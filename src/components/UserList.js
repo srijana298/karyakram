@@ -169,7 +169,7 @@ function UserList({
         <IoClose />
       </button>
       <div className="w-full space-y-4">
-        <p className="page-title">
+        {/* <p className="page-title">
           Search {deleteInvitation ? "Members" : "Users"}{" "}
           {checkUserIsOwner() && (
             <button
@@ -185,7 +185,7 @@ function UserList({
               <MdDownloadForOffline className="text-base" /> Download XLSX
             </button>
           )}
-        </p>
+        </p> */}
 
         <div className="w-full px-3 rounded-[18px] bg-neutral-200 outline outline-1 outline-neutral-200 flex items-center justify-between">
           <input

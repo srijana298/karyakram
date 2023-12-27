@@ -12,10 +12,9 @@ function OtpLogic() {
   const [timeString, setTimeString] = useState("");
 
   const navigate = useNavigate();
-  const {state} = useLocation()
+  const { state } = useLocation();
   const { userId, phone, expire } = state;
 
-  
   const inputs = [
     {
       label: "OTP",
@@ -28,11 +27,16 @@ function OtpLogic() {
   ];
 
   useEffect(() => {
-    setTimeLeft(prev => (new Date(expire?.split(' ').join('+')).getTime() - new Date().getTime()));
+    setTimeLeft(
+      (prev) =>
+        new Date(expire?.split(" ").join("+")).getTime() - new Date().getTime()
+    );
     setTimeString((prev) => {
       const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-      return `${minutes <=9 ? '0' : ''}${minutes}:${seconds <=9 ? '0' : ''}${seconds}`;
+      return `${minutes <= 9 ? "0" : ""}${minutes}:${
+        seconds <= 9 ? "0" : ""
+      }${seconds}`;
     });
   }, [expire]);
 
@@ -45,7 +49,9 @@ function OtpLogic() {
             (timeLeft % (1000 * 60 * 60)) / (1000 * 60)
           );
           const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-          return `${minutes <=9 ? '0' : ''}${minutes}:${seconds <=9 ? '0' : ''}${seconds}`;
+          return `${minutes <= 9 ? "0" : ""}${minutes}:${
+            seconds <= 9 ? "0" : ""
+          }${seconds}`;
         });
       }, 1000);
       return () => clearInterval(interval);
@@ -56,7 +62,6 @@ function OtpLogic() {
     e?.preventDefault();
     setSigningin((prev) => true);
     setValidateMessage((prev) => null);
-    
 
     const account = new Account(client);
 
@@ -65,11 +70,11 @@ function OtpLogic() {
         userId,
         otp
       );
-      
+      console.log(sendOTPResponse);
       toast.success("OTP verified successfully.");
       navigate("/", { replace: true });
     } catch (error) {
-      
+      console.log(error);
       setValidateMessage((prev) => error.message);
     } finally {
       setSigningin((prev) => false);
@@ -80,15 +85,15 @@ function OtpLogic() {
     const account = new Account(client);
     try {
       const sendOTPResponse = await account.createPhoneVerification();
-        
-        toast.success("OTP resend successfully.");
-        setTimeLeft(new Date(sendOTPResponse?.expire).getTime() - new Date().getTime());
-      }  
-      catch(err) {
-        
-        toast.error("Internal Server Error.");
+
+      toast.success("OTP resend successfully.");
+      setTimeLeft(
+        new Date(sendOTPResponse?.expire).getTime() - new Date().getTime()
+      );
+    } catch (err) {
+      toast.error("Internal Server Error.");
     }
-  }
+  };
 
   return {
     inputs,
@@ -100,7 +105,7 @@ function OtpLogic() {
     timeLeft,
     timeString,
     phone,
-    resendCode
+    resendCode,
   };
 }
 

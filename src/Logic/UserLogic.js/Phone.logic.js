@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import { Account, Locale } from "appwrite";
 import client from "../../appwrite.config.js";
 import { toast } from "react-hot-toast";
@@ -11,15 +11,10 @@ function PhoneLogic() {
   const [phoneCode, setPhoneCode] = useState(null);
 
   const { state } = useLocation();
-  
-  
-  
+
   const navigate = useNavigate();
 
   const { email, password, countryCode } = state;
-  
-
-  
 
   useEffect(() => {
     const getPhoneCode = async () => {
@@ -33,14 +28,10 @@ function PhoneLogic() {
                 country.countryCode.toLowerCase() === countryCode.toLowerCase()
             )[0]?.code
         );
-      } catch (error) {
-        
-      }
+      } catch (error) {}
     };
     if (countryCode && countryCode.length > 0) getPhoneCode();
   }, [countryCode]);
-
-  
 
   const inputs = [
     {
@@ -57,7 +48,6 @@ function PhoneLogic() {
     e?.preventDefault();
     setSigningin((prev) => true);
     setValidateMessage((prev) => null);
-    
 
     const account = new Account(client);
 
@@ -66,9 +56,9 @@ function PhoneLogic() {
         `${phoneCode}${phone}`,
         password
       );
-      
+
       const sendOTPResponse = await account.createPhoneVerification();
-      
+      console.log(sendOTPResponse, "phone response");
       toast.success("Phone number updated successfully. Please Check for OTP.");
       navigate("/auth/otp", {
         replace: true,
@@ -80,7 +70,6 @@ function PhoneLogic() {
         },
       });
     } catch (error) {
-      
       setValidateMessage((prev) => error.message);
       toast.error(error.message);
     } finally {

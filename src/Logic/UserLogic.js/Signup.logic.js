@@ -21,7 +21,7 @@ function SignupLogic() {
     {
       label: "Name",
       name: "name",
-      placeholder: "John Doe",
+      placeholder: "Enter Your Name",
       value: name,
       cb: setName,
       required: true,
@@ -29,7 +29,7 @@ function SignupLogic() {
     {
       label: "Email",
       name: "email",
-      placeholder: "example@email.com",
+      placeholder: "Enter Your Email",
       value: email,
       type: "email",
       cb: setEmail,

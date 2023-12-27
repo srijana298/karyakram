@@ -218,9 +218,9 @@ function CreateEventLogic() {
       //     throw new Error("Please provide a meeting id for your event.");
       //   }
       // }
-      if (image === null) {
-        throw new Error("Please provide an image for your event.");
-      }
+      // if (image === null) {
+      //   throw new Error("Please provide an image for your event.");
+      // }
       try {
         let uploadedFile, filePreviewUrl;
         const storage = new Storage(client);
