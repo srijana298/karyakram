@@ -17,25 +17,27 @@ function ExploreEventCard({
     const formattedDay = `${day <= 9 ? '0'+day : day}`
     const month = start.toDateString().slice(4,7).toUpperCase()
 
-  return <Link to={`/event/${id}`} className="w-full">
-        <div className="relative">
+  return (
+    <Link to={`/event/${id}`} className="w-full block group">
+        <div className="relative overflow-hidden rounded-xl">
             <img
                 src={image}
                 alt={title}
-                className="object-cover w-full rounded-lg aspect-video"
+                className="object-cover w-full aspect-video group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute m-2 rounded text-sm top-0 right-0 text-center font-semibold bg-white shadow p-2">
-                <h3>{formattedDay}</h3>
-                <p>{month}</p>
+            <div className="absolute top-2 right-2 rounded-lg text-xs font-semibold bg-white/90 backdrop-blur-sm p-2 text-center min-w-[40px] shadow-sm">
+                <p className="text-sm leading-none text-secondary">{formattedDay}</p>
+                <p className="text-[10px] text-stone-400 mt-0.5">{month}</p>
             </div>
-            <div className="absolute m-2 rounded text-xs bottom-0 left-0 text-center bg-white shadow p-2">
+            <div className="absolute bottom-2 left-2 rounded-lg text-xs bg-primary/90 backdrop-blur-sm text-white px-2.5 py-1 shadow-sm">
                 <p>{category}</p>
             </div>
         </div>
-        <div className="py-4 space-y-2">
-            <h1 className="font-bold">{title}</h1>
+        <div className="pt-3 pb-1">
+            <h3 className="text-sm font-semibold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">{title}</h3>
         </div>
-  </Link>;
+  </Link>
+  );
 }
 
 export default ExploreEventCard;

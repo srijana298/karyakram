@@ -1,16 +1,10 @@
 import React from "react";
-import { IoAdd } from "react-icons/io5";
-import { Link } from "react-router-dom";
 
-function DashboardScreenLayout({children, title}) {
+function DashboardScreenLayout({ children, title }) {
   return (
-    <div>
-      <div className="inline-flex justify-between w-full items-center">
-        <h2 className="page-title">{title}</h2>
-        <Link to="/dashboard/create" className="primary-btn">
-          <IoAdd />
-          Create
-        </Link>
+    <div className="space-y-4">
+      <div className="dashboard-panel px-5 py-4">
+        <h2 className="text-[28px] leading-tight font-semibold text-dashboard-text">{title}</h2>
       </div>
       {children}
     </div>

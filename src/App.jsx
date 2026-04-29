@@ -18,9 +18,16 @@ import Landing from "./pages/landing/Landing";
 import Explore from "./pages/landing/Explore";
 import EventPage from "./pages/landing/EventPage";
 import Ticket from "./components/Ticket";
-import Rsvps from "./pages/dashboard/Rsvp";
 import DashboardScreenLayout from "./layouts/DashboardScreenLayout";
 import MarkAttendance from "./pages/MarkAttendance";
+import SelfCheckIn from "./pages/SelfCheckIn";
+import NotificationPage from "./pages/dashboard/Notifications";
+import Groups from "./pages/dashboard/Groups";
+import GroupDetails from "./pages/dashboard/GroupDetails";
+import CreateGroup from "./pages/dashboard/CreateGroup";
+import EventAttendance from "./pages/dashboard/EventAttendance";
+import EventCertificates from "./pages/dashboard/EventCertificates";
+import TemplateEditor from "./pages/editor/TemplateEditor";
 
 function App() {
   return (
@@ -59,11 +66,7 @@ function App() {
             <Route path="account" element={<Account />} />
             <Route
               path="events"
-              element={
-                <DashboardScreenLayout title={"Your Events"}>
-                  <Events />
-                </DashboardScreenLayout>
-              }
+              element={<Events />}
             />
             <Route
               path="invities"
@@ -74,16 +77,47 @@ function App() {
               }
             />
             <Route
-              path="rsvp"
+              path="notifications"
+              element={<NotificationPage />}
+            />
+            <Route
+              path="groups/create"
+              element={<CreateGroup />}
+            />
+            <Route
+              path="groups"
+              element={<Groups />}
+            />
+            <Route
+              path="groups/:id"
               element={
-                <DashboardScreenLayout title={"Your RSVPs"}>
-                  <Rsvps />
+                <DashboardScreenLayout title={"Group Details"}>
+                  <GroupDetails />
+                </DashboardScreenLayout>
+              }
+            />
+            <Route
+              path="event/:id/attendance"
+              element={
+                <DashboardScreenLayout title={"Attendance"}>
+                  <EventAttendance />
+                </DashboardScreenLayout>
+              }
+            />
+            <Route
+              path="event/:id/certificates"
+              element={
+                <DashboardScreenLayout title={"Certificates"}>
+                  <EventCertificates />
                 </DashboardScreenLayout>
               }
             />
           </Route>
           <Route path="/accept-invite/:eventId" element={<AcceptInvite />} />
           <Route path="/mark-attendance" element={<MarkAttendance />} />
+          <Route path="/checkin/:id" element={<SelfCheckIn />} />
+          <Route path="/template-editor" element={<TemplateEditor />} />
+          <Route path="/template-editor/:id" element={<TemplateEditor />} />
         </Routes>
       </Router>
     </>

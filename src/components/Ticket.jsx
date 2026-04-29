@@ -32,7 +32,7 @@ function Ticket({ text, event }) {
       <section
         id="ticket"
         ref={ticketRef}
-        className="flex items-center justify-between font-grostek text-black w-[1024px] h-[400px] m-10 drop-shadow-xl"
+        className="flex items-center justify-between font-geist text-black w-[1024px] h-[400px] m-10 drop-shadow-xl"
         style={{ boxSizing: "border-box" }}
       >
         <div className="rounded-l-[18px] bg-primary p-2 h-full text-white flex items-center justify-center">

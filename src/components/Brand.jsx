@@ -12,7 +12,7 @@ function Brand({ size }) {
       className={`font-extrabold gap-2 capitalize inline-flex text-xl items-center ${
         (pathname.includes("dashboard") || pathname.includes("auth")) &&
         "text-primary"
-      } font-poppins`}
+      } font-geist`}
       to={"/"}
     >
       <img
@@ -20,8 +20,8 @@ function Brand({ size }) {
         className={size ?? "w-8"}
         src={
           pathname.includes("dashboard") || pathname.includes("auth")
-            ? "./karyakram.svg"
-            : "./karyakram.svg"
+            ? "./mahotsav.svg"
+            : "./mahotsav.svg"
         }
       />
       <span
@@ -31,7 +31,7 @@ function Brand({ size }) {
             : "block"
         }
       >
-        Karyakram
+        Mahotsav
       </span>
     </Link>
   );

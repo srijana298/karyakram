@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { events, eventMembers, rsvps, notifications } from "../db/schema.js";
+import { events, eventMembers, rsvps, notifications, users } from "../db/schema.js";
 import { Ok, Created, Forbidden, NotFound, BadRequest, InternalError } from "../utils/ApiResponse.js";
 
 export const inviteMember = async (req, res) => {
@@ -102,11 +102,88 @@ export const markAttendance = async (req, res) => {
   return Ok(null, "Attendance marked");
 };
 
+export const receivedInvites = async (req, res) => {
+  const userId = req.user.id;
+
+  const rows = await db.select().from(eventMembers).where(
+    and(eq(eventMembers.user_id, userId), eq(eventMembers.joined, false), eq(eventMembers.confirm, false)),
+  ).catch(() => null);
+
+  if (!rows) return InternalError("Failed to fetch invites");
+
+  const invites = [];
+  for (const m of rows) {
+    const [event] = await db.select().from(events).where(eq(events.id, m.event_id)).catch(() => []);
+    const [owner] = await db.select().from(users).where(eq(users.id, event?.created_by ?? 0)).catch(() => []);
+    invites.push({
+      id: m.id,
+      eventId: m.event_id,
+      eventTitle: event?.title || "Unknown",
+      eventImage: event?.image || null,
+      role: m.role,
+      invitedAt: m.created_at,
+      inviteToken: m.invite_token,
+      ownerName: owner?.name || "Unknown",
+    });
+  }
+
+  return Ok(invites);
+};
+
+export const sentInvites = async (req, res) => {
+  const userId = req.user.id;
+
+  const myEvents = await db.select().from(events).where(eq(events.created_by, userId)).catch(() => null);
+  if (!myEvents) return InternalError("Failed to fetch events");
+
+  const result = [];
+  for (const ev of myEvents) {
+    const members = await db.select().from(eventMembers).where(
+      and(eq(eventMembers.event_id, ev.id)),
+    ).catch(() => []);
+
+    const nonOwner = members.filter((m) => m.role !== "owner");
+    if (nonOwner.length === 0) continue;
+
+    const invitedUsers = [];
+    for (const m of nonOwner) {
+      const [u] = await db.select().from(users).where(eq(users.id, m.user_id)).catch(() => []);
+      invitedUsers.push({
+        memberId: m.id,
+        userId: m.user_id,
+        name: u?.name || `User #${m.user_id}`,
+        email: u?.email || "",
+        role: m.role,
+        joined: m.joined,
+        confirmed: m.confirm,
+        status: m.joined ? "accepted" : m.invited ? "pending" : "rejected",
+      });
+    }
+
+    const pending = invitedUsers.filter((u) => u.status === "pending").length;
+    const accepted = invitedUsers.filter((u) => u.status === "accepted").length;
+    const rejected = invitedUsers.filter((u) => u.status === "rejected").length;
+
+    result.push({
+      eventId: ev.id,
+      eventTitle: ev.title,
+      eventImage: ev.image,
+      totalInvited: nonOwner.length,
+      pending,
+      accepted,
+      rejected,
+      invitedUsers,
+    });
+  }
+
+  return Ok(result);
+};
+
 export const acceptInvite = async (req, res) => {
   const { invite_token } = req.body;
 
   const [member] = await db.select().from(eventMembers).where(
-    eq(eventMembers.invite_token, invite_token),
+    and(eq(eventMembers.invite_token, invite_token), eq(eventMembers.user_id, req.user.id)),
   ).catch(() => []);
 
   if (!member) return NotFound("Invalid invite token");

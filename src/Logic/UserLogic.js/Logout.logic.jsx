@@ -7,7 +7,7 @@ function LogoutLogic() {
   const logout = async (e) => {
     e?.preventDefault();
     localStorage.removeItem("token");
-    localStorage.removeItem("Karyakram-user");
+    localStorage.removeItem("Mahotsav-user");
     localStorage.removeItem("cookieFallback");
     toast.success("Logged out successfully");
     navigate("/");

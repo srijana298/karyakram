@@ -1,93 +1,260 @@
-import React, { useEffect, useState } from "react";
-import { IoAdd } from "react-icons/io5";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  IoAdd,
+  IoArrowForward,
+  IoCalendarOutline,
+  IoLayersOutline,
+  IoNotificationsOutline,
+  IoPaperPlaneOutline,
+  IoPeopleOutline,
+  IoRocketOutline,
+} from "react-icons/io5";
 import { Link } from "react-router-dom";
-import NotFoundEvent from "../../assets/images/eventNotFound.svg";
 import GetEventLogic from "../../Logic/EventsLogic/getEvents";
+import { analyticsService } from "../../services/analytics";
 import Loading from "../../components/Loading";
 
-function Dashboard() {
-  const [date, setDate] = useState(new Date());
-  const {
-    loading,
-    error,
-    eventCount,
-    privateEvent,
-    publicEvent,
-    offlineEvent,
-    onlineEvent,
-  } = GetEventLogic();
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDate(new Date());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [date]);
+function StatCard({ icon, label, value, delta, tone = "green" }) {
+  const toneClass =
+    tone === "blue"
+      ? "bg-blue-50 text-blue-600"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-600"
+        : tone === "violet"
+          ? "bg-violet-50 text-violet-600"
+          : "bg-emerald-50 text-emerald-600";
 
   return (
-    <div>
-      <div className="flex justify-between">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-        </div>
-        <Link to="create" className="primary-btn">
-          <IoAdd />
-          Create
-        </Link>
+    <div className="bg-white border border-gray-200 rounded-md p-4">
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${toneClass}`}>{icon}</div>
+      <p className="mt-2 text-xs text-dashboard-muted font-medium">{label}</p>
+      <p className="text-[30px] leading-tight font-semibold text-dashboard-text mt-0.5">{value}</p>
+      <p className="text-[11px] text-emerald-600 font-medium mt-1">↑ {delta}% from last month</p>
+    </div>
+  );
+}
+
+function Dashboard() {
+  const { events = [], error } = GetEventLogic();
+  const [analytics, setAnalytics] = useState(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setLoadingAnalytics(true);
+      try {
+        const res = await analyticsService.get();
+        if (res.ok && res.data) setAnalytics(res.data);
+      } catch (err) {
+        console.error("Analytics error:", err);
+      }
+      setLoadingAnalytics(false);
+    };
+    fetchAnalytics();
+  }, []);
+
+  const overview = analytics?.overview || {};
+  const stats = [
+    {
+      label: "Total Events",
+      value: overview.totalEvents ?? 0,
+      icon: <IoCalendarOutline className="text-lg" />,
+      tone: "green",
+      delta: 12,
+    },
+    {
+      label: "Upcoming Events",
+      value: events?.length ?? 0,
+      icon: <IoRocketOutline className="text-lg" />,
+      tone: "blue",
+      delta: 8,
+    },
+    {
+      label: "Total Attendees",
+      value: Number(overview.totalMembers ?? 0).toLocaleString(),
+      icon: <IoPeopleOutline className="text-lg" />,
+      tone: "violet",
+      delta: 16,
+    },
+    {
+      label: "Invites Sent",
+      value: Number(overview.totalRsvps ?? 0).toLocaleString(),
+      icon: <IoPaperPlaneOutline className="text-lg" />,
+      tone: "amber",
+      delta: 20,
+    },
+  ];
+
+  const upcomingEvents = useMemo(() => {
+    const list = Array.isArray(events) ? events : [];
+    return list.slice(0, 5);
+  }, [events]);
+
+  const rsvp = analytics?.rsvpStats || {};
+  const accepted = Number(rsvp.approved || 0);
+  const pending = Number(rsvp.pending || 0);
+  const declined = Number(rsvp.rejected || 0);
+  const total = accepted + pending + declined;
+
+  const acceptedPct = total ? Math.round((accepted / total) * 100) : 0;
+  const pendingPct = total ? Math.round((pending / total) * 100) : 0;
+  const declinedPct = total ? Math.round((declined / total) * 100) : 0;
+
+  const donutStyle = {
+    background: `conic-gradient(#4caf50 0 ${acceptedPct}%, #fb923c ${acceptedPct}% ${acceptedPct + pendingPct}%, #ef4444 ${acceptedPct + pendingPct}% 100%)`,
+  };
+
+  const formatEventDate = (event) => {
+    const raw = event?.start_date || event?.start || event?.date || event?.created_at;
+    if (!raw) return "Date TBA";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return "Date TBA";
+    return d.toLocaleString([], { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="px-5 py-3 text-xs text-dashboard-muted border-b border-dashboard-border">
+        Main Menu <span className="px-2">/</span> Home
       </div>
-      <div className="py-8">
-        {loading && <Loading />}
-        {error && <p>{error}</p>}
-        {!loading && eventCount === 0 && (
-          <div className="flex flex-col h-[80vh] justify-center items-center gap-8">
-            <p className="text-neutral-400 text-xl font-semibold">
-              No events found. Add your first event.
-            </p>
-            <img
-              alt="not found"
-              className="w-[45%] h-max object-contain"
-              src={NotFoundEvent}
-            />
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">Welcome back{analytics?.user?.name ? `, ${analytics.user.name}` : ""}! 👋</h1>
+            <p className="text-dashboard-muted mt-1">Here&apos;s what&apos;s happening with your events today.</p>
           </div>
-        )}
-        {!loading && eventCount > 0 && (
-          <div className="flex justify-between items-center">
-            {[
-              { label: "Total", count: eventCount },
-              { count: privateEvent?.length ?? 0, label: "Private" },
-              { count: publicEvent?.length ?? 0, label: "Public" },
-              { count: offlineEvent?.length ?? 0, label: "Offline" },
-              { count: onlineEvent?.length ?? 0, label: "Online" },
-            ]?.map((item, index) => {
-              return (
-                <Link
-                  key={index}
-                  to={`events?filter=${item.label.toLowerCase()}`}
-                  className={`${
-                    index === 0 && "row-span-2"
-                  } flex flex-col items-center justify-center text-lg p-4 w-full text-center group ${
-                    index > 0 && "border-l"
-                  } border-neutral-300`}
-                >
-                  <h2 className="font-bold text-7xl ">{item?.count}</h2>
-                  <p className="text-neutral-600 text-sm font-poppins">
-                    {item.label} Events Added
-                  </p>
-                  <Link
-                    className="sidebar-link -translate-y-5 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all"
-                    to={`events?filter=${item.label.toLowerCase()}`}
-                  >
-                    See all
+          <Link
+            to="create"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-emerald-600"
+          >
+            <IoAdd className="text-base" />
+            Create Event
+          </Link>
+        </div>
+
+        {loadingAnalytics && <div className="mt-6"><Loading /></div>}
+        {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
+
+        {!loadingAnalytics && (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+              {stats.map((item) => (
+                <StatCard key={item.label} {...item} />
+              ))}
+            </div>
+
+            <div className="grid lg:grid-cols-[1.7fr_1fr] gap-4 mt-5">
+              <div className="dashboard-panel rounded-md p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-semibold text-dashboard-text">Upcoming Events</h2>
+                  <Link to="events?filter=total" className="text-sm text-primary inline-flex items-center gap-1 font-medium">
+                    View all events <IoArrowForward />
                   </Link>
-                </Link>
-              );
-            })}
-          </div>
+                </div>
+
+                <div>
+                  {upcomingEvents.length === 0 && (
+                    <p className="text-sm text-dashboard-muted py-8 text-center">No upcoming events yet.</p>
+                  )}
+                  {upcomingEvents.map((event, i) => (
+                    <Link
+                      key={event.id}
+                      to={`/dashboard/event/${event.id}`}
+                      className={`flex items-center gap-3 py-3 px-2 hover:bg-white/70 transition-colors ${i < upcomingEvents.length - 1 ? "border-b border-gray-200" : ""}`}
+                    >
+                      <img
+                        src={event.banner_url || event.image || "/mahotsav.svg"}
+                        alt={event.title}
+                        className="w-20 h-14 rounded object-cover shrink-0 bg-stone-200"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-dashboard-text truncate">{event.title || "Untitled Event"}</p>
+                        <p className="text-xs text-dashboard-muted mt-1 inline-flex items-center gap-1">
+                          <IoCalendarOutline className="text-[13px]" />
+                          {formatEventDate(event)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="dashboard-panel p-4">
+                  <h3 className="text-xl font-semibold text-dashboard-text">Invitations Overview</h3>
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="relative w-28 h-28">
+                      <div className="w-28 h-28 rounded-full" style={donutStyle} />
+                      <div className="absolute inset-[18px] bg-dashboard-surface rounded-full flex items-center justify-center text-center">
+                        <div>
+                          <p className="text-2xl font-semibold text-dashboard-text leading-none">{total}</p>
+                          <p className="text-[11px] text-dashboard-muted mt-1">Total</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 text-sm">
+                      <p className="text-dashboard-text"><span className="text-green-600">●</span> Accepted <span className="text-dashboard-muted ml-2">{accepted} ({acceptedPct}%)</span></p>
+                      <p className="text-dashboard-text"><span className="text-orange-500">●</span> Pending <span className="text-dashboard-muted ml-2">{pending} ({pendingPct}%)</span></p>
+                      <p className="text-dashboard-text"><span className="text-red-500">●</span> Declined <span className="text-dashboard-muted ml-2">{declined} ({declinedPct}%)</span></p>
+                    </div>
+                  </div>
+
+                  <Link to="invities" className="mt-4 pt-3 border-t border-dashboard-border text-sm text-primary inline-flex items-center gap-1 font-medium">
+                    View all invites <IoArrowForward />
+                  </Link>
+                </div>
+
+                <div className="dashboard-panel p-4">
+                  <h3 className="text-xl font-semibold text-dashboard-text mb-2">Quick Actions</h3>
+                  <div className="divide-y divide-dashboard-border">
+                    <QuickAction
+                      icon={<IoCalendarOutline className="text-emerald-600" />}
+                      title="Create New Event"
+                      subtitle="Start planning your next event"
+                      to="create"
+                    />
+                    <QuickAction
+                      icon={<IoPaperPlaneOutline className="text-amber-600" />}
+                      title="Send Invites"
+                      subtitle="Invite people to your events"
+                      to="invities"
+                    />
+                    <QuickAction
+                      icon={<IoLayersOutline className="text-violet-600" />}
+                      title="Manage Groups"
+                      subtitle="Organize your teams and groups"
+                      to="groups"
+                    />
+                    <QuickAction
+                      icon={<IoNotificationsOutline className="text-blue-600" />}
+                      title="View Notifications"
+                      subtitle="Stay updated on new activity"
+                      to="notifications"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+function QuickAction({ icon, title, subtitle, to }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 py-3 group">
+      <div className="w-9 h-9 rounded-lg bg-white border border-dashboard-border flex items-center justify-center">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-dashboard-text">{title}</p>
+        <p className="text-xs text-dashboard-muted truncate">{subtitle}</p>
+      </div>
+      <IoArrowForward className="text-dashboard-muted group-hover:text-dashboard-text transition-colors" />
+    </Link>
   );
 }
 

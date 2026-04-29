@@ -1,38 +1,40 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect } from 'react';
 import {
   IoCalendarClearOutline,
   IoHomeOutline,
+  IoInformationCircleOutline,
+  IoLayersOutline,
   IoLogOutOutline,
+  IoMoonOutline,
   IoNotificationsOutline,
-  IoPeopleOutline,
   IoPersonOutline,
-  IoTicketOutline,
-} from "react-icons/io5";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import LogoutLogic from "../Logic/UserLogic.js/Logout.logic";
-import { authService } from "../services/auth";
-import { useNotifications } from "../context/notificationContext";
-import Brand from "./Brand";
-import { useUser } from "../context/userContext";
+  IoSearchOutline,
+  IoTicketOutline
+} from 'react-icons/io5';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import LogoutLogic from '../Logic/UserLogic.js/Logout.logic';
+import { authService } from '../services/auth';
+import { useNotifications } from '../context/notificationContext';
+import { useUser } from '../context/userContext';
 
 function Sidebar() {
   const { logout } = LogoutLogic();
   const { userInfo, setUserInfo } = useUser();
-  const { toggleNotificationBar, unreadNotifications } = useNotifications();
+  const { unreadNotifications } = useNotifications();
   const navigate = useNavigate();
 
   const getUserInfo = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     if (!token) return;
 
     const res = await authService.getMe();
     if (res.ok) {
-      localStorage.setItem("Karyakram-user", JSON.stringify(res.data));
+      localStorage.setItem('Mahotsav-user', JSON.stringify(res.data));
       setUserInfo(res.data);
     } else {
-      localStorage.removeItem("Karyakram-user");
-      localStorage.removeItem("token");
-      navigate("/");
+      localStorage.removeItem('Mahotsav-user');
+      localStorage.removeItem('token');
+      navigate('/');
     }
   }, [navigate, setUserInfo]);
 
@@ -40,55 +42,99 @@ function Sidebar() {
     getUserInfo();
   }, [getUserInfo]);
 
+  const linkClass = ({ isActive }) =>
+    `inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+      isActive
+        ? 'bg-[#edf3ee] text-[#1f6d3d] border border-[#d8e6da]'
+        : 'text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text'
+    }`;
+
   return (
-    <div className="flex flex-col p-4 border-r border-neutral-200 gap-2 ">
-      <div className="sidebar-link hover:bg-transparent hover:shadow-none w-max">
-        <Brand />
+    <aside className="flex flex-col w-72 shrink-0 border-r border-dashboard-border bg-dashboard-panel h-full">
+      <div className="px-5 h-[72px] border-b border-dashboard-border flex items-center">
+        <Link to="/" className="text-2xl font-semibold tracking-tight text-dashboard-text">
+          Mahotsav
+        </Link>
       </div>
-      <Link className="sidebar-link" to="">
-        <IoHomeOutline /> Home
-      </Link>
-      <NavLink className="sidebar-link" to="events?filter=total">
-        <IoCalendarClearOutline /> Events
-      </NavLink>
-      <NavLink className="sidebar-link" to="invities">
-        <IoTicketOutline /> Invities
-      </NavLink>
-      <NavLink className="sidebar-link" to="rsvp">
-        <IoPeopleOutline /> RSVPs
-      </NavLink>
-      <button className="sidebar-link" onClick={toggleNotificationBar}>
-        <div className="relative">
-          <IoNotificationsOutline />
-          {unreadNotifications > 0 && (
-            <p className="absolute -top-3 p-2 aspect-square -right-2 bg-primary text-white rounded-full text-[10px] text-center w-2 h-2 flex items-center justify-center">
-              <span className="w-max h-max">
-                {unreadNotifications > 9 ? `9+` : unreadNotifications}
-              </span>
-            </p>
-          )}
+
+      <div className="p-2 border-b border-dashboard-border">
+        <div className="flex items-center gap-2 h-9 bg-white border border-dashboard-border rounded-md px-2.5">
+          <IoSearchOutline className="text-stone-400 text-[15px] shrink-0" />
+          <input
+            placeholder="Search"
+            className="bg-transparent outline-none text-sm leading-none h-full flex-1 placeholder:text-stone-400"
+          />
+          <span className="ml-auto mr-2 h-6 inline-flex items-center whitespace-nowrap leading-none text-[10px] font-semibold text-stone-500 border border-stone-300 rounded px-1.5">
+            ⌘K
+          </span>
         </div>
-        Notifications
-      </button>
-      <div className="mt-auto flex flex-col">
-        <NavLink
-          title={userInfo?.email}
-          className="sidebar-link inline-flex items-center gap-1"
-          to="account"
-        >
-          {userInfo ? (
-            <>
-              <IoPersonOutline /> {userInfo?.name?.split(" ")[0]}
-            </>
-          ) : (
-            "Account"
-          )}
+      </div>
+
+      <nav className="flex-1 px-4 py-5 flex flex-col gap-1">
+        <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Main Menu</p>
+        <NavLink className={linkClass} to="">
+          <IoHomeOutline className="text-[18px]" /> Home
         </NavLink>
-        <button className="sidebar-link" onClick={logout}>
-          <IoLogOutOutline /> Logout
+        <NavLink className={linkClass} to="events?filter=total">
+          <IoCalendarClearOutline className="text-[18px]" /> Events
+        </NavLink>
+        <NavLink className={linkClass} to="invities">
+          <IoTicketOutline className="text-[18px]" /> Invites
+        </NavLink>
+        <NavLink className={linkClass} to="groups">
+          <IoLayersOutline className="text-[18px]" /> Groups
+        </NavLink>
+        <NavLink className={linkClass} to="notifications">
+          <div className="relative">
+            <IoNotificationsOutline className="text-[18px]" />
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-accent text-secondary rounded-full text-[10px] font-bold flex items-center justify-center px-1">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
+          </div>
+          Notifications
+        </NavLink>
+
+        <div className="mt-5 pt-5 border-t border-dashboard-border flex flex-col gap-1">
+          <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Support</p>
+          <button className="inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text text-left">
+            <IoInformationCircleOutline className="text-[18px]" /> Learn More
+          </button>
+          <button className="inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text text-left">
+            <IoMoonOutline className="text-[18px]" /> Dark Mode
+          </button>
+        </div>
+      </nav>
+
+      <div className="p-2 border-t border-dashboard-border">
+        <div className="bg-white border border-dashboard-border rounded-xl p-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-stone-900 text-white flex items-center justify-center text-xs font-bold uppercase">
+            {(userInfo?.name || 'U').slice(0, 2)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-dashboard-text truncate">
+              {userInfo?.name || 'User'}
+            </p>
+            <p className="text-[11px] text-dashboard-muted truncate">{userInfo?.email || ''}</p>
+          </div>
+          <NavLink
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-dashboard-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+            to="account"
+            title="Account"
+          >
+            <IoPersonOutline className="text-[18px]" />
+          </NavLink>
+        </div>
+
+        <button
+          className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-dashboard-muted hover:bg-red-50 hover:text-red-500 transition-colors"
+          onClick={logout}
+        >
+          <IoLogOutOutline className="text-lg" /> Logout
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
 

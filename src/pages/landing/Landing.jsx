@@ -1,42 +1,39 @@
-import { useRef } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-
-import Marketing from "../../assets/images/marketing.png";
-import Research from "../../assets/images/research.png";
-import Development from "../../assets/images/dev.png";
-import Ui from "../../assets/images/uiux.png";
-import Card from "../../components/Card";
-import Testimonial from "../../components/TestimonialCard";
-import Hero from "../../assets/images/pattern1.jpg";
-import { Navigation, Autoplay, Pagination } from "swiper";
-import { Swiper, SwiperSlide, useSwiper } from "swiper/react";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/scrollbar";
+import HeroBg from "../../assets/images/herobg.jpg";
 import {
-  IoArrowBack,
-  IoArrowDownCircleOutline,
   IoArrowForward,
-  IoCreateOutline,
-  IoNotificationsOutline,
-  IoPeople,
+  IoCalendarOutline,
+  IoCheckmarkCircleOutline,
+  IoChevronDownOutline,
+  IoGlobeOutline,
+  IoLinkOutline,
   IoPeopleOutline,
+  IoShieldCheckmarkOutline,
   IoTicketOutline,
 } from "react-icons/io5";
-import {
-  MdManageHistory,
-  MdOutlineFileDownload,
-  MdOutlinePrivacyTip,
-  MdRsvp,
-} from "react-icons/md";
-import { RiMouseLine, RiSteamLine } from "react-icons/ri";
-import Hero2 from "../../assets/images/3187910.jpg";
-import Security from "../../assets/images/security.jpg";
+import { RiGithubFill, RiInstagramLine, RiTwitterLine } from "react-icons/ri";
 
 function Landing() {
-  const swiper = useSwiper();
-  const swiperRef = useRef(null);
+  useEffect(() => {
+    const elements = document.querySelectorAll("[data-reveal]");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.18, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   let token = null;
   try {
@@ -45,173 +42,274 @@ function Landing() {
     token = null;
   }
 
+  const features = [
+    {
+      icon: <IoCalendarOutline className="text-2xl" />,
+      title: "Create Events",
+      description:
+        "Set up events in minutes with customizable forms, dates, locations, and cover images.",
+      color: "bg-emerald-50 text-primary",
+    },
+    {
+      icon: <IoTicketOutline className="text-2xl" />,
+      title: "Manage RSVPs",
+      description:
+        "Track attendees, approve requests, and send invitations — all from one dashboard.",
+      color: "bg-amber-50 text-accent",
+    },
+    {
+      icon: <IoPeopleOutline className="text-2xl" />,
+      title: "Go Live",
+      description:
+        "Host online or offline events, scan QR codes for attendance, and download event tickets.",
+      color: "bg-stone-100 text-stone-700",
+    },
+    {
+      icon: <IoShieldCheckmarkOutline className="text-2xl" />,
+      title: "Secure & Reliable",
+      description:
+        "Your data is safe with us. Built with modern security practices and reliable infrastructure.",
+      color: "bg-rose-50 text-rose-600",
+    },
+  ];
+
+  const steps = [
+    {
+      number: "01",
+      title: "Create Your Event",
+      description:
+        "Fill in the details, upload a cover image, and set your event preferences.",
+      icon: <IoCalendarOutline className="text-xl" />,
+    },
+    {
+      number: "02",
+      title: "Share & Invite",
+      description:
+        "Send invitations, share links, and let students RSVP with one click.",
+      icon: <IoLinkOutline className="text-xl" />,
+    },
+    {
+      number: "03",
+      title: "Manage & Celebrate",
+      description:
+        "Track RSVPs, mark attendance with QR codes, and focus on hosting a great event.",
+      icon: <IoCheckmarkCircleOutline className="text-xl" />,
+    },
+  ];
+
+  const stats = [
+    { value: "500+", label: "Events Created", icon: <IoCalendarOutline className="text-lg" /> },
+    { value: "10K+", label: "RSVPs Processed", icon: <IoTicketOutline className="text-lg" /> },
+    { value: "200+", label: "College Organizers", icon: <IoPeopleOutline className="text-lg" /> },
+    { value: "50+", label: "Campuses Reached", icon: <IoGlobeOutline className="text-lg" /> },
+  ];
+
   return (
-    <div className="flex-1 bg-white font-poppins select-none h-100v">
-      <div className="bg-secondary" style={{ height: "100vh" }}>
-        <section className="flex flex-col text-center w-full h-100 items-center py-8 lg:py-16 justify-center gap-8 md:gap-0 container min-h-[75vh] relative">
-          <div
-            className="flex flex-col gap-4 items-center justify-center z-10"
-            style={{ flexBasis: "50%" }}
-          >
-            <h1 className=" text-2xl md:text-4xl lg:text-6xl text-slate-100 font-bold leading-relaxed lg:leading-normal drop-shadow-2xl">
-              Karyakram Your Creativity
-              <br />
-              Curate Unforgettable Events
-            </h1>
-            <p className=" md:max-w-[90%] py-4 text-slate-400">
-              RSVP and Management Made Effortless for Creators
-            </p>
-            <div className="inline-flex items-center gap-2">
-              <Link
-                to={token ? "/dashboard" : "/auth/signup"}
-                className="bg-gradient-to-b shadow-xl focus:ring-accent from-accent to-accent/90 rounded-full p-4 text-white text-center"
-              >
-                {token ? "Go to Dashboard" : "Get Started"}
-              </Link>
-              <Link
-                to={"/explore"}
-                className="bg-gradient-to-r shadow-xl from-primary to-primary/90 rounded-full p-4 text-white text-center"
-              >
-                Explore Events
-              </Link>
-            </div>
-          </div>
-          <div className=" w-full relative"></div>
-        </section>
-      </div>
-      {/* <section className="flex flex-col-reverse  lg:flex-row w-full py-8 md:py-16 justify-between gap-8 md:gap-0 container">
-        <div className="md:pt-16 " style={{ flexBasis: "50%" }}>
-          <img className="w-full" src={Hero2} />
-        </div>
-        <div
-          className="flex flex-col gap-4 items-start justify-evenly text-left py-8 lg:pl-16"
-          style={{ flexBasis: "50%" }}
-        >
-          <p className="text-accent tracking-[1px] font-semibold items-center gap-2 flex">
-            <hr className="w-20 h-1 bg-accent"></hr>
-          </p>
-          <h1 className="text-3xl md:text-5xl text-primary font-semibold md:leading-normal">
-            Unlock Your Creative Potential
+    <div className="flex-1 bg-white font-sans">
+      {/* Hero — Full-width background image */}
+      <section
+        className="relative min-h-[calc(100vh-72px)] flex items-center"
+        style={{
+          backgroundImage: `linear-gradient(135deg, rgba(5,150,105,0.85), rgba(28,25,23,0.75)), url(${HeroBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="container text-center text-white py-16 md:py-24">
+          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto tracking-tight">
+            Campus Events,
+            <br />
+            Simplified.
           </h1>
-          <hr className="w-full border border-neutral-200"></hr>
-          <p className="text-sm leading-[1.4rem] md:max-w-[90%] py-4 text-neutral-500 text-justify">
-            Our app empowers individual contributors and artists like you to
-            unleash your creativity and organize remarkable events. Whether
-            you're planning a solo exhibition, a live performance, or a
-            collaborative workshop, our platform provides the tools and features
-            you need to make your events a resounding success.
+          <p className="mt-4 text-base md:text-lg text-white/80 max-w-2xl mx-auto">
+            Create. Manage. Celebrate. — RSVP, ticketing, and event management built for college organizers.
           </p>
-          <Link
-            to={token ? "Go to Dashboard" : "/auth/signup"}
-            className="bg-accent rounded-full p-4 text-white text-center"
-          >
-            {token ? "Go to Dashboard" : "Get Started"}
-          </Link>
+          <div className="mt-10 inline-flex flex-wrap justify-center gap-3">
+            <Link
+              to={token ? "/dashboard" : "/auth/signup"}
+              className="rounded-lg px-8 py-3 text-sm font-semibold bg-accent text-secondary hover:bg-amber-400 shadow-lg shadow-amber-500/20"
+            >
+              {token ? "Go to Dashboard" : "Host Your Event"}
+            </Link>
+            <Link
+              to="/explore"
+              className="rounded-lg px-8 py-3 text-sm font-semibold bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20"
+            >
+              Explore Events
+            </Link>
+          </div>
+          <div className="mt-12 flex justify-center">
+            <IoChevronDownOutline className="text-2xl text-white/60 animate-bounce" />
+          </div>
         </div>
       </section>
-      <div className="bg-gradient-to-b from-secondary from-100% to-50% to-white pb-10">
-        <section className="flex flex-col lg:flex-row w-full items-center py-8 lg:pt-16 lg:pb-0 justify-between gap-4 md:gap-0 container">
-          <div className="flex flex-row gap-16">
-            <div className="flex-[80%] space-y-4">
-              <p className="text-accent tracking-[1px] font-semibold  items-center gap-2 flex">
-                <div className="w-20 h-1 bg-accent"></div> Secure
+
+      {/* Stats bar */}
+      <section className="py-6 bg-secondary reveal-up" data-reveal>
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center text-white">
+                <div className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 mb-2">
+                  {stat.icon}
+                </div>
+                <p className="text-2xl md:text-3xl font-extrabold">{stat.value}</p>
+                <p className="mt-1 text-xs text-stone-400">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features — 2x2 grid with icon cards */}
+      <section className="py-20 md:py-24 bg-white reveal-up" data-reveal>
+        <div className="container">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Features</p>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-secondary">
+              Everything You Need
+            </h2>
+            <p className="mt-3 text-sm text-stone-500">
+              From planning to execution, we&apos;ve got you covered
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+            {features.map((item) => (
+              <div
+                key={item.title}
+                className="group rounded-xl p-6 bg-stone-50/80 border border-stone-100 hover:bg-white hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-200 transition-all duration-300"
+              >
+                <div className={`w-11 h-11 rounded-lg ${item.color} flex items-center justify-center mb-4`}>
+                  {item.icon}
+                </div>
+                <h3 className="text-base font-bold text-secondary">{item.title}</h3>
+                <p className="mt-2 text-sm text-stone-500 leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works — Horizontal timeline */}
+      <section className="py-20 md:py-24 bg-stone-50 reveal-up" data-reveal>
+        <div className="container">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">How It Works</p>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-secondary">
+              Three Simple Steps
+            </h2>
+            <p className="mt-3 text-sm text-stone-500">
+              From idea to event in minutes
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12 relative">
+            {/* Connecting line */}
+            <div className="hidden md:block absolute top-[52px] left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-primary via-accent to-primary opacity-30" />
+
+            {steps.map((step) => (
+              <div key={step.number} className="relative text-center">
+                <div className="w-[52px] h-[52px] rounded-full bg-primary text-white flex items-center justify-center text-lg font-bold mx-auto shadow-lg shadow-primary/20">
+                  {step.number}
+                </div>
+                <h3 className="mt-5 text-base font-bold text-secondary">{step.title}</h3>
+                <p className="mt-2 text-sm text-stone-500 leading-relaxed max-w-xs mx-auto">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA — Bold gradient */}
+      <section className="py-20 md:py-24 bg-white reveal-up" data-reveal>
+        <div className="container">
+          <div className="relative bg-secondary rounded-2xl p-10 md:p-16 text-center overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute -top-20 -right-20 w-60 h-60 bg-primary rounded-full blur-3xl" />
+              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-accent rounded-full blur-3xl" />
+            </div>
+            <div className="relative z-10">
+              <h2 className="text-2xl md:text-4xl font-extrabold text-white">
+                Ready to Host Your Next Event?
+              </h2>
+              <p className="mt-3 text-sm md:text-base text-stone-400 max-w-lg mx-auto">
+                Join hundreds of college organizers already using Mahotsav.
               </p>
-              <h1 className="text-3xl md:text-5xl text-white font-semibold md:leading-normal">
-                Seamless Event Planning and Organization
-              </h1>
+              <div className="mt-8 inline-flex flex-wrap justify-center gap-3">
+                <Link
+                  to={token ? "/dashboard" : "/auth/signup"}
+                  className="rounded-lg px-6 py-3 text-sm font-semibold bg-primary text-white hover:bg-emerald-600 inline-flex items-center gap-2 shadow-lg shadow-primary/30"
+                >
+                  Get Started Free
+                  <IoArrowForward className="text-sm" />
+                </Link>
+                <Link
+                  to="/explore"
+                  className="rounded-lg px-6 py-3 text-sm font-semibold border border-white/20 text-white hover:bg-white/10"
+                >
+                  See How It Works
+                </Link>
+              </div>
+              <p className="mt-6 text-xs text-stone-500">
+                No credit card required. Free for college events.
+              </p>
             </div>
           </div>
-          <p className="flex-[80%] w-full text-sm leading-[1.4rem] md:max-w-[90%] py-4 text-slate-400 text-justify">
-            Say goodbye to the hassles of event planning. Our user-friendly
-            interface simplifies the process, allowing you to focus on your
-            artistic endeavors. Create and manage events effortlessly, from
-            setting dates and locations to providing event descriptions and
-            ticketing options. Streamline your planning process and bring your
-            vision to reality.
-          </p>
-        </section>
-        <div className="flex flex-row gap-4 items-center justify-between container">
-          <hr className="w-full  border border-neutral-200 opacity-30"></hr>
-          <div className="inline-flex flex-[50%] gap-4 justify-end items-center">
-            <button
-              onClick={() => {
-                swiperRef.current.swiper.slidePrev();
-              }}
-              className="text-white p-4 rounded-full outline outline-1 outline-white hover:bg-primary hover:outline-none transition-all"
-            >
-              <IoArrowBack />
-            </button>
-            <button
-              onClick={() => {
-                swiperRef.current.swiper.slideNext();
-              }}
-              className="text-white p-4 rounded-full bg-accent"
-            >
-              <IoArrowForward />
-            </button>
+        </div>
+      </section>
+
+      {/* Footer — Clean with warm tones */}
+      <footer className="bg-stone-900 text-white pt-16 pb-10 reveal-up" data-reveal>
+        <div className="container">
+          <div className="grid md:grid-cols-4 gap-10">
+            <div>
+              <h3 className="text-xl font-extrabold text-white">Mahotsav</h3>
+              <p className="mt-3 text-sm text-stone-400 leading-relaxed">
+                The modern event management platform built for college organizers.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Platform</h4>
+              <ul className="space-y-2.5 text-sm text-stone-400">
+                <li><Link className="hover:text-white transition-colors" to="/explore">Explore Events</Link></li>
+                <li><Link className="hover:text-white transition-colors" to="/dashboard">Dashboard</Link></li>
+                <li><Link className="hover:text-white transition-colors" to="/dashboard/create">Create Event</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Company</h4>
+              <ul className="space-y-2.5 text-sm text-stone-400">
+                <li><a className="hover:text-white transition-colors" href="#">About</a></li>
+                <li><a className="hover:text-white transition-colors" href="#">Contact</a></li>
+                <li><a className="hover:text-white transition-colors" href="#">Privacy Policy</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Connect</h4>
+              <div className="flex gap-2">
+                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
+                  <RiInstagramLine />
+                </a>
+                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
+                  <RiTwitterLine />
+                </a>
+                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
+                  <RiGithubFill />
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-        <Swiper
-          ref={swiperRef}
-          modules={[Navigation]}
-          spaceBetween={50}
-          breakpoints={{
-            640: {
-              slidesPerView: 1.5,
-              spaceBetween: 50,
-            },
-            820: {
-              slidesPerView: 2.5,
-              spaceBetween: 50,
-            },
-            960: {
-              slidesPerView: 2.8,
-              spaceBetween: 50,
-            },
-            1024: {
-              slidesPerView: 2.5,
-              spaceBetween: 80,
-            },
-          }}
-        >
-          {data.map((item) => (
-            <SwiperSlide>
-              <Card {...item} />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div> */}
-      {/* <section className="flex flex-col-reverse lg:flex-row-reverse w-full py-8 md:py-16 justify-between gap-8 md:gap-0 container">
-        <div className="" style={{ flexBasis: "50%" }}>
-          <img className="w-full" src={Security} />
-        </div>
-        <div
-          className="flex flex-col gap-4 items-start justify-evenly text-left py-8 lg:pr-16"
-          style={{ flexBasis: "50%" }}
-        >
-          <p className="text-accent tracking-[1px] font-semibold items-center gap-2 flex">
-            <hr className="w-20 h-1 bg-accent"></hr> Registrations Made Easy
+          <hr className="my-8 border-stone-800" />
+          <p className="text-center text-xs text-stone-600">
+            © {new Date().getFullYear()} Mahotsav. All rights reserved.
           </p>
-          <h1 className="text-3xl md:text-5xl text-primary font-semibold md:leading-normal">
-            Security and Reliability
-          </h1>
-          <hr className="w-full border border-neutral-200"></hr>
-          <p className="text-sm leading-[1.4rem] md:max-w-[90%] py-4 text-neutral-500 text-justify">
-            Rest assured that your event data is safe and secure with our web
-            app. We prioritize data protection and employ industry-standard
-            security measures to safeguard your information. Our reliable
-            infrastructure ensures that your event management process remains
-            uninterrupted, allowing you to focus on what matters most – creating
-            exceptional events.
-          </p>
-          <Link
-            to={token ? "/dashboard" : "/auth/signup"}
-            className="bg-gradient-to-r from-primary to-primary rounded-full px-6 p-4 text-white text-center"
-          >
-            {token ? "Go to Dashboard" : "Get Started"}
-          </Link>
         </div>
-      </section> */}
+      </footer>
     </div>
   );
 }

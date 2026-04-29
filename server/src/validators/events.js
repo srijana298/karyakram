@@ -20,6 +20,7 @@ export const createEventSchema = z.object({
   tnc: z.string().nullable().optional(),
   accepting_rsvp: z.boolean().default(true),
   accepting_attendance: z.boolean().default(false),
+  group_id: z.coerce.number().int().nullable().optional(),
 })
 
 export const updateEventSchema = z.object({
@@ -43,6 +44,8 @@ export const updateEventSchema = z.object({
   tnc: z.string().nullable().optional(),
   accepting_rsvp: z.boolean().optional(),
   accepting_attendance: z.boolean().optional(),
+  group_id: z.coerce.number().int().nullable().optional(),
+  check_in_code: z.string().nullable().optional(),
 });
 
 export const eventQuerySchema = z.object({

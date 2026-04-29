@@ -107,7 +107,7 @@ function SignupLogic() {
     }
 
     localStorage.setItem("token", JSON.stringify(res.data.token));
-    localStorage.setItem("Karyakram-user", JSON.stringify(res.data.user));
+    localStorage.setItem("Mahotsav-user", JSON.stringify(res.data.user));
     toast.success("Signed up successfully");
     navigate("/dashboard", { replace: true });
     setSigningin(false);

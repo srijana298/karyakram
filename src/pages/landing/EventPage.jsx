@@ -1,28 +1,32 @@
 import React from "react";
 import GetEventLogic from "../../Logic/EventsLogic/getEvents";
 import Loading from "../../components/Loading";
-import { MdComputer, MdCurrencyRupee } from "react-icons/md";
+import { MdComputer } from "react-icons/md";
 import {
   IoBookmarkOutline,
   IoCalendarClearOutline,
+  IoGlobeOutline,
   IoLanguageOutline,
+  IoLinkOutline,
   IoLocationOutline,
+  IoShareSocialOutline,
   IoTimerOutline,
-  IoWalletOutline,
 } from "react-icons/io5";
 import { shareLinks } from "../../static/shareLinks";
 import { useLocation } from "react-router-dom";
 import RsvpLogic from "../../Logic/Explore/rsvp.logic";
 
+function formatTime(date) {
+  return date?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) || "";
+}
+
 function EventPage() {
   const { loading, error, events } = GetEventLogic();
   const { handleRSVP, adding } = RsvpLogic(events);
-
   const { pathname } = useLocation();
 
   if (loading || !events) return <Loading />;
-
-  if (error) return <div>{error}</div>;
+  if (error) return <div className="container py-16 text-center text-stone-500">{error}</div>;
 
   const {
     title,
@@ -39,193 +43,245 @@ function EventPage() {
     language,
     duration,
   } = events;
+
   const start = startDate ? new Date(startDate?.split("+")[0]) : null;
   const end = endDate ? new Date(endDate?.split("+")[0]) : null;
-  const startDay = start?.toDateString();
-  const endDay = end?.toDateString();
-  const startTime = start?.toTimeString()?.slice(0, 5);
-  const endTime = end?.toTimeString()?.slice(0, 5);
+  const isFree = !price || price <= 0;
 
-  const RSVPBtn = () => (
-    <button
-      disabled={adding}
-      onClick={handleRSVP}
-      className={`primary-btn disabled:opacity-60`}
-    >
-      {price <= 0 ? "RSVP" : "BUY NOW"}
-    </button>
+  const DetailsCard = () => (
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      {/* Date header */}
+      <div className="p-5 pb-4 border-b border-stone-100">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center shrink-0">
+            <p className="text-xs font-bold text-primary leading-none">{start?.toLocaleString("en", { weekday: "short" })}</p>
+            <p className="text-lg font-extrabold text-primary leading-none mt-0.5">{start?.getDate()}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-secondary">
+              {start?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            </p>
+            <p className="text-xs text-stone-400 mt-0.5">
+              {formatTime(start)}
+              {end && start?.toDateString() !== end?.toDateString() && ` — ${formatTime(end)}`}
+              {end && start?.toDateString() === end?.toDateString() && ` – ${formatTime(end)}`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className="p-5 space-y-4">
+        {/* Category */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+            <IoBookmarkOutline className="text-xs text-stone-500" />
+          </div>
+          <span className="text-sm text-stone-600">{category}</span>
+        </div>
+
+        {/* Location */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center shrink-0 mt-0.5">
+            {medium === "offline" ? (
+              <IoLocationOutline className="text-xs text-stone-500" />
+            ) : (
+              <IoGlobeOutline className="text-xs text-stone-500" />
+            )}
+          </div>
+          <div className="flex-1">
+            <span className="text-sm text-stone-600">
+              {medium === "offline" ? (Array.isArray(location) ? location[0] : location) : "Online Event"}
+            </span>
+          </div>
+        </div>
+
+        {/* Duration */}
+        {duration?.length > 0 && (
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+              <IoTimerOutline className="text-xs text-stone-500" />
+            </div>
+            <span className="text-sm text-stone-600">{duration.split(":").join("h ")}m</span>
+          </div>
+        )}
+
+        {/* Language */}
+        {language?.length > 0 && (
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+              <IoLanguageOutline className="text-xs text-stone-500" />
+            </div>
+            <span className="text-sm text-stone-600">{language}</span>
+          </div>
+        )}
+
+        {/* Map */}
+        {medium === "offline" && Array.isArray(location) && location[1] && (
+          <div className="rounded-xl overflow-hidden border border-stone-200 mt-2">
+            <iframe
+              title="map"
+              className="w-full h-40"
+              src={`https://maps.google.com/maps?q=${location[1]},${location[2]}&hl=en&output=embed`}
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* Online link */}
+        {medium === "online" && meet?.[0] && (
+          <a
+            href={meet[0]}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline mt-1"
+          >
+            <IoLinkOutline /> Join Meeting Link
+          </a>
+        )}
+      </div>
+
+      {/* Price & CTA */}
+      <div className="p-5 pt-4 border-t border-stone-100">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs text-stone-400">Price</p>
+            <p className={`text-lg font-extrabold ${isFree ? "text-primary" : "text-secondary"}`}>
+              {isFree ? "Free" : `Rs. ${price}`}
+            </p>
+          </div>
+        </div>
+        <button
+          disabled={adding}
+          onClick={handleRSVP}
+          className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
+        >
+          {adding ? "Processing..." : isFree ? "RSVP — It's Free" : `Buy Ticket — Rs. ${price}`}
+        </button>
+      </div>
+    </div>
   );
 
   return (
-    <section className="container py-8 pb-16 w-full font-poppins">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-8 md:items-start">
-        <div className="col-span-4 space-y-4">
+    <section className="pb-16 w-full">
+      {/* Cover image with glow effect */}
+      <div className="relative">
+        <div className="absolute inset-0 overflow-hidden">
           <img
-            alt="event image"
+            alt="cover blur"
             src={image}
-            className="rounded-lg w-full aspect-video object-cover"
+            className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
           />
-          <div className="flex flex-col md:hidden w-full space-y-4">
-            <div className="rounded-lg flex flex-col gap-4 outline w-full outline-1 outline-neutral-300 p-6">
-              <h2 className="font-bold text-xl">{title}</h2>
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoBookmarkOutline /> {category}
-              </h2>
-              {duration?.length > 0 && (
-                <h2 className="inline-flex items-center gap-2 text-sm">
-                  <IoTimerOutline /> {duration.split(":").join("h ")}m
-                </h2>
-              )}
-              {language?.length > 0 && (
-                <h2 className="inline-flex items-center gap-2 text-sm">
-                  <IoLanguageOutline /> {language}
-                </h2>
-              )}
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoBookmarkOutline /> {category}
-              </h2>
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoCalendarClearOutline /> {startDay}, {startTime}
-                {startDay === endDay && ` | ${endTime}`}
-              </h2>
-              {startDay !== endDay && endDate && endDay && (
-                <h2 className="inline-flex items-center gap-2 text-sm">
-                  <IoBookmarkOutline /> {endDay}, {endTime}
-                </h2>
-              )}
-              <h2 className="inline-flex flex-wrap items-center gap-2 text-sm">
-                {medium === "offline" ? (
-                  <>
-                    <IoLocationOutline />
-                    <span className="flex-1">{location[0]}</span>
-                    <iframe
-                      title="map"
-                      className="w-full h-max outline outline-1 outline-neutral-300 shadow-md rounded-lg flex-1 mt-2"
-                      src={`https://maps.google.com/maps?q=${location[1]},${location[2]}&hl=en&output=embed`}
-                    ></iframe>
-                  </>
-                ) : (
-                  <>
-                    <MdComputer />
-                    {meet[0] || "Online"}
-                  </>
-                )}
-              </h2>
-              <div className="inline-flex items-center justify-between w-full">
-                <h2 className="inline-flex items-center gap-2 font-extrabold font-grostek text-xl mt-2">
-                  <IoWalletOutline />{" "}
-                  {price <= 0 ? (
-                    "Free"
-                  ) : (
-                    <>
-                      <MdCurrencyRupee />
-                      {price}
-                    </>
-                  )}
-                </h2>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white" />
+        </div>
+        <div className="relative container pt-6">
+          <div className="rounded-2xl overflow-hidden shadow-lg shadow-stone-200/50">
+            <img
+              alt={title}
+              src={image}
+              className="w-full aspect-[21/9] object-cover"
+            />
+          </div>
+        </div>
+      </div>
 
-                <RSVPBtn />
+      {/* Content */}
+      <div className="container">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 md:items-start">
+          {/* Left: Main content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Title & meta */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
+                {category}
+              </div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-secondary leading-tight">
+                {title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-stone-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <IoCalendarClearOutline className="text-sm" />
+                  {start?.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {start?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) !== end?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) && end && (
+                    <> — {end?.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</>
+                  )}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  {formatTime(start)}
+                  {end && ` – ${formatTime(end)}`}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  {medium === "offline" ? (
+                    <><IoLocationOutline className="text-sm" />{Array.isArray(location) ? location[0] : location}</>
+                  ) : (
+                    <><MdComputer className="text-sm" />Online</>
+                  )}
+                </span>
               </div>
             </div>
-            {/* <div className="inline-flex w-full items-center gap-2">
-              <div className="mr-auto">
-                <h2 className="font-semibold text-lg">Invite your friends</h2>
-                <p className="text-xs text-neutral-500 font-grostek">
-                  and enjoy a shared experience!
-                </p>
-              </div>
-              {shareLinks?.map((link, index) => (
-                <a
-                  href={link?.share(
-                    `${window.location.origin}${pathname}`,
-                    title
-                  )}
-                  target="_blank"
-                  title={`Share on ${link?.title}`}
-                  className={`border flex items-center justify-center rounded-full p-2 text-xl hover:scale-125 transition-all text-white bg-gradient-to-br ${link?.color}`}
-                  rel="noreferrer"
-                >
-                  {link?.icon}
-                </a>
-              ))}
-            </div> */}
-          </div>
-          <h2 className="font-semibold py-2 border-b border-neutral-300 text-lg">
-            About
-          </h2>
-          <div className="display-linebreak text-neutral-800 text-sm font-grostek">
-            {description}
-          </div>
-          {tnc && (
-            <>
-              <h2 className="font-semibold py-2 border-b border-neutral-300 text-lg">
-                Terms and Conditions
-              </h2>
-              <ul className="display-linebreak text-neutral-800 text-sm font-grostek list-disc">
-                {tnc?.split("\n")?.map((t) => (
-                  <li>{t}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-        <div className="col-span-2 hidden md:block w-full space-y-4">
-          <div className="rounded-lg flex flex-col gap-4 outline w-full  outline-1 outline-neutral-300 p-6">
-            <h2 className="font-bold text-xl">{title}</h2>
-            <h2 className="inline-flex items-center gap-2 text-sm">
-              <IoBookmarkOutline /> {category}
-            </h2>
-            {duration?.length > 0 && (
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoTimerOutline /> {duration.split(":").join("h ")}m
-              </h2>
-            )}
-            {language?.length > 0 && (
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoLanguageOutline /> {language}
-              </h2>
-            )}
-            <h2 className="inline-flex items-center gap-2 text-sm">
-              <IoCalendarClearOutline /> {startDay}, {startTime}
-              {startDay === endDay && ` | ${endTime}`}
-            </h2>
-            {startDay !== endDay && endDate && endDay && (
-              <h2 className="inline-flex items-center gap-2 text-sm">
-                <IoBookmarkOutline /> {endDay}, {endTime}
-              </h2>
-            )}
-            <h2 className="inline-flex flex-wrap items-center gap-2 text-sm">
-              {medium === "offline" ? (
-                <>
-                  <IoLocationOutline />
-                  <span className="flex-1">{location[0]}</span>
-                  <iframe
-                    title="map"
-                    className="w-full h-max outline outline-1 outline-neutral-300 shadow-md rounded-lg flex-1 mt-2"
-                    src={`https://maps.google.com/maps?q=${location[1]},${location[2]}&hl=en&output=embed`}
-                  ></iframe>
-                </>
-              ) : (
-                <>
-                  <MdComputer />
-                  {meet[0] || "Online"}
-                </>
-              )}
-            </h2>
-            <div className="inline-flex items-center justify-between w-full">
-              <h2 className="inline-flex items-center gap-2 font-extrabold font-grostek text-xl mt-2">
-                <IoWalletOutline />{" "}
-                {price <= 0 ? (
-                  "Free"
-                ) : (
-                  <>
-                    <MdCurrencyRupee />
-                    {price}
-                  </>
-                )}
-              </h2>
 
-              <RSVPBtn />
+            {/* Mobile details card */}
+            <div className="lg:hidden">
+              <DetailsCard />
+            </div>
+
+            {/* Description */}
+            <div>
+              <h2 className="text-sm font-bold text-secondary uppercase tracking-wider mb-4">
+                About this event
+              </h2>
+              <div className="display-linebreak text-stone-600 text-sm leading-relaxed whitespace-pre-line">
+                {description}
+              </div>
+            </div>
+
+            {/* Terms */}
+            {tnc && (
+              <div>
+                <h2 className="text-sm font-bold text-secondary uppercase tracking-wider mb-4">
+                  Terms & Conditions
+                </h2>
+                <ul className="space-y-2">
+                  {tnc?.split("\n")?.filter(Boolean).map((t, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-stone-600">
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 mt-1.5 shrink-0" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Share */}
+            <div className="pt-4 border-t border-stone-100">
+              <div className="flex items-center gap-3">
+                <IoShareSocialOutline className="text-stone-400" />
+                <p className="text-xs text-stone-400">Share this event</p>
+                <div className="flex gap-2 ml-auto">
+                  {shareLinks?.map((link, index) => (
+                    <a
+                      key={index}
+                      href={link?.share?.(
+                        `${window.location.origin}${pathname}`,
+                        title
+                      )}
+                      target="_blank"
+                      title={`Share on ${link?.title}`}
+                      className={`w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-sm text-stone-500 hover:text-stone-700 transition-colors`}
+                      rel="noreferrer"
+                    >
+                      {link?.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Sticky sidebar */}
+          <div className="hidden lg:block">
+            <div className="sticky top-24">
+              <DetailsCard />
             </div>
           </div>
         </div>

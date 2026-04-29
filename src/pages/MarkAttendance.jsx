@@ -46,7 +46,7 @@ function MarkAttendance() {
   if (loading) return <Loading text={"Marking Attendance"} />;
 
   return (
-    <div className="flex flex-col items-center justify-center font-grostek h-screen gap-8">
+    <div className="flex flex-col items-center justify-center font-geist h-screen gap-8">
       <h1 className="font-bold text-lg">{state?.message}</h1>
       {state?.new && <TiTick className="text-5xl text-green-500" />}
       {state?.invalid && <AiFillCloseCircle className="text-5xl text-red-500" />}

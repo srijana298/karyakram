@@ -10,6 +10,10 @@ import eventRoutes from "./routes/events.js";
 import rsvpRoutes from "./routes/rsvps.js";
 import memberRoutes from "./routes/members.js";
 import notificationRoutes from "./routes/notifications.js";
+import analyticsRoutes from "./routes/analytics.js";
+import groupRoutes from "./routes/groups.js";
+import attendanceRoutes from "./routes/attendance.js";
+import certificateRoutes from "./routes/certificates.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -41,6 +45,10 @@ app.use("/api/events", eventRoutes);
 app.use("/api/rsvps", rsvpRoutes);
 app.use("/api", memberRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api", attendanceRoutes);
+app.use("/api/certificates", certificateRoutes);
 
 app.use((err, req, res, next) => {
   if (err.name === "MulterError") {

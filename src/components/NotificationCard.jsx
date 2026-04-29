@@ -1,29 +1,44 @@
-import React from 'react'
-import Avatar from './Avatar'
-import { Link } from 'react-router-dom'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
+import React from "react";
+import Avatar from "./Avatar";
+import { Link } from "react-router-dom";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 
-dayjs.extend(relativeTime)
+dayjs.extend(relativeTime);
 
-
-function NotificationCard({userId, fromUserId, fromUserName, link, message, $createdAt }) {
-
-  
-
-  const time = dayjs($createdAt).fromNow(true)
+function NotificationCard({ fromUserId, fromUserName, link, message, created_at, read }) {
+  const time = dayjs(created_at).fromNow(true);
 
   return (
-    <div className='p-4 rounded-[18px] flex flex-row items-center gap-2 shadow outline outline-1 outline-neutral-200 bg-slate-100 relative'>
-          <Avatar name={fromUserName} />
-        <div className='relative'>
-            <p className='text-sm font-semibold'>{fromUserName}</p>
-            <p className='text-xs text-neutral-500'>{message}</p>
-            {link && <Link to={link} target='_blank' className='text-xs text-neutral-500 sidebar-link outline outline-1 outline-neutral-300'>See event</Link>}
+    <div
+      className={`p-4 rounded-xl border flex items-start gap-3 transition-colors ${
+        read
+          ? "bg-white border-stone-100"
+          : "bg-primary/5 border-primary/10"
+      }`}
+    >
+      <Avatar name={fromUserName} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-secondary">{fromUserName}</p>
+          {!read && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+          )}
         </div>
-        <p className='text-xs right-0 m-2 mx-4 absolute top-0 text-neutral-400'>{time} ago</p>
+        <p className="text-xs text-stone-500 mt-0.5 line-clamp-2 leading-relaxed">{message}</p>
+        {link && (
+          <Link
+            to={link}
+            target="_blank"
+            className="inline-block mt-2 text-xs font-medium text-primary hover:underline"
+          >
+            See event →
+          </Link>
+        )}
+      </div>
+      <p className="text-[10px] text-stone-400 shrink-0 mt-0.5">{time}</p>
     </div>
-  )
+  );
 }
 
-export default NotificationCard
+export default NotificationCard;

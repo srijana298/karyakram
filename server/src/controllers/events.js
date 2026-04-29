@@ -8,7 +8,7 @@ export const createEvent = async (req, res) => {
     title, description, medium, location_name, latitude, longitude,
     meet_link, meet_id, meet_password, start_date, end_date,
     duration, language, max_participants, category, privacy,
-    tnc, accepting_rsvp, accepting_attendance,
+    tnc, accepting_rsvp, accepting_attendance, group_id,
   } = req.body;
 
   const result = await db.insert(events).values({
@@ -18,6 +18,7 @@ export const createEvent = async (req, res) => {
     end_date: end_date ? new Date(end_date) : null,
     duration, language, max_participants, category, privacy,
     tnc, accepting_rsvp, accepting_attendance,
+    group_id: group_id ?? null,
     created_by: req.user.id,
   }).catch(() => null);
 
@@ -88,7 +89,7 @@ export const updateEvent = async (req, res) => {
     "title", "description", "medium", "location_name", "latitude", "longitude",
     "meet_link", "meet_id", "meet_password", "start_date", "end_date",
     "duration", "language", "max_participants", "category", "privacy",
-    "image", "tnc", "accepting_rsvp", "accepting_attendance",
+    "image", "tnc", "accepting_rsvp", "accepting_attendance", "group_id", "check_in_code",
   ];
 
   const updates = {};

@@ -8,6 +8,27 @@
       "when": 1777105490858,
       "tag": "0000_daffy_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1777475128145,
+      "tag": "0001_curved_human_robot",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1777475520842,
+      "tag": "0002_hot_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1777481730945,
+      "tag": "0003_striped_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

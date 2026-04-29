@@ -14,4 +14,7 @@ export const memberService = {
 
   acceptInvite: (inviteToken) =>
     api.patch("/memberships/accept", { invite_token: inviteToken }),
+
+  receivedInvites: () => api.get("/invites/received"),
+  sentInvites: () => api.get("/invites/sent"),
 };

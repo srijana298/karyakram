@@ -5,25 +5,24 @@ import { footerLinks } from "../static/footerLinks";
 
 function Footer() {
   return (
-    <div className="flex flex-col gap-4 md:gap-8 py-12 bg-secondary text-neutral-200 font-poppins border-t border-neutral-400">
+    <div className="flex flex-col gap-6 py-12 bg-stone-900 text-stone-300 font-sans">
       <div className="w-full flex flex-row items-start uppercase gap-4 justify-between container">
         <div className="flex flex-col items-start gap-2">
           <Brand />
-          {/* <p className='font-medium capitalize text-md '>Subtitle Lorem Ipsum!</p> */}
         </div>
-        <ul className="flex flex-col items-start gap-1">
-          <NavLink className="font-light text-sm " to={"/explore"}>
+        <ul className="flex flex-col items-start gap-2">
+          <NavLink className="font-light text-sm normal-case hover:text-white transition-colors" to={"/explore"}>
             Explore
           </NavLink>
-          <NavLink className="font-light text-sm " to={`/dashboard`}>
+          <NavLink className="font-light text-sm normal-case hover:text-white transition-colors" to={`/dashboard`}>
             Dashboard
           </NavLink>
         </ul>
       </div>
-      <hr className="bg-neutral-100 border border-neutral-100 opacity-25"></hr>
-      <ul className="md:w-full flex flex-row flex-wrap items-center justify-center gap-4">
+      <hr className="bg-stone-700 border-stone-700 opacity-100"></hr>
+      <ul className="md:w-full flex flex-row flex-wrap items-center justify-center gap-3">
         {footerLinks.map((link, index) => (
-          <li className="border flex items-center justify-center rounded-full p-2 text-2xl hover:scale-125 transition-all">
+          <li className="flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 p-2.5 text-xl hover:text-white transition-all">
             <Link
               className=""
               target={"_blank"}
@@ -36,15 +35,8 @@ function Footer() {
         ))}
       </ul>
       <div>
-        <p className="text-neutral-300 text-xs md:text-sm text-center">
-          &copy; Karyakram {new Date().getFullYear()} | All rights reserved |{" "}
-          <Link
-            className="hover:text-accent hover:underline"
-            target="_blank"
-            to="https://github.com/pranaygoel02"
-          >
-            Pranay Goel
-          </Link>
+        <p className="text-stone-500 text-xs md:text-sm text-center">
+          &copy; Mahotsav {new Date().getFullYear()} | All rights reserved
         </p>
       </div>
     </div>

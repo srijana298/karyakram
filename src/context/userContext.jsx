@@ -4,7 +4,7 @@ const UserContext = createContext();
 
 export default function UserProvider({ children }) {
   const [userInfo, setUserInfo] = useState(
-    JSON.parse(localStorage.getItem("Karyakram-user"))
+    JSON.parse(localStorage.getItem("Mahotsav-user"))
   );
 
   const value = {

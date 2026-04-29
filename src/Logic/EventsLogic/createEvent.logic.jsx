@@ -11,6 +11,7 @@ function CreateEventLogic() {
 
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
+  const groupIdParam = searchParams.get("groupId");
 
   const navigate = useNavigate();
   const fileRef = useRef(null);
@@ -31,6 +32,7 @@ function CreateEventLogic() {
   const [meetId, setMeetId] = useState("");
   const [meetPassword, setMeetPassword] = useState("");
   const [privacy, setPrivacy] = useState("public");
+  const [groupId, setGroupId] = useState(groupIdParam || "");
   const [image, setImage] = useState(null);
   const [imageError, setImageError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -75,6 +77,7 @@ function CreateEventLogic() {
     setMeetId(data.meet_id || "");
     setMeetPassword(data.meet_password || "");
     setPrivacy(data.privacy || "public");
+    setGroupId(data.group_id || "");
     setImage(data.image || null);
     setImagePreview(data.image || null);
     setTnc(data.tnc || null);
@@ -125,6 +128,7 @@ function CreateEventLogic() {
       meet_id: medium === "offline" ? null : meetId,
       meet_password: medium === "offline" ? null : meetPassword,
       privacy,
+      group_id: groupId ? Number(groupId) : null,
       tnc,
       accepting_rsvp: acceptingRsvp,
       accepting_attendance: acceptingAttendance,
@@ -165,6 +169,7 @@ function CreateEventLogic() {
     { label: "Title", placeholder: "Please provide a title for your event.", value: title, cb: setTitle, show: true, required: true },
     { label: "Description", value: description, placeholder: "Please provide a description of your event.", cb: setDescription, multiline: true, show: true, required: true, type: "textarea" },
     { label: "Privacy", value: privacy, placeholder: "Please provide a medium for your event.", cb: setPrivacy, options: [{ label: "Public", value: "public" }, { label: "Private", value: "private" }], show: true, required: true },
+    { label: "Group ID (optional)", value: groupId, placeholder: "Attach this event to a group", cb: setGroupId, show: true, type: "number" },
     { label: "Medium", value: medium, placeholder: "Please provide a medium for your event.", cb: setMedium, options: [{ label: "Online", value: "online" }, { label: "In Person", value: "offline" }], show: true, required: true },
     { label: "Start Date-Time", value: startDate, placeholder: "Please provide a start date for your event.", cb: setStartDate, show: true, required: true, type: "datetime-local" },
     { label: "End Date-Time", value: endDate, placeholder: "Please provide an end date for your event.", cb: setEndDate, show: true, type: "datetime-local" },

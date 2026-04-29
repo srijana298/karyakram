@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Avatar from "../../components/Avatar";
 import Input from "../../components/Input";
-import { MdVerified } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import Button from "../../components/Button";
 import { useUser } from "../../context/userContext";
@@ -29,7 +28,7 @@ function Account() {
   ];
 
   const revalidateFields = () => {
-    const user = JSON.parse(localStorage.getItem("Karyakram-user"));
+    const user = JSON.parse(localStorage.getItem("Mahotsav-user"));
     if (user) {
       setName(user.name);
       setEmail(user.email);
@@ -46,7 +45,7 @@ function Account() {
       const res = await authService.updateMe({ name, phone });
       if (res.ok) {
         toast.success("Name updated successfully!");
-        localStorage.setItem("Karyakram-user", JSON.stringify(res.data));
+        localStorage.setItem("Mahotsav-user", JSON.stringify(res.data));
         setUserInfo(res.data);
         revalidateFields();
       } else {
@@ -65,24 +64,25 @@ function Account() {
   }, [updateFields, userName, userEmail, userPhone]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full gap-4 ">
-      <Avatar size={"text-3xl"} name={userName} />
-      <h1 className="page-title">Hello, {userName}</h1>
-      <form onSubmit={handleUpdateFields} className="flex flex-col gap-4 w-full max-w-[400px]">
+    <div className="flex flex-col items-center justify-center h-full w-full gap-4 py-8">
+      <Avatar size={"text-2xl w-14 h-14"} name={userName} />
+      <h1 className="text-xl font-bold text-secondary">Hello, {userName}</h1>
+      <form onSubmit={handleUpdateFields} className="flex flex-col gap-4 w-full max-w-sm mt-4">
         {inputFields?.map((field, index) => (
           <Input key={index} {...field} show={true} />
         ))}
         <button
-          className="rounded-[18px] bg-neutral-300 mt-2 p-4 outline outline-1 outline-neutral-300"
+          type="button"
+          className="rounded-xl bg-neutral-100 border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-200 transition-colors"
           onClick={(e) => {
             e.preventDefault();
             setUpdateFields((prev) => !prev);
           }}
         >
-          {updateFields ? "Cancel" : "Edit"}
+          {updateFields ? "Cancel" : "Edit Profile"}
         </button>
         {updateFields && (
-          <Button type="submit" className="primary-btn" style="mt-0" text={"Save"} disabled={!updateFields} loading={loading} />
+          <Button type="submit" text="Save" style="my-0" disabled={!updateFields} loading={loading} />
         )}
       </form>
     </div>

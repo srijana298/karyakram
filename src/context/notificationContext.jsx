@@ -20,6 +20,10 @@ export default function NotificationProvider({ children }) {
     setUnreadNotifications(0);
   };
 
+  const closeNotificationBar = useCallback(() => {
+    setShow(false);
+  }, []);
+
   const sendNotification = useCallback(async (data) => {
     const res = await notificationService.create(data);
     if (!res.ok) console.error("Failed to send notification:", res.error);
@@ -35,7 +39,6 @@ export default function NotificationProvider({ children }) {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30s
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
@@ -43,6 +46,7 @@ export default function NotificationProvider({ children }) {
   const value = {
     show,
     toggleNotificationBar,
+    closeNotificationBar,
     sendNotification,
     notifications,
     unreadNotifications,
