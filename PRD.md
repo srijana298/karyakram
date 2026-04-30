@@ -2,7 +2,7 @@
 
 **Project:** Mahotsav — Campus Event Management Platform  
 **Author:** Srijana Dahal  
-**Date:** April 29, 2026  
+**Date:** April 30, 2026  
 **Status:** Draft  
 **Mid-defense:** Week of May 5, 2026  
 **Final defense:** July 2026  
@@ -66,24 +66,30 @@ Mahotsav is a full-stack campus event management platform with:
 
 ### Role-Based Access Control
 
-22. As a **super admin**, I want to see **all events** across all organizers, so that I can moderate the platform.
-23. As a **super admin**, I want to **manage users** (view, deactivate, change roles), so that I can control access.
-24. As a **super admin**, I want to see **platform-wide analytics** (total events, total users, RSVP rates), so that I understand platform usage.
+22. As a **super admin**, I want to see **all events across all organizers** on my dashboard, so that I can moderate the platform.
+23. As a **super admin**, I want a **Users** page listing every registered user with their role and activity, so that I can manage the platform.
+24. As a **super admin**, I want to see **platform-wide analytics** (total events, total users, RSVP rates across all organizers), so that I understand platform usage.
 25. As an **organizer**, I want to see only **my events** and my analytics, so that my dashboard is focused on my work.
 26. As a **student (attendee)**, I want a clean dashboard showing my **upcoming events, RSVPs, attendance, and certificates**, so that I don't see organizer tools I don't need.
+27. As an **attendee**, I want to **browse and explore events** on the landing pages without logging in, but be prompted to log in when I try to RSVP.
+28. As an **admin**, I want my **sidebar** to show: Home | All Events | All Groups | Users | Analytics | Notifications, so that I have full platform oversight.
+29. As an **organizer**, I want my **sidebar** to show: Home | My Events | Invites | Groups | Notifications, so that I can manage the events I organize.
+30. As an **attendee**, I want my **sidebar** to show: Home | My Events | My Certificates | My Attendance | Notifications, so that I only see what's relevant to me.
 
 ### Dashboard & Navigation
 
-27. As an **organizer**, I want to click on an event and **immediately see its RSVPs, invites, attendance, and certificates** on one page, so that I don't have to navigate through multiple screens.
-28. As an **organizer**, I want a **breadcrumb trail** showing where I am (Dashboard > Events > Sports Week > Futsal), so that I can navigate back easily.
-29. As a **student**, I want a **"My Events"** tab showing events I've RSVP'd to, so that I can find them quickly.
-30. As an **organizer**, I want quick-action buttons on each event card (RSVPs, Attendance, Edit, Delete, Certificates), so that common actions are one click away.
+31. As an **organizer**, I want to click on an event and **immediately see its RSVPs, invites, attendance, and certificates** on one page, so that I don't have to navigate through multiple screens.
+32. As an **organizer**, I want a **breadcrumb trail** showing where I am (Dashboard > Events > Sports Week > Futsal), so that I can navigate back easily.
+33. As an **attendee**, I want a **"My Events"** page showing events I've RSVP'd to, so that I can find them quickly.
+34. As an **organizer**, I want quick-action buttons on each event card (RSVPs, Attendance, Edit, Delete, Certificates), so that common actions are one click away.
+35. As an **admin**, I want the **"Create Event" button** to be hidden from my dashboard (admins moderate, they don't organize), so that the UI is clear about my role.
+36. As an **attendee**, I want the **"Create Event" button** to be hidden, since I participate in events rather than organize them.
 
 ### Recommendations & Search (existing, to be enhanced)
 
-31. As a **student**, I want to see **recommended events** based on my past RSVPs, so that I discover relevant events (already implemented via Jaccard similarity).
-32. As a **student**, I want to **search events by title, category, location, and date range**, so that I can find exactly what I'm looking for (already implemented).
-33. As a **student**, I want to filter events by **event groups**, so that I can discover multi-day programs like sports weeks.
+37. As an **attendee**, I want to see **recommended events** based on my past RSVPs, so that I discover relevant events (already implemented via Jaccard similarity).
+38. As an **attendee**, I want to **search events by title, category, location, and date range**, so that I can find exactly what I'm looking for (already implemented).
+39. As an **attendee**, I want to filter events by **event groups**, so that I can discover multi-day programs like sports weeks.
 
 ---
 
@@ -144,6 +150,66 @@ Mahotsav is a full-stack campus event management platform with:
     - `PATCH /api/admin/users/:id` — Change user role, deactivate
     - `GET /api/admin/stats` — Platform-wide analytics
 
+### Backend: Return Role in Auth Responses
+
+15. **Update `POST /api/auth/login`** — Return `role` in the user object alongside `id`, `name`, `email`, `phone`.
+16. **Update `GET /api/auth/me`** — Return `role` in the response. Currently the `users` table has a `role` column but it is not included in the select.
+17. **Update `POST /api/auth/signup`** — Return `role` in the user object (will be `"attendee"` by default).
+18. **Update `PATCH /api/auth/me`** — Return `role` in the updated user object.
+
+This is the **prerequisite** for all role-based UI — the frontend needs `role` from the very first auth response.
+
+### Role-Based UI Architecture
+
+19. **Role detection in frontend**
+    - On login/signup, store `role` in `localStorage` alongside the existing user object.
+    - `userContext` exposes `userInfo.role` to all components.
+    - `Sidebar`, `Dashboard`, and `ProtectedRoute` read `role` to conditionally render navigation and pages.
+
+20. **Sidebar per role**
+
+    | Section | Admin | Organizer | Attendee |
+    |---------|-------|-----------|----------|
+    | Home | ✅ | ✅ | ✅ |
+    | All Events (cross-org) | ✅ | — | — |
+    | My Events | — | ✅ | ✅ |
+    | Invites | — | ✅ | — |
+    | Groups | ✅ | ✅ | — |
+    | Users | ✅ | — | — |
+    | Analytics | ✅ | — | — |
+    | My Certificates | — | — | ✅ |
+    | My Attendance | — | — | ✅ |
+    | Notifications | ✅ | ✅ | ✅ |
+    | Account | ✅ | ✅ | ✅ |
+
+21. **Dashboard per role**
+
+    - **Admin dashboard**: Platform-wide stats cards (total users, total events, total RSVPs, total groups). Table of recent events across all organizers. Link to Users page. No "Create Event" button.
+    - **Organizer dashboard**: Current dashboard (unchanged). Own events, own analytics, RSVP donut, quick actions including "Create Event".
+    - **Attendee dashboard**: Upcoming events they RSVP'd to. Their attendance summary (X events attended out of Y RSVPs). Their certificates with download links. Recommended events section.
+
+22. **Route protection per role**
+    - `/dashboard/create`, `/dashboard/event/:id/attendance`, `/dashboard/event/:id/certificates` → Organizer and Admin only.
+    - `/dashboard/groups`, `/dashboard/groups/create` → Organizer and Admin only.
+    - `/admin` → Admin only.
+    - `/dashboard/my-events`, `/dashboard/my-certificates`, `/dashboard/my-attendance` → Attendee only (also visible to organizers for their own participation).
+    - Attempting to access a restricted route redirects to the role-appropriate home page.
+
+23. **Attendee-specific pages**
+    - **My Events** (`/dashboard/my-events`): Cards of events the attendee has RSVP'd to, grouped by upcoming/past. Each card shows RSVP status and attendance status.
+    - **My Certificates** (`/dashboard/my-certificates`): List of all certificates earned, with preview and download. Verification code shown for each.
+    - **My Attendance** (`/dashboard/my-attendance`): Table/list of all events with RSVP status and check-in status. Overall attendance rate displayed.
+
+24. **Admin-specific pages**
+    - **All Events** (`/dashboard/events?scope=all`): Reuse existing Events page but fetch all events (not just `mine`). Admin sees organizer name on each event card.
+    - **Users** (`/dashboard/users`): Table with columns: Name, Email, Role, Events Created, RSVPs, Joined Date. Filter by role. Search by name/email.
+    - **Analytics** (`/dashboard/analytics`): Platform-wide charts — events by month across all organizers, RSVP trends, user growth, top events platform-wide.
+
+25. **Browse & RSVP flow (unauthenticated)**
+    - Landing page (`/`), Explore (`/explore`), and Event Page (`/event/:id`) remain **publicly accessible** without login.
+    - When an unauthenticated user clicks "RSVP" on any event, redirect to `/auth/login` with a `returnTo` query param.
+    - After login, redirect back to the event page they were trying to RSVP to.
+
 ### Core Algorithms
 
 11. **Conflict Detection Algorithm**
@@ -173,42 +239,58 @@ Mahotsav is a full-stack campus event management platform with:
 
 ### Frontend Modules
 
-15. **Event Group Landing Page** (`/group/:id`)
+26. **Event Group Landing Page** (`/group/:id`)
     - Hero section with group cover image
     - Grid/list of sub-events with date, time, RSVP count
     - Group-level stats (if organizer)
     - Conflict warnings (if organizer)
 
-16. **Event Detail Page Enhancement** (`/dashboard/event/:id`)
+27. **Event Detail Page Enhancement** (`/dashboard/event/:id`)
     - Tabbed interface: Overview | RSVPs | Attendance | Certificates | Settings
     - Quick-action bar at top with icons for common actions
     - If event belongs to a group, show breadcrumb link to group
 
-17. **Attendance Page** (`/dashboard/event/:id/attendance`)
+28. **Attendance Page** (`/dashboard/event/:id/attendance`)
     - Table of approved RSVPs with checkboxes for attended/not attended
     - Generate check-in code button (displays a short code like "ABC123")
     - Export to XLSX button
 
-18. **Certificate Management** (`/dashboard/event/:id/certificates`)
+29. **Certificate Management** (`/dashboard/event/:id/certificates`)
     - Template selector with visual thumbnails
     - "Generate Certificates" button
     - List of generated certificates with download links
     - Verification search box
 
-19. **Admin Panel** (`/admin`)
-    - User management table
-    - Platform-wide stats dashboard
-    - Event moderation (view all events)
+30. **Admin Panel** (`/dashboard/users`)
+    - User management table with Name, Email, Role, Events Created, RSVPs, Joined Date
+    - Filter by role, search by name/email
+    - Platform-wide stats (total users, events, RSVPs, groups) on admin dashboard
+    - "All Events" view with organizer name on each card
 
-20. **Student Dashboard Enhancement** (`/dashboard`)
-    - Tabs: My Events | My Certificates | My Attendance
-    - Clean card-based layout for upcoming events
+31. **Attendee Dashboard** (`/dashboard` when role=attendee)
+    - Hero section: "Welcome back, {name}!" with attendance rate summary
+    - Upcoming Events: Cards of events the attendee RSVP'd to
+    - My Certificates: Horizontal scroll of earned certificates with download
+    - Recommended Events: Cards powered by Jaccard similarity
+    - Quick actions: Browse Events, View My Attendance, Download Certificates
+
+32. **Attendee Pages**
+    - **My Events** (`/dashboard/my-events`): RSVP'd events grouped by upcoming/past, with RSVP status and check-in status on each card
+    - **My Certificates** (`/dashboard/my-certificates`): List of all earned certificates, preview modal, download button, verification code
+    - **My Attendance** (`/dashboard/my-attendance`): All events with RSVP and check-in status, overall attendance rate
+
+33. **Role-Aware Sidebar** (`Sidebar.jsx`)
+    - Reads `userInfo.role` from `userContext`
+    - Conditionally renders navigation items based on role (see table in item 20)
+    - Shows role badge in user profile section at bottom (e.g., "Admin", "Organizer", "Attendee")
+    - "Create Event" button only visible for organizer role
 
 ### Navigation Redesign
 
-21. **Sidebar update**: Add sections for "Event Groups" and "Certificates"
-22. **Breadcrumbs**: Add breadcrumb component to all nested pages
-23. **Event cards**: Add quick-action menu (three-dot menu) with RSVPs, Attendance, Edit, Certificates
+34. **Sidebar update**: Role-aware sidebar (see item 33). Add sections for "Event Groups", "Users" (admin), "My Certificates" (attendee), "My Attendance" (attendee).
+35. **Breadcrumbs**: Add breadcrumb component to all nested pages.
+36. **Event cards**: Add quick-action menu (three-dot menu) with RSVPs, Attendance, Edit, Certificates.
+37. **Role badge**: Display current role as a colored badge in sidebar user section and account page.
 
 ---
 
@@ -280,18 +362,24 @@ The following items should be demo-ready for mid-defense:
 | **P0** | Event Groups + Sub-events | Core new feature |
 | **P0** | Conflict Detection Algorithm | Headline algorithm |
 | **P0** | Attendance Tracking (manual) | Completes the workflow |
+| **P0** | Return `role` in auth API responses | Prerequisite for all role-based UI |
+| **P0** | Role-aware Sidebar | Immediately shows the platform adapts per user type |
+| **P0** | Role-aware Dashboard (Admin / Organizer / Attendee) | Core visual differentiator |
 | **P1** | Attendance Aggregation Stats | Shows algorithm output |
 | **P1** | Group Landing Page | Visual demo |
+| **P1** | Attendee pages (My Events, My Certificates, My Attendance) | Completes the attendee experience |
 | **P2** | Certificate Generation | Nice-to-have for mid |
+| **P2** | Admin Users page | Admin-specific feature |
 
 ### Priority for Final Defense (July)
 
-- Certificate templates + generation
-- Self check-in codes
-- Admin panel
-- Full navigation redesign
+- Group-level certificates (one cert per student listing all sub-events attended)
+- Admin Analytics page (platform-wide charts)
 - Export to XLSX
-- Group-level certificates
+- Breadcrumbs across all nested pages
+- Event card quick-action menus
+- Route protection (redirect restricted roles)
+- Polish attendee browse → RSVP → login redirect flow
 
 ### Algorithm Presentation Tips
 
