@@ -115,7 +115,7 @@ export default function Invites() {
       render: (row) => (
         <div className="flex items-center gap-2.5">
           <img
-            src={row.event.image || "/mahotsav.svg"}
+            src={row.event.image || "/logo192.png"}
             alt=""
             className="w-11 h-8 rounded object-cover bg-stone-200"
           />

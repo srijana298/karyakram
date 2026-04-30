@@ -102,6 +102,7 @@ function CreateEventLogic() {
         throw new Error("End date cannot be before start date.");
       }
       if (!category) throw new Error("Please provide a category for your event.");
+      if (!image && !id) throw new Error("Please upload a feature image.");
       if (medium === "offline" && !location) {
         throw new Error("Please provide a location for your event.");
       }
@@ -169,7 +170,7 @@ function CreateEventLogic() {
     { label: "Title", placeholder: "Please provide a title for your event.", value: title, cb: setTitle, show: true, required: true },
     { label: "Description", value: description, placeholder: "Please provide a description of your event.", cb: setDescription, multiline: true, show: true, required: true, type: "textarea" },
     { label: "Privacy", value: privacy, placeholder: "Please provide a medium for your event.", cb: setPrivacy, options: [{ label: "Public", value: "public" }, { label: "Private", value: "private" }], show: true, required: true },
-    { label: "Group ID (optional)", value: groupId, placeholder: "Attach this event to a group", cb: setGroupId, show: true, type: "number" },
+    { label: "Group", value: groupId, placeholder: "Attach this event to a group", cb: setGroupId, show: true, type: "select" },
     { label: "Medium", value: medium, placeholder: "Please provide a medium for your event.", cb: setMedium, options: [{ label: "Online", value: "online" }, { label: "In Person", value: "offline" }], show: true, required: true },
     { label: "Start Date-Time", value: startDate, placeholder: "Please provide a start date for your event.", cb: setStartDate, show: true, required: true, type: "datetime-local" },
     { label: "End Date-Time", value: endDate, placeholder: "Please provide an end date for your event.", cb: setEndDate, show: true, type: "datetime-local" },

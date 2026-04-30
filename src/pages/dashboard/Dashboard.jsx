@@ -164,7 +164,7 @@ function Dashboard() {
                       className={`flex items-center gap-3 py-3 px-2 hover:bg-white/70 transition-colors ${i < upcomingEvents.length - 1 ? "border-b border-gray-200" : ""}`}
                     >
                       <img
-                        src={event.banner_url || event.image || "/mahotsav.svg"}
+                        src={event.banner_url || event.image || "/logo192.png"}
                         alt={event.title}
                         className="w-20 h-14 rounded object-cover shrink-0 bg-stone-200"
                       />

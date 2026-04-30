@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import Logo from "../assets/images/logo.svg";
-import Logo2 from "../assets/images/logo_color.svg";
+import Logo from "../assets/images/mahotsav_logo.png";
 
 function Brand({ size }) {
   const { pathname } = useLocation();
@@ -9,20 +8,17 @@ function Brand({ size }) {
   return (
     <Link
       title="Home"
-      className={`font-extrabold gap-2 capitalize inline-flex text-xl items-center ${
-        (pathname.includes("dashboard") || pathname.includes("auth")) &&
-        "text-primary"
+      className={`font-extrabold gap-3 capitalize inline-flex items-center ${
+        (pathname.includes("dashboard") || pathname.includes("auth"))
+          ? "text-primary text-3xl"
+          : "text-3xl"
       } font-geist`}
       to={"/"}
     >
       <img
         alt="Logo"
-        className={size ?? "w-8"}
-        src={
-          pathname.includes("dashboard") || pathname.includes("auth")
-            ? "./mahotsav.svg"
-            : "./mahotsav.svg"
-        }
+        className={size ?? "w-12"}
+        src={Logo}
       />
       <span
         className={

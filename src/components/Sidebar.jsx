@@ -52,7 +52,8 @@ function Sidebar() {
   return (
     <aside className="flex flex-col w-72 shrink-0 border-r border-dashboard-border bg-dashboard-panel h-full">
       <div className="px-5 h-[72px] border-b border-dashboard-border flex items-center">
-        <Link to="/" className="text-2xl font-semibold tracking-tight text-dashboard-text">
+        <Link to="/" className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-dashboard-text">
+          <img src="/logo192.png" alt="Logo" className="w-10 h-10 rounded" />
           Mahotsav
         </Link>
       </div>
@@ -72,7 +73,7 @@ function Sidebar() {
 
       <nav className="flex-1 px-4 py-5 flex flex-col gap-1">
         <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Main Menu</p>
-        <NavLink className={linkClass} to="">
+        <NavLink className={linkClass} to="/dashboard" end>
           <IoHomeOutline className="text-[18px]" /> Home
         </NavLink>
         <NavLink className={linkClass} to="events?filter=total">

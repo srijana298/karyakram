@@ -18,6 +18,29 @@ export default function Groups() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
+  const [expandedSubEvents, setExpandedSubEvents] = useState({});
+  const [loadingExpand, setLoadingExpand] = useState({});
+
+  const handleExpand = async (groupId) => {
+    if (expanded === groupId) {
+      setExpanded(null);
+      return;
+    }
+    setExpanded(groupId);
+
+    // Fetch sub-events for this group if not already loaded
+    if (!expandedSubEvents[groupId]) {
+      setLoadingExpand((prev) => ({ ...prev, [groupId]: true }));
+      const res = await groupService.getById(groupId);
+      if (res.ok && res.data) {
+        setExpandedSubEvents((prev) => ({
+          ...prev,
+          [groupId]: res.data.subEvents || [],
+        }));
+      }
+      setLoadingExpand((prev) => ({ ...prev, [groupId]: false }));
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -39,22 +62,23 @@ export default function Groups() {
       key: "name",
       label: "Name",
       render: (row, idx) => {
-        const subEvents = row.subEvents || [];
+        const subEvents = expandedSubEvents[row.id] || [];
         const isOpen = expanded === row.id;
         const visibility = (row.privacy || "public").toLowerCase();
+        const isLoading = loadingExpand[row.id];
 
         return (
           <>
             <div className="flex items-start gap-2.5 min-w-0">
               <button
-                onClick={() => setExpanded(isOpen ? null : row.id)}
+                onClick={() => handleExpand(row.id)}
                 className="mt-1 text-stone-500 hover:text-stone-700"
                 type="button"
               >
-                {subEvents.length > 0 ? (
-                  <IoChevronDownOutline className={`transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
+                {isLoading ? (
+                  <span className="text-[10px] text-dashboard-muted">...</span>
                 ) : (
-                  <IoChevronForwardOutline />
+                  <IoChevronDownOutline className={`transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
                 )}
               </button>
               <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
@@ -73,7 +97,11 @@ export default function Groups() {
               </div>
             </div>
 
-            {isOpen && subEvents.length > 0 && (
+            {isOpen && isLoading && (
+              <div className="ml-8 mt-2 py-3 text-xs text-dashboard-muted text-center">Loading sub-events...</div>
+            )}
+
+            {isOpen && !isLoading && subEvents.length > 0 && (
               <div className="ml-8 mt-2 border border-gray-200 rounded-md overflow-hidden">
                 {subEvents.map((s, sIdx) => (
                   <div
@@ -100,7 +128,7 @@ export default function Groups() {
       label: "Events",
       className: "text-center w-[90px]",
       render: (row) => {
-        const count = row.sub_event_count ?? (row.subEvents || []).length ?? 0;
+        const count = row.sub_event_count ?? row.event_count ?? 0;
         return <span className="text-sm text-dashboard-text">{count}</span>;
       },
     },
