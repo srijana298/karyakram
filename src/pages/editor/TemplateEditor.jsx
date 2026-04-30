@@ -8,7 +8,6 @@ import {
   IoArrowUndoOutline,
   IoCloudUploadOutline,
   IoEyeOutline,
-  IoSaveOutline,
   IoTextOutline,
   IoTrashOutline,
   IoAddOutline,
@@ -52,6 +51,9 @@ function createTextObject(opts = {}) {
     textAlign: opts.textAlign || "center",
     angle: opts.angle || 0,
     role: opts.role || null,
+    autoWidth: opts.autoWidth ?? true,
+    paddingX: opts.paddingX ?? 12,
+    paddingY: opts.paddingY ?? 8,
   };
 }
 
@@ -77,6 +79,7 @@ export default function TemplateEditor() {
   const [canvasWidth, setCanvasWidth] = useState(1400);
   const [canvasHeight, setCanvasHeight] = useState(1000);
   const [renderTick, setRenderTick] = useState(0);
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Selected object properties
   const [selected, setSelected] = useState(null);
@@ -185,14 +188,25 @@ export default function TemplateEditor() {
       ctx.textAlign = obj.textAlign;
       ctx.textBaseline = "middle";
 
-      // Word-wrap the text within obj.width
-      const lines = wrapText(ctx, obj.text, obj.width);
       const lineHeight = obj.fontSize * 1.3;
-      const totalHeight = lines.length * lineHeight;
+
+      // Auto-size to text by default
+      if (obj.autoWidth) {
+        const rawLines = (obj.text || "").split("\n");
+        const longest = rawLines.reduce((m, l) => Math.max(m, ctx.measureText(l || " ").width), 0);
+        obj.width = Math.max(40, Math.ceil(longest + (obj.paddingX || 0) * 2));
+        obj.height = Math.max(lineHeight, Math.ceil(rawLines.length * lineHeight + (obj.paddingY || 0) * 2));
+      }
+
+      // Word-wrap only when manually resized
+      const lines = obj.autoWidth ? (obj.text || "").split("\n") : wrapText(ctx, obj.text, obj.width);
+      const totalHeight = obj.autoWidth
+        ? Math.max(lineHeight, Math.ceil(lines.length * lineHeight + (obj.paddingY || 0) * 2))
+        : lines.length * lineHeight;
       obj.height = totalHeight;
 
       const textX = 0; // already translated to center
-      const textY = -(totalHeight / 2) + lineHeight / 2;
+      const textY = -(totalHeight / 2) + lineHeight / 2 + (obj.autoWidth ? (obj.paddingY || 0) : 0);
 
       for (let i = 0; i < lines.length; i++) {
         let lx = textX;
@@ -201,7 +215,7 @@ export default function TemplateEditor() {
         ctx.fillText(lines[i], lx, textY + i * lineHeight);
       }
 
-      // Selection outline
+      // Selection outline + controllers
       if (obj.id === selectedIdRef.current) {
         ctx.strokeStyle = "#059669";
         ctx.lineWidth = 2;
@@ -209,18 +223,35 @@ export default function TemplateEditor() {
         ctx.strokeRect(-obj.width / 2, -totalHeight / 2, obj.width, totalHeight);
         ctx.setLineDash([]);
 
-        // Corner handles
-        const hs = 6;
+        // Edge/corner resize handles
+        const hs = 8;
         ctx.fillStyle = "#059669";
-        const corners = [
-          [-obj.width / 2, -totalHeight / 2],
-          [obj.width / 2, -totalHeight / 2],
-          [-obj.width / 2, totalHeight / 2],
-          [obj.width / 2, totalHeight / 2],
+        const hw = obj.width / 2;
+        const hh = totalHeight / 2;
+        const handles = [
+          [-hw, -hh], [0, -hh], [hw, -hh],
+          [-hw, 0],             [hw, 0],
+          [-hw, hh],  [0, hh],  [hw, hh],
         ];
-        for (const [cx, cy] of corners) {
+        for (const [cx, cy] of handles) {
           ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs);
         }
+
+        // Rotate handle (top center)
+        const handleY = -totalHeight / 2 - 30;
+        ctx.strokeStyle = "#059669";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -totalHeight / 2);
+        ctx.lineTo(0, handleY + 8);
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(0, handleY, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#059669";
+        ctx.stroke();
       }
 
       ctx.restore();
@@ -315,27 +346,61 @@ export default function TemplateEditor() {
   };
 
   /* ── Hit testing ────────────────────────────────────── */
+  const toLocalPoint = (obj, px, py) => {
+    const cx = obj.x + obj.width / 2;
+    const cy = obj.y + obj.height / 2;
+    const dx = px - cx;
+    const dy = py - cy;
+    const rad = -(obj.angle * Math.PI) / 180;
+    return {
+      x: dx * Math.cos(rad) - dy * Math.sin(rad),
+      y: dx * Math.sin(rad) + dy * Math.cos(rad),
+    };
+  };
+
   const hitTest = (px, py) => {
-    // Iterate in reverse (top-most first)
     for (let i = objectsRef.current.length - 1; i >= 0; i--) {
       const obj = objectsRef.current[i];
-      // Transform point to object's local space
-      const cx = obj.x + obj.width / 2;
-      const cy = obj.y + obj.height / 2;
-      const dx = px - cx;
-      const dy = py - cy;
-      const rad = -(obj.angle * Math.PI) / 180;
-      const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
-      const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+      const local = toLocalPoint(obj, px, py);
       if (
-        localX >= -obj.width / 2 &&
-        localX <= obj.width / 2 &&
-        localY >= -obj.height / 2 &&
-        localY <= obj.height / 2
+        local.x >= -obj.width / 2 &&
+        local.x <= obj.width / 2 &&
+        local.y >= -obj.height / 2 &&
+        local.y <= obj.height / 2
       ) {
         return obj;
       }
     }
+    return null;
+  };
+
+  const getControlHit = (obj, px, py) => {
+    const local = toLocalPoint(obj, px, py);
+    const hw = obj.width / 2;
+    const hh = obj.height / 2;
+    const hs = 10;
+
+    const rotateHandle = { x: 0, y: -hh - 30, r: 12 };
+    const dist = Math.hypot(local.x - rotateHandle.x, local.y - rotateHandle.y);
+    if (dist <= rotateHandle.r) return "rotate";
+
+    const handleMap = [
+      { key: "nw", x: -hw, y: -hh },
+      { key: "n", x: 0, y: -hh },
+      { key: "ne", x: hw, y: -hh },
+      { key: "w", x: -hw, y: 0 },
+      { key: "e", x: hw, y: 0 },
+      { key: "sw", x: -hw, y: hh },
+      { key: "s", x: 0, y: hh },
+      { key: "se", x: hw, y: hh },
+    ];
+
+    for (const h of handleMap) {
+      if (Math.abs(local.x - h.x) <= hs && Math.abs(local.y - h.y) <= hs) return `resize-${h.key}`;
+    }
+
+    if (local.x >= -hw && local.x <= hw && local.y >= -hh && local.y <= hh) return "move";
+
     return null;
   };
 
@@ -355,8 +420,59 @@ export default function TemplateEditor() {
   /* ── Mouse handlers ─────────────────────────────────── */
   const handleMouseDown = (e) => {
     const pos = eventToCanvas(e);
-    const hit = hitTest(pos.x, pos.y);
 
+    // Priority: selected object's controllers
+    const selectedObj = objectsRef.current.find((o) => o.id === selectedIdRef.current);
+    if (selectedObj) {
+      const control = getControlHit(selectedObj, pos.x, pos.y);
+      if (control === "rotate") {
+        const cx = selectedObj.x + selectedObj.width / 2;
+        const cy = selectedObj.y + selectedObj.height / 2;
+        dragStateRef.current = {
+          mode: "rotate",
+          objId: selectedObj.id,
+          centerX: cx,
+          centerY: cy,
+          startPointerAngle: Math.atan2(pos.y - cy, pos.x - cx),
+          origAngle: selectedObj.angle || 0,
+        };
+        return;
+      }
+      if (control?.startsWith("resize-")) {
+        const cx = selectedObj.x + selectedObj.width / 2;
+        const cy = selectedObj.y + selectedObj.height / 2;
+        const local = toLocalPoint(selectedObj, pos.x, pos.y);
+        dragStateRef.current = {
+          mode: "resize",
+          handle: control.replace("resize-", ""),
+          objId: selectedObj.id,
+          centerX: cx,
+          centerY: cy,
+          startLocalX: local.x,
+          startLocalY: local.y,
+          origWidth: selectedObj.width,
+          origHeight: selectedObj.height,
+          origCenterX: cx,
+          origCenterY: cy,
+          angleRad: ((selectedObj.angle || 0) * Math.PI) / 180,
+        };
+        selectedObj.autoWidth = false;
+        return;
+      }
+      if (control === "move") {
+        dragStateRef.current = {
+          mode: "move",
+          objId: selectedObj.id,
+          startX: pos.x,
+          startY: pos.y,
+          origX: selectedObj.x,
+          origY: selectedObj.y,
+        };
+        return;
+      }
+    }
+
+    const hit = hitTest(pos.x, pos.y);
     if (hit) {
       selectObject(hit);
       dragStateRef.current = {
@@ -373,19 +489,79 @@ export default function TemplateEditor() {
   };
 
   const handleMouseMove = (e) => {
-    const drag = dragStateRef.current;
-    if (!drag) return;
-
     const pos = eventToCanvas(e);
+    const canvas = canvasRef.current;
+
+    const drag = dragStateRef.current;
+    if (!drag) {
+      if (canvas && selectedIdRef.current) {
+        const selectedObj = objectsRef.current.find((o) => o.id === selectedIdRef.current);
+        if (selectedObj) {
+          const control = getControlHit(selectedObj, pos.x, pos.y);
+          const cursorMap = {
+            "resize-n": "ns-resize",
+            "resize-s": "ns-resize",
+            "resize-e": "ew-resize",
+            "resize-w": "ew-resize",
+            "resize-ne": "nesw-resize",
+            "resize-sw": "nesw-resize",
+            "resize-nw": "nwse-resize",
+            "resize-se": "nwse-resize",
+          };
+          canvas.style.cursor = control === "rotate" ? "grab" : cursorMap[control] || (control === "move" ? "move" : "default");
+        }
+      }
+      return;
+    }
+
     const obj = objectsRef.current.find((o) => o.id === drag.objId);
     if (!obj) return;
 
-    const dx = pos.x - drag.startX;
-    const dy = pos.y - drag.startY;
-
     if (drag.mode === "move") {
+      const dx = pos.x - drag.startX;
+      const dy = pos.y - drag.startY;
       obj.x = drag.origX + dx;
       obj.y = drag.origY + dy;
+    }
+
+    if (drag.mode === "rotate") {
+      const currentPointerAngle = Math.atan2(pos.y - drag.centerY, pos.x - drag.centerX);
+      const delta = currentPointerAngle - drag.startPointerAngle;
+      obj.angle = drag.origAngle + (delta * 180) / Math.PI;
+      setSelected({ ...obj });
+    }
+
+    if (drag.mode === "resize") {
+      const local = toLocalPoint(obj, pos.x, pos.y);
+      const dx = local.x - drag.startLocalX;
+      const dy = local.y - drag.startLocalY;
+
+      let w = drag.origWidth;
+      let h = drag.origHeight;
+      let shiftX = 0;
+      let shiftY = 0;
+      const minW = 40;
+      const minH = obj.fontSize * 1.3;
+      const handle = drag.handle;
+
+      if (handle.includes("e")) { w = Math.max(minW, drag.origWidth + dx); shiftX = (w - drag.origWidth) / 2; }
+      if (handle.includes("w")) { w = Math.max(minW, drag.origWidth - dx); shiftX = -(w - drag.origWidth) / 2; }
+      if (handle.includes("s")) { h = Math.max(minH, drag.origHeight + dy); shiftY = (h - drag.origHeight) / 2; }
+      if (handle.includes("n")) { h = Math.max(minH, drag.origHeight - dy); shiftY = -(h - drag.origHeight) / 2; }
+
+      const cos = Math.cos(drag.angleRad);
+      const sin = Math.sin(drag.angleRad);
+      const worldShiftX = shiftX * cos - shiftY * sin;
+      const worldShiftY = shiftX * sin + shiftY * cos;
+      const newCenterX = drag.origCenterX + worldShiftX;
+      const newCenterY = drag.origCenterY + worldShiftY;
+
+      obj.width = w;
+      obj.height = h;
+      obj.x = newCenterX - w / 2;
+      obj.y = newCenterY - h / 2;
+      obj.autoWidth = false;
+      setSelected({ ...obj });
     }
 
     scheduleRender();
@@ -393,6 +569,8 @@ export default function TemplateEditor() {
 
   const handleMouseUp = () => {
     if (dragStateRef.current) {
+      const obj = objectsRef.current.find((o) => o.id === dragStateRef.current.objId);
+      if (obj) setSelected({ ...obj });
       dragStateRef.current = null;
       saveHistory();
     }
@@ -475,13 +653,23 @@ export default function TemplateEditor() {
       img.onload = () => {
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
+
+        // Immediately sync actual canvas buffer size
+        const canvas = canvasRef.current;
+        if (canvas) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
         setCanvasWidth(w);
         setCanvasHeight(h);
         bgImageRef.current = img;
-        setTimeout(() => {
+
+        requestAnimationFrame(() => {
           fitCanvas();
           scheduleRender();
-        }, 0);
+        });
+
         toast.success("Background uploaded");
       };
       img.src = url;
@@ -490,6 +678,13 @@ export default function TemplateEditor() {
   };
 
   const addParticipantName = () => {
+    const existing = objectsRef.current.find((o) => o.role === "participant_name");
+    if (existing) {
+      selectObject(existing);
+      toast("Participant name field already exists");
+      return;
+    }
+
     const obj = createTextObject({
       text: "{{participant_name}}",
       x: canvasWidth / 2 - 200,
@@ -503,7 +698,6 @@ export default function TemplateEditor() {
       role: "participant_name",
     });
 
-    // Compute initial height
     const ctx = ctxRef.current;
     if (ctx) {
       const weight = obj.fontWeight === "bold" ? "bold" : "normal";
@@ -589,18 +783,6 @@ export default function TemplateEditor() {
     applyProp("textAlign", align);
   };
 
-  const handleRotation = (angle) => {
-    const obj = objectsRef.current.find((o) => o.id === selectedIdRef.current);
-    if (!obj) return;
-    obj.angle = angle;
-    setSelected({ ...obj });
-    scheduleRender();
-    saveHistory();
-  };
-
-  const handleWidth = (w) => {
-    applyProp("width", w);
-  };
 
   /* ── Save template ──────────────────────────────────── */
   const handleSave = async () => {
@@ -650,19 +832,14 @@ export default function TemplateEditor() {
     previewCanvas.height = canvasHeight;
     const pctx = previewCanvas.getContext("2d");
 
-    // Background
     pctx.fillStyle = "#f3f4f6";
     pctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     const bgImg = bgImageRef.current;
-    if (bgImg) {
-      pctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
-    }
+    if (bgImg) pctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
 
-    // Draw objects with sample data
     for (const obj of objectsRef.current) {
-      const displayText =
-        obj.text === "{{participant_name}}" ? "Srijana Dahal" : obj.text;
+      const displayText = obj.text === "{{participant_name}}" ? "Srijana Dahal" : obj.text;
 
       pctx.save();
       pctx.translate(obj.x + obj.width / 2, obj.y + obj.height / 2);
@@ -675,33 +852,33 @@ export default function TemplateEditor() {
       pctx.textAlign = obj.textAlign;
       pctx.textBaseline = "middle";
 
-      const lines = wrapText(pctx, displayText, obj.width);
+      const lines = obj.autoWidth ? (displayText || "").split("\n") : wrapText(pctx, displayText, obj.width);
       const lineHeight = obj.fontSize * 1.3;
-      const totalHeight = lines.length * lineHeight;
+      const totalHeight = obj.autoWidth
+        ? Math.max(lineHeight, Math.ceil(lines.length * lineHeight + (obj.paddingY || 0) * 2))
+        : lines.length * lineHeight;
+      const textY = -(totalHeight / 2) + lineHeight / 2 + (obj.autoWidth ? (obj.paddingY || 0) : 0);
 
-      const textY = -(totalHeight / 2) + lineHeight / 2;
       for (let i = 0; i < lines.length; i++) {
         let lx = 0;
         if (obj.textAlign === "left") lx = -obj.width / 2;
         else if (obj.textAlign === "right") lx = obj.width / 2;
-        pctx.fillText(lx === 0 ? lines[i] : lines[i], lx, textY + i * lineHeight);
+        pctx.fillText(lines[i], lx, textY + i * lineHeight);
       }
       pctx.restore();
     }
 
-    const dataUrl = previewCanvas.toDataURL("image/png", 1);
-    const win = window.open("");
-    if (win) {
-      win.document.write(`
-        <html><head><title>Preview</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1c1917;}</style></head>
-        <body><img src="${dataUrl}" style="max-width:95vw;max-height:95vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);"/></body></html>
-      `);
-    }
+    setPreviewImage(previewCanvas.toDataURL("image/png", 1));
   };
 
   /* ── Keyboard shortcuts ─────────────────────────────── */
   useEffect(() => {
     const handleKey = (e) => {
+      if (e.key === "Escape" && previewImage) {
+        e.preventDefault();
+        setPreviewImage(null);
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedIdRef.current && document.activeElement === document.body) {
           e.preventDefault();
@@ -717,328 +894,140 @@ export default function TemplateEditor() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [selected, id]);
+  }, [selected, id, previewImage]);
 
   if (loading) return <Loading />;
 
   return (
-    <div className="h-screen flex flex-col bg-stone-900">
-      {/* ── Top bar ──────────────────────────────────── */}
-      <div className="shrink-0 h-14 bg-stone-800 border-b border-stone-700 flex items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-white transition-colors"
-          >
-            <IoArrowBackOutline className="text-sm" />
-            Back
-          </button>
-          <div className="w-px h-6 bg-stone-700" />
+    <div className="h-screen bg-[#f6f7f9] p-4 text-slate-800">
+      <div className="h-full rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col overflow-hidden">
+        <div className="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-slate-500">Main Menu / Certificates / Template Editor</p>
+            <h1 className="text-3xl font-semibold mt-1">Certificate Template Editor</h1>
+            <p className="text-sm text-slate-500">Add and position text fields on your certificate template.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handlePreview} className="px-4 py-2 text-sm border border-slate-300 rounded-lg inline-flex items-center gap-2 hover:bg-slate-50">
+              <IoEyeOutline /> Preview
+            </button>
+            <button disabled className="px-4 py-2 text-sm border border-slate-300 rounded-lg text-slate-500">Save Draft</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60">
+              {saving ? "Saving..." : "Save Template"}
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 py-3 border-b border-slate-200 flex items-center gap-2 text-sm">
+          <button onClick={() => navigate(-1)} className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-50 inline-flex items-center gap-1"><IoArrowBackOutline /> Back</button>
+          <label className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-50 cursor-pointer inline-flex items-center gap-1">
+            <IoCloudUploadOutline /> Upload Background
+            <input type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
+          </label>
+          <button onClick={addParticipantName} className="px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 inline-flex items-center gap-1"><IoTextOutline /> Add Text Field</button>
+          <button onClick={undo} className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-50 inline-flex items-center gap-1"><IoArrowUndoOutline /> Undo</button>
+          <button onClick={redo} className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-50 inline-flex items-center gap-1"><IoArrowRedoOutline /> Redo</button>
           <input
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            placeholder="Template name..."
-            className="bg-transparent text-sm font-semibold text-white outline-none placeholder:text-stone-500 w-48"
+            placeholder="Template name"
+            className="ml-auto w-56 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePreview}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-300 bg-stone-700 rounded-lg hover:bg-stone-600 transition-colors"
-          >
-            <IoEyeOutline className="text-sm" />
-            Preview
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-colors"
-          >
-            <IoSaveOutline className="text-sm" />
-            {saving ? "Saving..." : "Save Template"}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── Left sidebar: Tools ──────────────────────── */}
-        <div className="shrink-0 w-72 bg-stone-800 border-r border-stone-700 flex flex-col overflow-auto">
-          {/* Upload background */}
-          <div className="p-4 border-b border-stone-700">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-3">
-              Background
-            </p>
-            <label className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium text-stone-300 bg-stone-700 rounded-xl cursor-pointer hover:bg-stone-600 transition-colors border border-dashed border-stone-600">
-              <IoCloudUploadOutline className="text-base" />
-              Upload Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBackgroundUpload}
-                className="hidden"
+        <div className="flex-1 flex overflow-hidden">
+          <div ref={containerRef} className="flex-1 bg-slate-50 p-4 overflow-auto">
+            {!backgroundPreview && (
+              <div className="h-full flex items-center justify-center">
+                <label className="px-8 py-10 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer bg-white">
+                  <p className="font-medium">Upload a certificate background</p>
+                  <p className="text-sm text-slate-500 mt-1">PNG or JPG</p>
+                  <input type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
+                </label>
+              </div>
+            )}
+            <div className="mx-auto w-fit rounded-lg border border-slate-300 bg-white p-2 shadow-sm">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                style={{ cursor: "default" }}
               />
-            </label>
-            {backgroundPreview && (
-              <p className="text-[10px] text-stone-500 mt-2 text-center">
-                {canvasWidth} × {canvasHeight}px
-              </p>
+            </div>
+          </div>
+
+          <div className="w-80 border-l border-slate-200 bg-white p-4 overflow-auto">
+            <div className="grid grid-cols-2 text-sm border border-slate-200 rounded-lg overflow-hidden mb-4">
+              <button className="py-2 bg-emerald-50 text-emerald-700 font-medium">Fields</button>
+              <button className="py-2 text-slate-500">Properties</button>
+            </div>
+
+            <button onClick={addParticipantName} className="w-full mb-4 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+              + Add Text Field
+            </button>
+
+            <p className="text-xs font-semibold text-slate-500 mb-2">Fields</p>
+            <button
+              onClick={() => {
+                const participant = objectsRef.current.find((o) => o.role === "participant_name");
+                if (participant) selectObject(participant);
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-left text-sm hover:bg-slate-50"
+            >
+              participant_name
+            </button>
+
+            {selected && (
+              <div className="mt-5 space-y-3">
+                <p className="text-xs font-semibold text-slate-500">Selected Field</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <input value={Math.round(selected.x)} onChange={(e) => applyProp("x", Number(e.target.value))} className="px-2 py-2 border border-slate-300 rounded" />
+                  <input value={Math.round(selected.y)} onChange={(e) => applyProp("y", Number(e.target.value))} className="px-2 py-2 border border-slate-300 rounded" />
+                </div>
+                <select value={fontFamily} onChange={(e) => handleFontFamily(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                  {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+                <div className="flex gap-2">
+                  <button onClick={() => handleFontSize(Math.max(12, fontSize - 4))} className="px-2 border border-slate-300 rounded"><IoRemoveOutline /></button>
+                  <select value={fontSize} onChange={(e) => handleFontSize(Number(e.target.value))} className="flex-1 px-3 py-2 border border-slate-300 rounded text-sm">
+                    {FONT_SIZES.map((s) => <option key={s} value={s}>{s}px</option>)}
+                  </select>
+                  <button onClick={() => handleFontSize(Math.min(200, fontSize + 4))} className="px-2 border border-slate-300 rounded"><IoAddOutline /></button>
+                </div>
+                <input type="color" value={textColor} onChange={(e) => handleColor(e.target.value)} className="w-full h-10 border border-slate-300 rounded" />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={toggleBold} className={`py-2 rounded border ${isBold ? "bg-emerald-50 border-emerald-300" : "border-slate-300"}`}><MdFormatBold className="mx-auto" /></button>
+                  <button onClick={toggleItalic} className={`py-2 rounded border ${isItalic ? "bg-emerald-50 border-emerald-300" : "border-slate-300"}`}><MdFormatItalic className="mx-auto" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {['left','center','right'].map((align) => (
+                    <button key={align} onClick={() => handleAlign(align)} className={`py-2 rounded border text-xs ${textAlign === align ? "bg-emerald-50 border-emerald-300" : "border-slate-300"}`}>{align}</button>
+                  ))}
+                </div>
+                <button onClick={deleteSelected} className="w-full py-2 rounded border border-red-200 text-red-600 hover:bg-red-50 inline-flex justify-center items-center gap-1"><IoTrashOutline /> Remove Field</button>
+              </div>
             )}
           </div>
-
-          {/* Fields */}
-          <div className="p-4 border-b border-stone-700">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-3">
-              Dynamic Fields
-            </p>
-            <button
-              onClick={addParticipantName}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium text-stone-300 bg-stone-700 rounded-xl hover:bg-primary/20 hover:text-primary transition-colors"
-            >
-              <IoTextOutline className="text-base" />
-              Add Participant Name
-            </button>
-            <p className="text-[10px] text-stone-600 mt-2">
-              Click to place, then drag to position
-            </p>
-          </div>
-
-          {/* Properties (shown when a text field is selected) */}
-          {selected && (
-            <div className="p-4 space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                Text Properties
-              </p>
-
-              {/* Font family */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Font
-                </label>
-                <select
-                  value={fontFamily}
-                  onChange={(e) => handleFontFamily(e.target.value)}
-                  className="w-full bg-stone-700 text-stone-200 text-xs rounded-lg px-2.5 py-2 outline-none border border-stone-600 focus:border-primary/50"
-                >
-                  {FONTS.map((f) => (
-                    <option key={f} value={f} style={{ fontFamily: f }}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Font size */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Size
-                </label>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() =>
-                      handleFontSize(Math.max(12, fontSize - 4))
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-stone-700 rounded-lg text-stone-300 hover:bg-stone-600"
-                  >
-                    <IoRemoveOutline />
-                  </button>
-                  <select
-                    value={fontSize}
-                    onChange={(e) => handleFontSize(Number(e.target.value))}
-                    className="flex-1 bg-stone-700 text-stone-200 text-xs rounded-lg px-2 py-2 outline-none border border-stone-600"
-                  >
-                    {FONT_SIZES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}px
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() =>
-                      handleFontSize(Math.min(200, fontSize + 4))
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-stone-700 rounded-lg text-stone-300 hover:bg-stone-600"
-                  >
-                    <IoAddOutline />
-                  </button>
-                </div>
-              </div>
-
-              {/* Color */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={textColor}
-                    onChange={(e) => handleColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg border border-stone-600 cursor-pointer bg-transparent"
-                  />
-                  <input
-                    type="text"
-                    value={textColor}
-                    onChange={(e) => handleColor(e.target.value)}
-                    className="flex-1 bg-stone-700 text-stone-200 text-xs rounded-lg px-2.5 py-2 outline-none border border-stone-600 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Bold / Italic */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={toggleBold}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors ${
-                    isBold
-                      ? "bg-primary text-white"
-                      : "bg-stone-700 text-stone-300 hover:bg-stone-600"
-                  }`}
-                >
-                  <MdFormatBold />
-                </button>
-                <button
-                  onClick={toggleItalic}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors ${
-                    isItalic
-                      ? "bg-primary text-white"
-                      : "bg-stone-700 text-stone-300 hover:bg-stone-600"
-                  }`}
-                  style={{ fontStyle: "italic" }}
-                >
-                  <MdFormatItalic />
-                </button>
-              </div>
-
-              {/* Alignment */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Alignment
-                </label>
-                <div className="flex items-center gap-1.5">
-                  {["left", "center", "right"].map((align) => (
-                    <button
-                      key={align}
-                      onClick={() => handleAlign(align)}
-                      className={`flex-1 py-1.5 text-[10px] font-medium rounded-lg transition-colors ${
-                        textAlign === align
-                          ? "bg-primary text-white"
-                          : "bg-stone-700 text-stone-300 hover:bg-stone-600"
-                      }`}
-                    >
-                      {align.charAt(0).toUpperCase() + align.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rotation */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Rotation
-                </label>
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  value={selected?.angle || 0}
-                  onChange={(e) => handleRotation(Number(e.target.value))}
-                  className="w-full accent-primary"
-                />
-                <p className="text-[10px] text-stone-500 text-center">
-                  {Math.round(selected?.angle || 0)}°
-                </p>
-              </div>
-
-              {/* Max width */}
-              <div>
-                <label className="text-[10px] text-stone-500 mb-1 block">
-                  Max Width
-                </label>
-                <input
-                  type="range"
-                  min="100"
-                  max={canvasWidth}
-                  value={selected?.width || 400}
-                  onChange={(e) => {
-                    handleWidth(Number(e.target.value));
-                  }}
-                  className="w-full accent-primary"
-                />
-                <p className="text-[10px] text-stone-500 text-center">
-                  {Math.round(selected?.width || 400)}px
-                </p>
-              </div>
-
-              {/* Delete */}
-              <button
-                onClick={deleteSelected}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-400 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors"
-              >
-                <IoTrashOutline className="text-sm" />
-                Remove Field
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Canvas area ─────────────────────────────── */}
-        <div
-          ref={containerRef}
-          className="relative flex-1 flex flex-col items-center justify-center overflow-auto bg-stone-900 p-6"
-        >
-          {!backgroundPreview && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <div className="text-center pointer-events-auto">
-                <label className="flex flex-col items-center gap-3 px-8 py-10 bg-stone-800 rounded-2xl border border-dashed border-stone-600 cursor-pointer hover:border-primary/50 transition-colors">
-                  <IoCloudUploadOutline className="text-4xl text-stone-500" />
-                  <p className="text-sm font-medium text-stone-400">
-                    Upload a certificate background
-                  </p>
-                  <p className="text-xs text-stone-600">
-                    Design in Canva, export as PNG, then upload here
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBackgroundUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-
-          <div className="rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-stone-700">
-            <canvas
-              ref={canvasRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              style={{ cursor: selected ? "move" : "default" }}
-            />
-          </div>
-        </div>
-
-        {/* ── Right mini toolbar ──────────────────────── */}
-        <div className="shrink-0 w-12 bg-stone-800 border-l border-stone-700 flex flex-col items-center py-3 gap-1">
-          <button
-            onClick={undo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-400 hover:text-white hover:bg-stone-700 transition-colors"
-            title="Undo (Ctrl+Z)"
-          >
-            <IoArrowUndoOutline className="text-base" />
-          </button>
-          <button
-            onClick={redo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-400 hover:text-white hover:bg-stone-700 transition-colors"
-            title="Redo (Ctrl+Shift+Z)"
-          >
-            <IoArrowRedoOutline className="text-base" />
-          </button>
         </div>
       </div>
+
+      {previewImage && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6">
+          <button
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 px-3 py-1.5 rounded-md bg-white/10 text-white border border-white/20 hover:bg-white/20"
+          >
+            Close (Esc)
+          </button>
+          <img
+            src={previewImage}
+            alt="Template preview"
+            className="max-w-[95vw] max-h-[92vh] rounded-xl shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 }
