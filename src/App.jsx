@@ -27,6 +27,7 @@ import GroupDetails from './pages/dashboard/GroupDetails';
 import CreateGroup from './pages/dashboard/CreateGroup';
 import EventAttendance from './pages/dashboard/EventAttendance';
 import EventCertificates from './pages/dashboard/EventCertificates';
+import Users from './pages/dashboard/Users';
 import TemplateEditor from './pages/editor/TemplateEditor';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
             <Route path="account" element={<Account />} />
             <Route path="events" element={<Events />} />
             <Route path="invities" element={<Invites />} />
+            <Route path="users" element={<Users />} />
             <Route path="notifications" element={<NotificationPage />} />
             <Route path="groups/create" element={<CreateGroup />} />
             <Route path="groups" element={<Groups />} />

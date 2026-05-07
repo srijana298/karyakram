@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { IoLocationOutline } from "react-icons/io5";
 import { MdComputer } from "react-icons/md";
+import { resolveImage } from "../lib/resolveImage";
 
 function ExploreEventCard({
   title,
@@ -25,7 +26,7 @@ function ExploreEventCard({
         {/* Image */}
         <div className="relative overflow-hidden">
           <img
-            src={image}
+            src={resolveImage(image)}
             alt={title}
             className="object-cover w-full aspect-[16/10] group-hover:scale-105 transition-transform duration-500"
           />

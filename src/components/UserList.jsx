@@ -3,6 +3,7 @@ import { IoClose, IoPerson, IoSearch } from "react-icons/io5";
 import Loading from "./Loading";
 import { toast } from "react-hot-toast";
 import { useLocation } from "react-router-dom";
+import { resolveImage } from "../lib/resolveImage";
 import { MdHandshake, MdPeople } from "react-icons/md";
 import { useNotifications } from "../context/notificationContext";
 import RsvpLogic from "../Logic/Explore/rsvp.logic";
@@ -178,7 +179,7 @@ function UserList({
                     <div className="shrink-0">
                       {u?.avatar || u?.image ? (
                         <img
-                          src={u.avatar || u.image}
+                          src={resolveImage(u.avatar || u.image)}
                           alt={u.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />

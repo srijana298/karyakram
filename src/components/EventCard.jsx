@@ -1,10 +1,11 @@
 import React from "react";
-import { IoLocation, IoSearchOutline } from "react-icons/io5";
+import { IoLocation, IoPersonOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import { MdComputer } from "react-icons/md";
+import { resolveImage } from "../lib/resolveImage";
 
 const EventCard = ({
-  event: { title, description, category, image, location_name, id, medium, start_date, end_date },
+  event: { title, description, category, image, location_name, id, medium, start_date, end_date, organizer_name },
 }) => {
   return (
     <Link
@@ -15,7 +16,7 @@ const EventCard = ({
         <img
           alt="event"
           className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
-          src={image}
+          src={resolveImage(image)}
         />
         <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs font-medium px-2.5 py-1 rounded-lg">
           {category}
@@ -28,6 +29,11 @@ const EventCard = ({
         <div className="flex flex-col md:flex-row justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-secondary line-clamp-1">{title}</p>
+            {organizer_name && (
+              <p className="text-[11px] text-emerald-600 mt-0.5 inline-flex items-center gap-1">
+                <IoPersonOutline className="text-[11px]" /> {organizer_name}
+              </p>
+            )}
             <p className="text-xs text-stone-400 line-clamp-2 mt-1">{description}</p>
           </div>
           <div className="flex md:flex-col gap-1 items-center md:items-end text-xs text-stone-400 shrink-0">

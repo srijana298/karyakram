@@ -37,7 +37,7 @@ export const signup = async (req, res) => {
   const token = generateToken({ id: userId, email, name });
 
   return Created(
-    { token, user: { id: userId, name, email, phone: null } },
+    { token, user: { id: userId, name, email, phone: null, role: 'attendee' } },
     'Signed up successfully'
   );
 };
@@ -58,7 +58,7 @@ export const login = async (req, res) => {
   const token = generateToken({ id: user.id, email: user.email, name: user.name });
 
   return Ok(
-    { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone } },
+    { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } },
     'Logged in successfully'
   );
 };
@@ -75,7 +75,8 @@ export const getMe = async (req, res) => {
     id: user.id,
     name: user.name,
     email: user.email,
-    phone: user.phone
+    phone: user.phone,
+    role: user.role,
   });
 };
 
@@ -105,7 +106,8 @@ export const updateMe = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      phone: user.phone
+      phone: user.phone,
+      role: user.role,
     },
     'Updated successfully'
   );

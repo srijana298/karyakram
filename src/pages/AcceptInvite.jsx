@@ -7,6 +7,7 @@ import Ticket from "../components/Ticket";
 import { useNotifications } from "../context/notificationContext";
 import { eventService } from "../services/events";
 import { memberService } from "../services/members";
+import { resolveImage } from "../lib/resolveImage";
 
 function AcceptInvite() {
   const [searchParams] = useSearchParams();
@@ -63,7 +64,7 @@ function AcceptInvite() {
   if (event)
     return (
       <div className="h-screen w-screen relative bg-black">
-        <img alt="event" src={event?.image} className="w-full h-full opacity-50 object-cover" />
+        <img alt="event" src={resolveImage(event?.image)} className="w-full h-full opacity-50 object-cover" />
         {showTicket ? (
           <div className="fixed inset-0 w-full h-full my-auto">
             <Ticket

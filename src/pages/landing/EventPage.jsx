@@ -2,6 +2,7 @@ import React from "react";
 import GetEventLogic from "../../Logic/EventsLogic/getEvents";
 import Loading from "../../components/Loading";
 import { MdComputer } from "react-icons/md";
+import { resolveImage } from "../../lib/resolveImage";
 import {
   IoBookmarkOutline,
   IoCalendarClearOutline,
@@ -169,7 +170,7 @@ function EventPage() {
         <div className="absolute inset-0 overflow-hidden">
           <img
             alt="cover blur"
-            src={image}
+            src={resolveImage(image)}
             className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white" />
@@ -178,7 +179,7 @@ function EventPage() {
           <div className="rounded-2xl overflow-hidden shadow-lg shadow-stone-200/50">
             <img
               alt={title}
-              src={image}
+              src={resolveImage(image)}
               className="w-full aspect-[21/9] object-cover"
             />
           </div>

@@ -3,6 +3,7 @@ import { memberService } from "../../services/members";
 import { toast } from "react-hot-toast";
 import Loading from "../../components/Loading";
 import DataTable from "../../components/DataTable";
+import { resolveImage } from "../../lib/resolveImage";
 import {
   IoCheckmarkCircleOutline,
   IoChevronDownOutline,
@@ -115,7 +116,7 @@ export default function Invites() {
       render: (row) => (
         <div className="flex items-center gap-2.5">
           <img
-            src={row.event.image || "/logo192.png"}
+            src={resolveImage(row.event.image)}
             alt=""
             className="w-11 h-8 rounded object-cover bg-stone-200"
           />

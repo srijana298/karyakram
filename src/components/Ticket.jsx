@@ -3,6 +3,7 @@ import Loading from "./Loading";
 import Barcode from "../assets/images/barcode.png";
 import { RiDownloadFill } from "react-icons/ri";
 import { exportComponentAsPNG } from "react-component-export-image";
+import { resolveImage } from "../lib/resolveImage";
 
 function Ticket({ text, event }) {
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ function Ticket({ text, event }) {
         <div
           className="col-span-4 relative bg-slate-200 w-full h-full border-l-[3px] border-r-[3px] border-spacing-2 border-dashed border-l-primary border-r-secondary"
           style={{
-            backgroundImage: `url(${event?.image})`,
+            backgroundImage: `url(${resolveImage(event?.image)})`,
             backgroundSize: "contain",
             backgroundRepeat: "no-repeat",
           }}

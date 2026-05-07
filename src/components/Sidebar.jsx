@@ -9,7 +9,8 @@ import {
   IoNotificationsOutline,
   IoPersonOutline,
   IoSearchOutline,
-  IoTicketOutline
+  IoTicketOutline,
+  IoPeopleOutline,
 } from 'react-icons/io5';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import LogoutLogic from '../Logic/UserLogic.js/Logout.logic';
@@ -22,6 +23,11 @@ function Sidebar() {
   const { userInfo, setUserInfo } = useUser();
   const { unreadNotifications } = useNotifications();
   const navigate = useNavigate();
+
+  const role = userInfo?.role || 'attendee';
+  const isAdmin = role === 'admin';
+  const isOrganizer = role === 'organizer';
+  const isAttendee = role === 'attendee';
 
   const getUserInfo = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -49,6 +55,12 @@ function Sidebar() {
         : 'text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text'
     }`;
 
+  const roleBadge = {
+    admin: 'bg-red-50 text-red-700 border-red-200',
+    organizer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    attendee: 'bg-blue-50 text-blue-700 border-blue-200',
+  };
+
   return (
     <aside className="flex flex-col w-72 shrink-0 border-r border-dashboard-border bg-dashboard-panel h-full">
       <div className="px-5 h-[72px] border-b border-dashboard-border flex items-center">
@@ -71,20 +83,36 @@ function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-5 flex flex-col gap-1">
+      <nav className="flex-1 px-4 py-5 flex flex-col gap-1 overflow-auto">
         <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Main Menu</p>
         <NavLink className={linkClass} to="/dashboard" end>
           <IoHomeOutline className="text-[18px]" /> Home
         </NavLink>
         <NavLink className={linkClass} to="events?filter=total">
-          <IoCalendarClearOutline className="text-[18px]" /> Events
+          <IoCalendarClearOutline className="text-[18px]" /> {isAdmin ? 'All Events' : 'Events'}
         </NavLink>
-        <NavLink className={linkClass} to="invities">
-          <IoTicketOutline className="text-[18px]" /> Invites
-        </NavLink>
-        <NavLink className={linkClass} to="groups">
-          <IoLayersOutline className="text-[18px]" /> Groups
-        </NavLink>
+
+        {/* Admin-only */}
+        {isAdmin && (
+          <NavLink className={linkClass} to="users">
+            <IoPeopleOutline className="text-[18px]" /> Users
+          </NavLink>
+        )}
+
+        {/* Organizer-only */}
+        {isOrganizer && (
+          <NavLink className={linkClass} to="invities">
+            <IoTicketOutline className="text-[18px]" /> Invites
+          </NavLink>
+        )}
+
+        {/* Admin + Organizer */}
+        {(isAdmin || isOrganizer) && (
+          <NavLink className={linkClass} to="groups">
+            <IoLayersOutline className="text-[18px]" /> Groups
+          </NavLink>
+        )}
+
         <NavLink className={linkClass} to="notifications">
           <div className="relative">
             <IoNotificationsOutline className="text-[18px]" />
@@ -119,6 +147,9 @@ function Sidebar() {
             </p>
             <p className="text-[11px] text-dashboard-muted truncate">{userInfo?.email || ''}</p>
           </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${roleBadge[role] || roleBadge.attendee}`}>
+            {role}
+          </span>
           <NavLink
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-dashboard-muted hover:text-red-500 hover:bg-red-50 transition-colors"
             to="account"

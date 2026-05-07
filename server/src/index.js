@@ -14,6 +14,7 @@ import analyticsRoutes from "./routes/analytics.js";
 import groupRoutes from "./routes/groups.js";
 import attendanceRoutes from "./routes/attendance.js";
 import certificateRoutes from "./routes/certificates.js";
+import adminRoutes from "./routes/admin.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -49,6 +50,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api", attendanceRoutes);
 app.use("/api/certificates", certificateRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((err, req, res, next) => {
   if (err.name === "MulterError") {

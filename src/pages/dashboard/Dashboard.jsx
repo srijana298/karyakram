@@ -8,11 +8,15 @@ import {
   IoPaperPlaneOutline,
   IoPeopleOutline,
   IoRocketOutline,
+  IoPersonOutline,
 } from "react-icons/io5";
 import { Link } from "react-router-dom";
-import GetEventLogic from "../../Logic/EventsLogic/getEvents";
+import { eventService } from "../../services/events";
 import { analyticsService } from "../../services/analytics";
+import { adminService } from "../../services/admin";
 import Loading from "../../components/Loading";
+import { resolveImage } from "../../lib/resolveImage";
+import { useUser } from "../../context/userContext";
 
 function StatCard({ icon, label, value, delta, tone = "green" }) {
   const toneClass =
@@ -35,15 +39,48 @@ function StatCard({ icon, label, value, delta, tone = "green" }) {
 }
 
 function Dashboard() {
-  const { events = [], error } = GetEventLogic();
+  const { userInfo } = useUser();
+  const role = userInfo?.role || "attendee";
+  const isAdmin = role === "admin";
+  const isOrganizer = role === "organizer";
+  const isAttendee = role === "attendee";
+
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch events: admin gets all via admin service, organizer gets mine, attendee gets public
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      try {
+        let res;
+        if (isAdmin) {
+          res = await adminService.listEvents();
+        } else if (isOrganizer) {
+          res = await eventService.list({ mine: "true" });
+        } else {
+          res = await eventService.list({});
+        }
+        if (res.ok) setEvents(res.data || []);
+        else setError(res.error);
+      } catch (err) {
+        setError(err.message);
+      }
+      setEventsLoading(false);
+    };
+    fetchEvents();
+  }, [isAdmin, isOrganizer]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoadingAnalytics(true);
       try {
-        const res = await analyticsService.get();
+        const res = isAdmin
+          ? await adminService.stats()
+          : await analyticsService.get();
         if (res.ok && res.data) setAnalytics(res.data);
       } catch (err) {
         console.error("Analytics error:", err);
@@ -51,35 +88,41 @@ function Dashboard() {
       setLoadingAnalytics(false);
     };
     fetchAnalytics();
-  }, []);
+  }, [isAdmin]);
 
   const overview = analytics?.overview || {};
   const stats = [
     {
-      label: "Total Events",
+      label: isAdmin ? "All Events" : "Total Events",
       value: overview.totalEvents ?? 0,
       icon: <IoCalendarOutline className="text-lg" />,
       tone: "green",
       delta: 12,
     },
     {
-      label: "Upcoming Events",
-      value: events?.length ?? 0,
-      icon: <IoRocketOutline className="text-lg" />,
+      label: isAdmin ? "Total Users" : "Upcoming Events",
+      value: isAdmin
+        ? Number(overview.totalUsers ?? 0).toLocaleString()
+        : events?.length ?? 0,
+      icon: isAdmin ? <IoPersonOutline className="text-lg" /> : <IoRocketOutline className="text-lg" />,
       tone: "blue",
       delta: 8,
     },
     {
-      label: "Total Attendees",
-      value: Number(overview.totalMembers ?? 0).toLocaleString(),
+      label: isAdmin ? "Total RSVPs" : "Total Attendees",
+      value: isAdmin
+        ? Number(overview.totalRsvps ?? 0).toLocaleString()
+        : Number(overview.totalMembers ?? 0).toLocaleString(),
       icon: <IoPeopleOutline className="text-lg" />,
       tone: "violet",
       delta: 16,
     },
     {
-      label: "Invites Sent",
-      value: Number(overview.totalRsvps ?? 0).toLocaleString(),
-      icon: <IoPaperPlaneOutline className="text-lg" />,
+      label: isAdmin ? "Total Attendees" : "Invites Sent",
+      value: isAdmin
+        ? Number(overview.totalMembers ?? 0).toLocaleString()
+        : Number(overview.totalRsvps ?? 0).toLocaleString(),
+      icon: isAdmin ? <IoRocketOutline className="text-lg" /> : <IoPaperPlaneOutline className="text-lg" />,
       tone: "amber",
       delta: 20,
     },
@@ -121,22 +164,28 @@ function Dashboard() {
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">Welcome back{analytics?.user?.name ? `, ${analytics.user.name}` : ""}! 👋</h1>
-            <p className="text-dashboard-muted mt-1">Here&apos;s what&apos;s happening with your events today.</p>
+            <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">Welcome back{userInfo?.name ? `, ${userInfo.name}` : ""}! 👋</h1>
+            <p className="text-dashboard-muted mt-1">
+              {isAdmin && "Here's what's happening across the platform."}
+              {isOrganizer && "Here's what's happening with your events today."}
+              {isAttendee && "Discover what's happening on campus."}
+            </p>
           </div>
-          <Link
-            to="create"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-emerald-600"
-          >
-            <IoAdd className="text-base" />
-            Create Event
-          </Link>
+          {isOrganizer && (
+            <Link
+              to="create"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-emerald-600"
+            >
+              <IoAdd className="text-base" />
+              Create Event
+            </Link>
+          )}
         </div>
 
-        {loadingAnalytics && <div className="mt-6"><Loading /></div>}
+        {loadingAnalytics || eventsLoading ? <div className="mt-6"><Loading /></div> : null}
         {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
 
-        {!loadingAnalytics && (
+        {!(loadingAnalytics || eventsLoading) && (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
               {stats.map((item) => (
@@ -147,7 +196,9 @@ function Dashboard() {
             <div className="grid lg:grid-cols-[1.7fr_1fr] gap-4 mt-5">
               <div className="dashboard-panel rounded-md p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-semibold text-dashboard-text">Upcoming Events</h2>
+                  <h2 className="text-xl font-semibold text-dashboard-text">
+                    {isAdmin ? "Recent Events (All Organizers)" : "Upcoming Events"}
+                  </h2>
                   <Link to="events?filter=total" className="text-sm text-primary inline-flex items-center gap-1 font-medium">
                     View all events <IoArrowForward />
                   </Link>
@@ -164,7 +215,7 @@ function Dashboard() {
                       className={`flex items-center gap-3 py-3 px-2 hover:bg-white/70 transition-colors ${i < upcomingEvents.length - 1 ? "border-b border-gray-200" : ""}`}
                     >
                       <img
-                        src={event.banner_url || event.image || "/logo192.png"}
+                        src={resolveImage(event.banner_url || event.image)}
                         alt={event.title}
                         className="w-20 h-14 rounded object-cover shrink-0 bg-stone-200"
                       />
@@ -208,24 +259,30 @@ function Dashboard() {
                 <div className="dashboard-panel p-4">
                   <h3 className="text-xl font-semibold text-dashboard-text mb-2">Quick Actions</h3>
                   <div className="divide-y divide-dashboard-border">
-                    <QuickAction
-                      icon={<IoCalendarOutline className="text-emerald-600" />}
-                      title="Create New Event"
-                      subtitle="Start planning your next event"
-                      to="create"
-                    />
-                    <QuickAction
-                      icon={<IoPaperPlaneOutline className="text-amber-600" />}
-                      title="Send Invites"
-                      subtitle="Invite people to your events"
-                      to="invities"
-                    />
-                    <QuickAction
-                      icon={<IoLayersOutline className="text-violet-600" />}
-                      title="Manage Groups"
-                      subtitle="Organize your teams and groups"
-                      to="groups"
-                    />
+                    {isOrganizer && (
+                      <QuickAction
+                        icon={<IoCalendarOutline className="text-emerald-600" />}
+                        title="Create New Event"
+                        subtitle="Start planning your next event"
+                        to="create"
+                      />
+                    )}
+                    {(isOrganizer || isAdmin) && (
+                      <QuickAction
+                        icon={<IoPaperPlaneOutline className="text-amber-600" />}
+                        title="Send Invites"
+                        subtitle="Invite people to your events"
+                        to="invities"
+                      />
+                    )}
+                    {(isOrganizer || isAdmin) && (
+                      <QuickAction
+                        icon={<IoLayersOutline className="text-violet-600" />}
+                        title="Manage Groups"
+                        subtitle="Organize your teams and groups"
+                        to="groups"
+                      />
+                    )}
                     <QuickAction
                       icon={<IoNotificationsOutline className="text-blue-600" />}
                       title="View Notifications"

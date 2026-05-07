@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { groupService } from "../../services/groups";
+import { adminService } from "../../services/admin";
 import Loading from "../../components/Loading";
 import DataTable from "../../components/DataTable";
 import {
@@ -10,6 +11,7 @@ import {
   IoEyeOutline,
   IoLayersOutline,
   IoOptionsOutline,
+  IoPersonOutline,
   IoSearchOutline,
 } from "react-icons/io5";
 
@@ -20,6 +22,14 @@ export default function Groups() {
   const [expanded, setExpanded] = useState(null);
   const [expandedSubEvents, setExpandedSubEvents] = useState({});
   const [loadingExpand, setLoadingExpand] = useState({});
+
+  let role = "attendee";
+  try {
+    const user = JSON.parse(localStorage.getItem("Mahotsav-user"));
+    role = user?.role || "attendee";
+  } catch {}
+  const isAdmin = role === "admin";
+  const isOrganizer = role === "organizer";
 
   const handleExpand = async (groupId) => {
     if (expanded === groupId) {
@@ -44,7 +54,12 @@ export default function Groups() {
 
   const load = async () => {
     setLoading(true);
-    const res = await groupService.list({ mine: "true" });
+    let res;
+    if (isAdmin) {
+      res = await adminService.listGroups();
+    } else {
+      res = await groupService.list({ mine: "true" });
+    }
     if (res.ok) setGroups(res.data || []);
     setLoading(false);
   };
@@ -54,7 +69,10 @@ export default function Groups() {
   }, []);
 
   const filtered = useMemo(() => {
-    return groups.filter((g) => g.title?.toLowerCase().includes(search.toLowerCase()));
+    return groups.filter((g) =>
+      g.title?.toLowerCase().includes(search.toLowerCase()) ||
+      g.organizer_name?.toLowerCase().includes(search.toLowerCase())
+    );
   }, [groups, search]);
 
   const columns = [
@@ -94,6 +112,11 @@ export default function Groups() {
                   </span>
                 </div>
                 <p className="text-xs text-dashboard-muted mt-0.5 truncate">{row.description || row.category || "No description"}</p>
+                {row.organizer_name && isAdmin && (
+                  <p className="text-[11px] text-emerald-600 mt-0.5 inline-flex items-center gap-1">
+                    <IoPersonOutline className="text-[11px]" /> {row.organizer_name}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -170,22 +193,28 @@ export default function Groups() {
   return (
     <div className="space-y-4">
       <div className="px-5 py-3 text-xs text-dashboard-muted border-b border-dashboard-border">
-        Main Menu <span className="px-2">/</span> Groups
+        Main Menu <span className="px-2">/</span> {isAdmin ? "All Groups" : "Groups"}
       </div>
 
       <div className="px-1">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">Groups</h1>
-            <p className="text-dashboard-muted mt-1">Organize your events into groups and sub-events.</p>
+            <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">
+              {isAdmin ? "All Groups" : "Groups"}
+            </h1>
+            <p className="text-dashboard-muted mt-1">
+              {isAdmin ? "All event groups across organizers." : "Organize your events into groups and sub-events."}
+            </p>
           </div>
-          <Link
-            to="/dashboard/groups/create"
-            className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
-          >
-            <IoLayersOutline className="text-base" />
-            Create Group
-          </Link>
+          {isOrganizer && (
+            <Link
+              to="/dashboard/groups/create"
+              className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
+            >
+              <IoLayersOutline className="text-base" />
+              Create Group
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2 mt-5">
@@ -194,7 +223,7 @@ export default function Groups() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search groups and events..."
+              placeholder="Search groups..."
               className="flex-1 bg-transparent outline-none text-sm placeholder:text-stone-400"
             />
           </div>

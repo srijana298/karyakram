@@ -21,6 +21,7 @@ import { MdComputer } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
 import Loading from "../../components/Loading";
+import { resolveImage } from "../../lib/resolveImage";
 import CreateMembershipLogic from "../../Logic/Membership/CreateMembership.logic";
 import GetUsersLogic from "../../Logic/UserLogic.js/GetUsers.logic";
 import UserList from "../../components/UserList";
@@ -129,7 +130,7 @@ function Event() {
               <img
                 alt="event"
                 className="w-full h-72 sm:h-80 object-cover group-hover:scale-[1.02] transition-transform duration-500"
-                src={events?.image}
+                src={resolveImage(events?.image)}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 

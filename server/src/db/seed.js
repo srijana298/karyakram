@@ -1,230 +1,556 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { db } from "./index.js";
-import { users, events, rsvps, eventMembers, notifications } from "./schema.js";
-
-// ── Seed Data ────────────────────────────────────────────────────────
-const SEED_USERS = [
-  { name: "Srijana Dahal", email: "srijana.dahal@mahotsav.com", phone: "+977-9801111111" },
-  { name: "Aarav Sharma", email: "aarav.sharma@mahotsav.com", phone: "+977-9801234567" },
-  { name: "Bikash Thapa", email: "bikash.thapa@mahotsav.com", phone: "+977-9823456789" },
-  { name: "Nisha Tamang", email: "nisha.tamang@mahotsav.com", phone: "+977-9834567890" },
-  { name: "Rajesh Adhikari", email: "rajesh.adhikari@mahotsav.com", phone: "+977-9845678901" },
-  { name: "Prabina Shrestha", email: "prabina.shrestha@mahotsav.com", phone: "+977-9856789012" },
-  { name: "Suman Karki", email: "suman.karki@mahotsav.com", phone: "+977-9867890123" },
-  { name: "Anita Gurung", email: "anita.gurung@mahotsav.com", phone: "+977-9878901234" },
-  { name: "Dipak Poudel", email: "dipak.poudel@mahotsav.com", phone: "+977-9889012345" },
-  { name: "Maya Rai", email: "maya.rai@mahotsav.com", phone: "+977-9890123456" },
-  { name: "Rohan Koirala", email: "rohan.koirala@mahotsav.com", phone: "+977-9802222222" },
-  { name: "Sita Magar", email: "sita.magar@mahotsav.com", phone: "+977-9803333333" },
-  { name: "Hari Subedi", email: "hari.subedi@mahotsav.com", phone: "+977-9804444444" },
-  { name: "Gita Limbu", email: "gita.limbu@mahotsav.com", phone: "+977-9805555555" },
-  { name: "Krishna Basnet", email: "krishna.basnet@mahotsav.com", phone: "+977-9806666666" },
-  { name: "Laxmi Chhetri", email: "laxmi.chhetri@mahotsav.com", phone: "+977-9807777777" },
-  { name: "Bimal Pandey", email: "bimal.pandey@mahotsav.com", phone: "+977-9808888888" },
-  { name: "Kamala Sherpa", email: "kamala.sherpa@mahotsav.com", phone: "+977-9809999999" },
-  { name: "Dinesh Rana", email: "dinesh.rana@mahotsav.com", phone: "+977-9810000000" },
-  { name: "Sarita Yadav", email: "sarita.yadav@mahotsav.com", phone: "+977-9811111111" },
-];
-
-const LOCATIONS = [
-  { name: "Pulchowk Campus, Lalitpur", lat: "27.6828", lng: "85.3217" },
-  { name: "Thapathali Campus, Kathmandu", lat: "27.6910", lng: "85.3190" },
-  { name: "Pashupati Campus, Kathmandu", lat: "27.7060", lng: "85.3480" },
-  { name: "Bhrikutimandap, Kathmandu", lat: "27.7003", lng: "85.3145" },
-  { name: "Narayanhiti Palace Museum, Kathmandu", lat: "27.7050", lng: "85.3150" },
-  { name: "Kathmandu University, Dhulikhel", lat: "27.6197", lng: "85.5397" },
-  { name: "Tribhuvan University, Kirtipur", lat: "27.6810", lng: "85.2780" },
-  { name: "Bhaktapur Durbar Square", lat: "27.6710", lng: "85.4290" },
-  { name: "Thamel, Kathmandu", lat: "27.7083", lng: "85.3129" },
-  { name: "Pokhara Lakeside, Pokhara", lat: "28.2096", lng: "83.9570" },
-];
-
-const CATEGORIES = [
-  "Technology", "Music", "Sports", "Arts", "Film",
-  "Literature", "Culture", "Games", "Charity", "Lifestyle",
-];
-
-const EVENT_TITLES = [
-  { title: "Tech Fest 2025", cat: "Technology", desc: "Annual technology festival featuring coding competitions, hackathons, and tech talks by industry leaders." },
-  { title: "Hackathon: Build for Nepal", cat: "Technology", desc: "48-hour hackathon focused on building solutions for local Nepali communities." },
-  { title: "AI & ML Workshop", cat: "Technology", desc: "Hands-on workshop covering machine learning fundamentals and real-world applications." },
-  { title: "Web Dev Bootcamp", cat: "Technology", desc: "Intensive 2-day bootcamp on modern web development with React and Node.js." },
-  { title: "Cybersecurity Seminar", cat: "Technology", desc: "Learn about latest cybersecurity threats and defense mechanisms." },
-  { title: "Open Source Meetup", cat: "Technology", desc: "Monthly meetup for open source contributors and enthusiasts." },
-  { title: "Flutter App Workshop", cat: "Technology", desc: "Build your first cross-platform mobile app with Flutter." },
-  { title: "Cloud Computing Day", cat: "Technology", desc: "Deep dive into AWS, Azure, and GCP with hands-on labs." },
-  { title: "Data Science Conclave", cat: "Technology", desc: "Explore data science career paths with panels and networking." },
-  { title: "Blockchain Basics", cat: "Technology", desc: "Introduction to blockchain technology and smart contracts." },
-  { title: "Jazz Night Live", cat: "Music", desc: "An evening of smooth jazz performed by local and international artists." },
-  { title: "Nepali Folk Music Festival", cat: "Music", desc: "Celebrating traditional Nepali folk music with live performances." },
-  { title: "Open Mic Acoustic", cat: "Music", desc: "Bring your guitar and your voice. All are welcome to perform." },
-  { title: "DJ Battle Royale", cat: "Music", desc: "Campus DJs compete head-to-head in an electrifying showdown." },
-  { title: "Band Competition", cat: "Music", desc: "College bands battle it out for the grand prize and recording deal." },
-  { title: "Inter-College Basketball", cat: "Sports", desc: "Annual basketball tournament between colleges in the valley." },
-  { title: "Marathon for Education", cat: "Sports", desc: "5K and 10K runs to raise funds for rural education programs." },
-  { title: "Cricket Tournament", cat: "Sports", desc: "T20 cricket tournament with teams from different departments." },
-  { title: "Futsal Championship", cat: "Sports", desc: "5-a-side futsal competition on campus grounds." },
-  { title: "Yoga & Wellness Day", cat: "Sports", desc: "Morning yoga session followed by wellness workshops." },
-  { title: "Art Exhibition: Colours of Nepal", cat: "Arts", desc: "Showcasing works of emerging Nepali artists." },
-  { title: "Pottery Workshop", cat: "Arts", desc: "Learn traditional Nepali pottery techniques from master artisans." },
-  { title: "Photography Walk", cat: "Arts", desc: "Guided photography walk through the heritage sites of Kathmandu." },
-  { title: "Street Art Festival", cat: "Arts", desc: "Live mural painting and street art demonstrations." },
-  { title: "Film Screening: Nepali Cinema", cat: "Film", desc: "Screening of award-winning Nepali short films and documentaries." },
-  { title: "Short Film Competition", cat: "Film", desc: "Students submit and screen their 5-minute short films." },
-  { title: "Documentary Making Workshop", cat: "Film", desc: "Learn the art of documentary filmmaking from professionals." },
-  { title: "Poetry Slam", cat: "Literature", desc: "Spoken word poetry competition with prizes for top performers." },
-  { title: "Book Club Meetup", cat: "Literature", desc: "Monthly book discussion — this month featuring Nepali novels." },
-  { title: "Creative Writing Workshop", cat: "Literature", desc: "Fiction writing techniques with published authors." },
-  { title: "Dashain Cultural Fair", cat: "Culture", desc: "Celebrating Dashain with traditional food, dance, and rituals." },
-  { title: "Holi Color Festival", cat: "Culture", desc: "Campus-wide Holi celebration with music and colors." },
-  { title: "Newari Food Festival", cat: "Culture", desc: "Taste authentic Newari cuisine and learn about the culture." },
-  { title: "ESports Tournament", cat: "Games", desc: "Compete in Valorant, CS2, and League of Legends tournaments." },
-  { title: "Board Game Night", cat: "Games", desc: "An evening of strategy board games — Catan, Chess, and more." },
-  { title: "Charity Run for Flood Relief", cat: "Charity", desc: "Running event to raise funds for recent flood-affected areas." },
-  { title: "Blood Donation Drive", cat: "Charity", desc: "Organized in partnership with Nepal Red Cross Society." },
-  { title: "Mental Health Awareness Walk", cat: "Lifestyle", desc: "Walk and talk session promoting mental health awareness." },
-  { title: "Sustainable Living Workshop", cat: "Lifestyle", desc: "Learn practical tips for reducing your carbon footprint." },
-  { title: "Career Fair 2025", cat: "Lifestyle", desc: "Connect with top employers and explore career opportunities." },
-  { title: "Startup Pitch Competition", cat: "Technology", desc: "Pitch your startup idea to a panel of investors and mentors." },
-  { title: "UI/UX Design Sprint", cat: "Technology", desc: "5-day design sprint to solve real user experience problems." },
-  { title: "IoT Workshop", cat: "Technology", desc: "Build IoT projects using Arduino and Raspberry Pi." },
-  { title: "Debate Championship", cat: "Literature", desc: "Inter-college debate competition on current affairs." },
-  { title: "Tihar Lights Festival", cat: "Culture", desc: "Celebrate Tihar with deusi bhailo, rangoli, and sweets." },
-  { title: "Table Tennis Tournament", cat: "Sports", desc: "Singles and doubles table tennis championship." },
-  { title: "Calligraphy Workshop", cat: "Arts", desc: "Learn beautiful handwriting and Nepali script calligraphy." },
-  { title: "Robotics Challenge", cat: "Technology", desc: "Build and program robots to complete obstacle courses." },
-  { title: "Agricultural Tech Summit", cat: "Technology", desc: "How technology is transforming agriculture in Nepal." },
-];
-
-const EVENT_IMAGES = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=400&fit=crop",
-];
+import {
+  users,
+  eventGroups,
+  events,
+  rsvps,
+  eventMembers,
+  attendance,
+  notifications,
+  certificateTemplates,
+} from "./schema.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────
-function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function pick(arr) { return arr[rand(0, arr.length - 1)]; }
-function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-
-function randomDate(startOffset, endOffset) {
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function pick(arr) {
+  return arr[rand(0, arr.length - 1)];
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rand(0, i);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function randomDate(startOffsetDays, endOffsetDays) {
   const now = new Date();
-  const start = new Date(now.getTime() + startOffset * 24 * 60 * 60 * 1000);
-  const end = new Date(now.getTime() + endOffset * 24 * 60 * 60 * 1000);
-  const d = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-  return d; // returns Date object
+  const start = new Date(now.getTime() + startOffsetDays * 24 * 60 * 60 * 1000);
+  const end = new Date(now.getTime() + endOffsetDays * 24 * 60 * 60 * 1000);
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+function futureDate(daysFromNow, hour, minute) {
+  const now = new Date();
+  const d = new Date(now.getTime() + daysFromNow * 24 * 60 * 60 * 1000);
+  d.setHours(hour, minute, 0, 0);
+  return d;
 }
 
-// ── Seed ─────────────────────────────────────────────────────────────
+// ── Seed Data ────────────────────────────────────────────────────────
+
+const SEED_IMAGES = [
+  "/uploads/seed/tech-fest.jpg",
+  "/uploads/seed/hackathon.jpg",
+  "/uploads/seed/workshop.jpg",
+  "/uploads/seed/coding.jpg",
+  "/uploads/seed/sports.jpg",
+  "/uploads/seed/basketball.jpg",
+  "/uploads/seed/cricket.jpg",
+  "/uploads/seed/futsal.jpg",
+  "/uploads/seed/music.jpg",
+  "/uploads/seed/art.jpg",
+  "/uploads/seed/culture.jpg",
+  "/uploads/seed/seminar.jpg",
+  "/uploads/seed/career.jpg",
+  "/uploads/seed/debate.jpg",
+  "/uploads/seed/yoga.jpg",
+];
+
+// ── Users ────────────────────────────────────────────────────────────
+const ADMIN = {
+  name: "Admin Mahotsav",
+  email: "admin@mahotsav.com",
+  phone: "+977-9800000001",
+  role: "admin",
+};
+
+const ORGANIZERS = [
+  { name: "Srijana Dahal", email: "srijana@mahotsav.com", phone: "+977-9801111111", role: "organizer" },
+  { name: "Aarav Sharma", email: "aarav@mahotsav.com", phone: "+977-9802222222", role: "organizer" },
+  { name: "Bikash Thapa", email: "bikash@mahotsav.com", phone: "+977-9803333333", role: "organizer" },
+];
+
+const ATTENDEES = [
+  { name: "Nisha Tamang", email: "nisha.tamang@mahotsav.com", phone: "+977-9810000001" },
+  { name: "Rajesh Adhikari", email: "rajesh.adhikari@mahotsav.com", phone: "+977-9810000002" },
+  { name: "Prabina Shrestha", email: "prabina.shrestha@mahotsav.com", phone: "+977-9810000003" },
+  { name: "Suman Karki", email: "suman.karki@mahotsav.com", phone: "+977-9810000004" },
+  { name: "Anita Gurung", email: "anita.gurung@mahotsav.com", phone: "+977-9810000005" },
+  { name: "Dipak Poudel", email: "dipak.poudel@mahotsav.com", phone: "+977-9810000006" },
+  { name: "Maya Rai", email: "maya.rai@mahotsav.com", phone: "+977-9810000007" },
+  { name: "Rohan Koirala", email: "rohan.koirala@mahotsav.com", phone: "+977-9810000008" },
+  { name: "Sita Magar", email: "sita.magar@mahotsav.com", phone: "+977-9810000009" },
+  { name: "Hari Subedi", email: "hari.subedi@mahotsav.com", phone: "+977-9810000010" },
+  { name: "Gita Limbu", email: "gita.limbu@mahotsav.com", phone: "+977-9810000011" },
+  { name: "Krishna Basnet", email: "krishna.basnet@mahotsav.com", phone: "+977-9810000012" },
+  { name: "Laxmi Chhetri", email: "laxmi.chhetri@mahotsav.com", phone: "+977-9810000013" },
+  { name: "Bimal Pandey", email: "bimal.pandey@mahotsav.com", phone: "+977-9810000014" },
+  { name: "Kamala Sherpa", email: "kamala.sherpa@mahotsav.com", phone: "+977-9810000015" },
+  { name: "Dinesh Rana", email: "dinesh.rana@mahotsav.com", phone: "+977-9810000016" },
+  { name: "Sarita Yadav", email: "sarita.yadav@mahotsav.com", phone: "+977-9810000017" },
+  { name: "Bikram Khadka", email: "bikram.khadka@mahotsav.com", phone: "+977-9810000018" },
+  { name: "Anjali Pariyar", email: "anjali.pariyar@mahotsav.com", phone: "+977-9810000019" },
+  { name: "Sandesh Maharjan", email: "sandesh.maharjan@mahotsav.com", phone: "+977-9810000020" },
+  { name: "Pramila Dongol", email: "pramila.dongol@mahotsav.com", phone: "+977-9810000021" },
+  { name: "Ramesh Bhattrai", email: "ramesh.bhattrai@mahotsav.com", phone: "+977-9810000022" },
+  { name: "Sunita Thakuri", email: "sunita.thakuri@mahotsav.com", phone: "+977-9810000023" },
+  { name: "Aashis Manandhar", email: "aashis.manandhar@mahotsav.com", phone: "+977-9810000024" },
+  { name: "Nirmala Rawal", email: "nirmala.rawal@mahotsav.com", phone: "+977-9810000025" },
+];
+
+// ── Nepal Venues ─────────────────────────────────────────────────────
+const VENUES = [
+  { name: "ACE Institute of Management, Satdobato", lat: "27.6710", lng: "85.3180" },
+  { name: "ACE Higher Secondary School, Gyaneshwor", lat: "27.7110", lng: "85.3330" },
+  { name: "Islington College (ICMS), Kamaladi", lat: "27.7040", lng: "85.3230" },
+  { name: "Pulchowk Campus, IOE, Lalitpur", lat: "27.6828", lng: "85.3217" },
+  { name: "Thapathali Campus, Kathmandu", lat: "27.6910", lng: "85.3190" },
+  { name: "Kathmandu University, Dhulikhel", lat: "27.6197", lng: "85.5397" },
+  { name: "Tribhuvan University, Kirtipur", lat: "27.6810", lng: "85.2780" },
+  { name: "St. Xavier's College, Maitighar", lat: "27.6980", lng: "85.3250" },
+  { name: "British College, Thapathali", lat: "27.6920", lng: "85.3200" },
+  { name: "Himalayan White House College, Khumaltar", lat: "27.6590", lng: "85.3190" },
+  { name: "Deerwalk Institute of Technology, Sifal", lat: "27.7060", lng: "85.3450" },
+  { name: "Softwarica College, Dillibazar", lat: "27.7030", lng: "85.3280" },
+  { name: "Prime College, Khusibu", lat: "27.7080", lng: "85.2990" },
+  { name: "Apex College, Sinamangal", lat: "27.6850", lng: "85.3360" },
+  { name: "Texas International College, Mitrapark", lat: "27.6880", lng: "85.3350" },
+  { name: "Sagarmatha College, Sanepa", lat: "27.6760", lng: "85.3130" },
+  { name: "Nagarjuna College, Kalanki", lat: "27.6990", lng: "85.2800" },
+  { name: "Chandigarh International College, Baneshwor", lat: "27.6930", lng: "85.3380" },
+];
+
+// ── Event Groups ─────────────────────────────────────────────────────
+const SEED_GROUPS = [
+  {
+    title: "Sports Week 2026",
+    description: "Annual inter-department sports week featuring futsal, basketball, cricket, table tennis, and more. Open to all students.",
+    category: "Sports",
+    cover_image: "/uploads/seed/sports.jpg",
+    organizerIndex: 0, // Srijana
+    subEvents: [
+      {
+        title: "Futsal — Group Stage",
+        cat: "Sports",
+        desc: "5-a-side futsal group stage matches. Teams from BCA, BBA, and BIM compete for knockout spots.",
+        venue: "ACE Institute of Management, Satdobato — Futsal Court",
+        lat: "27.6710", lng: "85.3180",
+        image: "/uploads/seed/futsal.jpg",
+        dayOffset: 5, startHour: 8, endHour: 12,
+        acceptingAttendance: true,
+      },
+      {
+        title: "Futsal — Finals",
+        cat: "Sports",
+        desc: "Top two teams from the group stage battle it out for the trophy. Medal ceremony follows.",
+        venue: "ACE Institute of Management, Satdobato — Futsal Court",
+        lat: "27.6710", lng: "85.3180",
+        image: "/uploads/seed/futsal.jpg",
+        dayOffset: 9, startHour: 14, endHour: 17,
+        acceptingAttendance: true,
+      },
+      {
+        title: "Basketball Tournament",
+        cat: "Sports",
+        desc: "Inter-college basketball tournament — men's and women's divisions. 5-on-5 full court.",
+        venue: "Pulchowk Campus, IOE — Indoor Court",
+        lat: "27.6828", lng: "85.3217",
+        image: "/uploads/seed/basketball.jpg",
+        dayOffset: 6, startHour: 10, endHour: 15,
+        acceptingAttendance: true,
+      },
+      {
+        title: "Cricket T20",
+        cat: "Sports",
+        desc: "T20 cricket match between BCA and BBA departments. Bring your cheering voices!",
+        venue: "Tribhuvan University Ground, Kirtipur",
+        lat: "27.6810", lng: "85.2780",
+        image: "/uploads/seed/cricket.jpg",
+        dayOffset: 7, startHour: 9, endHour: 16,
+        acceptingAttendance: true,
+      },
+      {
+        title: "Table Tennis Singles",
+        cat: "Sports",
+        desc: "Singles table tennis championship — knockout format. Open to all students.",
+        venue: "ACE Higher Secondary School, Gyaneshwor — Hall",
+        lat: "27.7110", lng: "85.3330",
+        image: "/uploads/seed/sports.jpg",
+        dayOffset: 8, startHour: 11, endHour: 14,
+        acceptingAttendance: true,
+      },
+    ],
+  },
+  {
+    title: "Tech Fest 2026",
+    description: "A 3-day technology festival featuring hackathons, coding competitions, tech talks, and workshops. Organized by the BCA department.",
+    category: "Technology",
+    cover_image: "/uploads/seed/tech-fest.jpg",
+    organizerIndex: 1, // Aarav
+    subEvents: [
+      {
+        title: "Hackathon: Build for Nepal",
+        cat: "Technology",
+        desc: "24-hour hackathon. Build a prototype that solves a real problem facing Nepal. Teams of 3-4. Prizes worth Rs. 50,000.",
+        venue: "Islington College (ICMS), Kamaladi — Computer Lab",
+        lat: "27.7040", lng: "85.3230",
+        image: "/uploads/seed/hackathon.jpg",
+        dayOffset: 12, startHour: 8, endHour: 20,
+        acceptingAttendance: true,
+      },
+      {
+        title: "Code Championship",
+        cat: "Technology",
+        desc: "Competitive programming contest — 5 problems, 3 hours. Top 3 win prizes and internship interviews.",
+        venue: "Deerwalk Institute of Technology, Sifal — Lab 1",
+        lat: "27.7060", lng: "85.3450",
+        image: "/uploads/seed/coding.jpg",
+        dayOffset: 13, startHour: 10, endHour: 13,
+        acceptingAttendance: true,
+      },
+      {
+        title: "AI & ML Workshop",
+        cat: "Technology",
+        desc: "Hands-on workshop covering machine learning fundamentals using Python and scikit-learn. Laptops required.",
+        venue: "Softwarica College, Dillibazar — Room 301",
+        lat: "27.7030", lng: "85.3280",
+        image: "/uploads/seed/workshop.jpg",
+        dayOffset: 14, startHour: 10, endHour: 16,
+        acceptingAttendance: true,
+      },
+    ],
+  },
+  {
+    title: "Cultural Week 2026",
+    description: "Celebrating the diversity of Nepal through music, art, food, and cultural performances. A week of colors, rhythms, and flavors.",
+    category: "Culture",
+    cover_image: "/uploads/seed/culture.jpg",
+    organizerIndex: 0, // Srijana
+    subEvents: [
+      {
+        title: "Nepali Folk Music Night",
+        cat: "Music",
+        desc: "Live performances of traditional Nepali folk music — Madal, Sarangi, and Panche Baja. Food stalls available.",
+        venue: "ACE Institute of Management, Satdobato — Open Amphitheatre",
+        lat: "27.6710", lng: "85.3180",
+        image: "/uploads/seed/music.jpg",
+        dayOffset: 20, startHour: 17, endHour: 21,
+        acceptingAttendance: false,
+      },
+      {
+        title: "Art Exhibition: Colours of Nepal",
+        cat: "Arts",
+        desc: "Showcasing paintings, sculptures, and mixed media works by emerging Nepali artists. Open for all to visit.",
+        venue: "Himalayan White House College, Khumaltar — Gallery Hall",
+        lat: "27.6590", lng: "85.3190",
+        image: "/uploads/seed/art.jpg",
+        dayOffset: 21, startHour: 10, endHour: 17,
+        acceptingAttendance: false,
+      },
+      {
+        title: "Newari Food Festival",
+        cat: "Culture",
+        desc: "Taste authentic Newari cuisine — Chatamari, Bara, Choila, Yomari, and more. Prepared by local Newari chefs.",
+        venue: "St. Xavier's College, Maitighar — Courtyard",
+        lat: "27.6980", lng: "85.3250",
+        image: "/uploads/seed/culture.jpg",
+        dayOffset: 22, startHour: 11, endHour: 18,
+        acceptingAttendance: false,
+      },
+    ],
+  },
+];
+
+// ── Standalone Events (not in groups) ────────────────────────────────
+const STANDALONE_EVENTS = [
+  {
+    title: "Web Dev Bootcamp: React + Node.js",
+    cat: "Technology",
+    desc: "Intensive 2-day bootcamp on modern web development. Day 1: React fundamentals, hooks, routing. Day 2: Node.js, Express, and building a full-stack app. Laptops required. Certificates provided.",
+    venue: "Softwarica College, Dillibazar — Lab 2",
+    lat: "27.7030", lng: "85.3280",
+    image: "/uploads/seed/workshop.jpg",
+    organizerIndex: 1,
+    dayOffset: 15, startHour: 9, endHour: 17,
+    maxParticipants: 40,
+    acceptingAttendance: true,
+  },
+  {
+    title: "Cybersecurity 101 Seminar",
+    cat: "Technology",
+    desc: "Introduction to cybersecurity threats in Nepal — phishing, ransomware, social engineering. Learn practical defense techniques. Open to all departments.",
+    venue: "Islington College (ICMS), Kamaladi — Auditorium",
+    lat: "27.7040", lng: "85.3230",
+    image: "/uploads/seed/seminar.jpg",
+    organizerIndex: 2,
+    dayOffset: 18, startHour: 13, endHour: 16,
+    maxParticipants: 100,
+    acceptingAttendance: true,
+  },
+  {
+    title: "Career Fair 2026",
+    cat: "Lifestyle",
+    desc: "Connect with 15+ top employers from Nepal's tech, finance, and management sectors. Bring your resume. On-spot interviews available.",
+    venue: "ACE Institute of Management, Satdobato — Main Hall",
+    lat: "27.6710", lng: "85.3180",
+    image: "/uploads/seed/career.jpg",
+    organizerIndex: 0,
+    dayOffset: 25, startHour: 10, endHour: 16,
+    maxParticipants: 200,
+    acceptingAttendance: false,
+  },
+  {
+    title: "Inter-College Debate Championship",
+    cat: "Literature",
+    desc: "Debate competition on current affairs — Nepali politics, climate change, and AI ethics. Teams of 2 per college. Grand prize Rs. 25,000.",
+    venue: "British College, Thapathali — Seminar Hall",
+    lat: "27.6920", lng: "85.3200",
+    image: "/uploads/seed/debate.jpg",
+    organizerIndex: 1,
+    dayOffset: 30, startHour: 10, endHour: 15,
+    maxParticipants: 60,
+    acceptingAttendance: true,
+  },
+  {
+    title: "Yoga & Wellness Morning",
+    cat: "Lifestyle",
+    desc: "Start your morning with guided yoga and meditation on the campus grounds. Mats provided. Open to all students and faculty.",
+    venue: "Kathmandu University, Dhulikhel — Central Lawn",
+    lat: "27.6197", lng: "85.5397",
+    image: "/uploads/seed/yoga.jpg",
+    organizerIndex: 2,
+    dayOffset: 10, startHour: 6, endHour: 8,
+    maxParticipants: 0,
+    acceptingAttendance: false,
+  },
+  {
+    title: "Open Mic Night",
+    cat: "Music",
+    desc: "Bring your guitar, your voice, your poetry — anything goes. Solo or group performances welcome. Sign up at the door.",
+    venue: "Sagarmatha College, Sanepa — Cafeteria Hall",
+    lat: "27.6760", lng: "85.3130",
+    image: "/uploads/seed/music.jpg",
+    organizerIndex: 0,
+    dayOffset: 35, startHour: 17, endHour: 20,
+    maxParticipants: 0,
+    acceptingAttendance: false,
+  },
+  {
+    title: "Startup Pitch Competition",
+    cat: "Technology",
+    desc: "Pitch your startup idea to a panel of investors and mentors from Nepal's startup ecosystem. Top 3 ideas win incubation support and seed funding.",
+    venue: "Prime College, Khusibu — Conference Room",
+    lat: "27.7080", lng: "85.2990",
+    image: "/uploads/seed/career.jpg",
+    organizerIndex: 1,
+    dayOffset: 40, startHour: 10, endHour: 14,
+    maxParticipants: 50,
+    acceptingAttendance: true,
+  },
+  {
+    title: "Blood Donation Drive",
+    cat: "Charity",
+    desc: "Organized in partnership with Nepal Red Cross Society. All healthy students and faculty are encouraged to donate. Refreshments provided.",
+    venue: "ACE Institute of Management, Satdobato — Health Unit",
+    lat: "27.6710", lng: "85.3180",
+    image: "/uploads/seed/culture.jpg",
+    organizerIndex: 2,
+    dayOffset: 3, startHour: 9, endHour: 15,
+    maxParticipants: 0,
+    acceptingAttendance: false,
+  },
+];
+
+// ── Seed Function ────────────────────────────────────────────────────
 async function seed() {
   console.log("🌱 Seeding database...\n");
 
-  // 1. Seed Users
-  const password = await bcrypt.hash("password123", 10);
-  const userIds = [];
-
-  for (const u of SEED_USERS) {
+  // ── Wipe all tables (reverse dependency order) ────────────────────
+  console.log("🧹 Wiping existing data...");
+  const conn = await import("mysql2/promise").then((m) =>
+    m.createConnection(process.env.DATABASE_URL)
+  );
+  const tables = [
+    "certificates", "certificate_templates", "attendance",
+    "notifications", "rsvps", "event_members",
+    "events", "event_groups", "users",
+  ];
+  for (const table of tables) {
     try {
-      const result = await db.insert(users).values({
-        name: u.name, email: u.email, phone: u.phone, password,
-      });
-      const id = result[0].insertId;
-      userIds.push(id);
-      console.log(`  ✅ User: ${u.name} (${id})`);
+      await conn.execute(`DELETE FROM \`${table}\``);
+      console.log(`  🗑  ${table}`);
     } catch (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        const [row] = await db.select().from(users).where(eq(users.email, u.email));
-        if (row) { userIds.push(row.id); console.log(`  ⏭️  User: ${u.name} — exists (${row.id})`); }
-      } else {
-        console.log(`  ❌ User: ${u.name} — ${err.message}`);
-      }
+      console.log(`  ⏭️  ${table} — ${err.message}`);
     }
   }
+  await conn.end();
+  console.log("");
 
-  // 2. Seed Events (50 events across users)
-  console.log("\n📅 Seeding events...");
-  const eventIds = [];
+  const password = await bcrypt.hash("password123", 10);
 
-  for (let i = 0; i < EVENT_TITLES.length; i++) {
-    const e = EVENT_TITLES[i];
-    const loc = pick(LOCATIONS);
-    const isOnline = Math.random() > 0.7;
-    const isPrivate = Math.random() > 0.8;
-    // First 15 events → owned by first user (Srijana Dahal), rest random
-    const ownerId = i < 15 ? userIds[0] : pick(userIds);
-    const startDate = randomDate(-30, 90);
-    const endDate = Math.random() > 0.5
-      ? new Date(startDate.getTime() + rand(1, 8) * 60 * 60 * 1000)
-      : null;
+  // ── 1. Create Admin ───────────────────────────────────────────────
+  const adminIds = [];
+  {
+    const result = await db.insert(users).values({
+      name: ADMIN.name, email: ADMIN.email, phone: ADMIN.phone,
+      password, role: ADMIN.role,
+    });
+    const id = result[0].insertId;
+    adminIds.push(id);
+    console.log(`  👑 Admin: ${ADMIN.name} (${id}) — password123`);
+  }
 
-    try {
-      const result = await db.insert(events).values({
-        title: e.title,
-        description: e.desc,
-        medium: isOnline ? "online" : "offline",
-        location_name: isOnline ? null : loc.name,
-        latitude: isOnline ? null : loc.lat,
-        longitude: isOnline ? null : loc.lng,
-        meet_link: isOnline ? `https://meet.google.com/${Math.random().toString(36).slice(2, 8)}` : null,
+  // ── 2. Create Organizers ──────────────────────────────────────────
+  const organizerIds = [];
+  for (const o of ORGANIZERS) {
+    const result = await db.insert(users).values({
+      name: o.name, email: o.email, phone: o.phone,
+      password, role: "organizer",
+    });
+    const id = result[0].insertId;
+    organizerIds.push(id);
+    console.log(`  🎓 Organizer: ${o.name} (${id}) — password123`);
+  }
+
+  // ── 3. Create Attendees ───────────────────────────────────────────
+  const attendeeIds = [];
+  for (const a of ATTENDEES) {
+    const result = await db.insert(users).values({
+      name: a.name, email: a.email, phone: a.phone,
+      password, role: "attendee",
+    });
+    const id = result[0].insertId;
+    attendeeIds.push(id);
+  }
+  console.log(`  👥 Attendees: ${attendeeIds.length} created — password123\n`);
+
+  const allUserIds = [...adminIds, ...organizerIds, ...attendeeIds];
+  const rsvpPool = shuffle(attendeeIds); // attendees are the RSVPers
+
+  // ── 4. Create Event Groups + Sub-events ───────────────────────────
+  console.log("📅 Seeding event groups & sub-events...\n");
+  const allEventIds = [];
+
+  for (const group of SEED_GROUPS) {
+    const organizerId = organizerIds[group.organizerIndex];
+    const groupResult = await db.insert(eventGroups).values({
+      title: group.title,
+      description: group.description,
+      category: group.category,
+      cover_image: group.cover_image,
+      privacy: "public",
+      created_by: organizerId,
+    });
+    const groupId = groupResult[0].insertId;
+    console.log(`  📁 Group: ${group.title} (id=${groupId}, organizer=${organizerId})`);
+
+    for (const sub of group.subEvents) {
+      const startDate = futureDate(sub.dayOffset, sub.startHour, sub.endHour > sub.startHour ? sub.startHour : sub.startHour);
+      const endDate = futureDate(sub.dayOffset, sub.endHour, 0);
+      const eventResult = await db.insert(events).values({
+        title: sub.title,
+        description: sub.desc,
+        medium: "offline",
+        location_name: sub.venue,
+        latitude: sub.lat,
+        longitude: sub.lng,
         start_date: startDate,
         end_date: endDate,
-        duration: `${rand(1, 4)}:${rand(10, 59)}`,
+        duration: `${sub.endHour - sub.startHour}h`,
         language: "English",
-        max_participants: Math.random() > 0.5 ? rand(20, 200) : 0,
-        category: e.cat,
-        privacy: isPrivate ? "private" : "public",
-        image: pick(EVENT_IMAGES),
-        tnc: Math.random() > 0.5 ? "1. Participants must carry valid ID.\n2. No refunds after registration.\n3. Organizers reserve the right to modify the schedule." : null,
+        max_participants: 0,
+        category: sub.cat,
+        privacy: "public",
+        image: sub.image,
+        tnc: "1. Participants must carry valid college ID.\n2. Decent behavior expected at all times.\n3. Organizers reserve the right to modify the schedule.",
         accepting_rsvp: true,
-        accepting_attendance: Math.random() > 0.6,
-        created_by: ownerId,
+        accepting_attendance: sub.acceptingAttendance ? true : false,
+        group_id: groupId,
+        created_by: organizerId,
       });
-      const eventId = result[0].insertId;
-      eventIds.push(eventId);
+      const eventId = eventResult[0].insertId;
+      allEventIds.push(eventId);
 
-      // Auto-add creator as owner member
+      // Creator as owner
       await db.insert(eventMembers).values({
-        event_id: eventId, user_id: ownerId,
+        event_id: eventId, user_id: organizerId,
         role: "owner", invited: true, joined: true, confirm: true,
       }).catch(() => {});
 
-    } catch (err) {
-      console.log(`  ❌ Event: ${e.title} — ${err.message}`);
+      console.log(`    📌 ${sub.title} (event=${eventId}, ${sub.venue})`);
     }
+    console.log("");
   }
-  console.log(`  ✅ Created ${eventIds.length} events`);
 
-  // 3. Seed RSVPs (3-8 RSVPs per event)
+  // ── 5. Create Standalone Events ───────────────────────────────────
+  console.log("📌 Seeding standalone events...\n");
+  for (const ev of STANDALONE_EVENTS) {
+    const organizerId = organizerIds[ev.organizerIndex];
+    const startDate = futureDate(ev.dayOffset, ev.startHour, 0);
+    const endDate = futureDate(ev.dayOffset, ev.endHour, 0);
+    const eventResult = await db.insert(events).values({
+      title: ev.title,
+      description: ev.desc,
+      medium: "offline",
+      location_name: ev.venue,
+      latitude: ev.lat,
+      longitude: ev.lng,
+      start_date: startDate,
+      end_date: endDate,
+      duration: `${ev.endHour - ev.startHour}h`,
+      language: "English",
+      max_participants: ev.maxParticipants || 0,
+      category: ev.cat,
+      privacy: "public",
+      image: ev.image,
+      tnc: "1. Participants must carry valid college ID.\n2. Decent behavior expected at all times.\n3. Organizers reserve the right to modify the schedule.",
+      accepting_rsvp: true,
+      accepting_attendance: ev.acceptingAttendance ? true : false,
+      created_by: organizerId,
+    });
+    const eventId = eventResult[0].insertId;
+    allEventIds.push(eventId);
+
+    // Creator as owner
+    await db.insert(eventMembers).values({
+      event_id: eventId, user_id: organizerId,
+      role: "owner", invited: true, joined: true, confirm: true,
+    }).catch(() => {});
+
+    console.log(`  📌 ${ev.title} (event=${eventId}, organizer=${organizerId})`);
+  }
+
+  // ── 6. Seed RSVPs ─────────────────────────────────────────────────
   console.log("\n📨 Seeding RSVPs...");
   let rsvpCount = 0;
+  const approvedRsvpMap = {}; // eventId -> [userId, ...]
 
-  for (const eventId of eventIds) {
-    const rsvpUsers = shuffle(userIds).slice(0, rand(3, 8));
+  for (const eventId of allEventIds) {
+    // 5-12 random attendees RSVP
+    const numRsvps = rand(5, Math.min(12, attendeeIds.length));
+    const rsvpUsers = shuffle(attendeeIds).slice(0, numRsvps);
+
+    // Get event owner
+    const [ownerRow] = await db.select().from(eventMembers).where(
+      and(eq(eventMembers.event_id, eventId), eq(eventMembers.role, "owner"))
+    ).limit(1).catch(() => []);
+    const ownerId = ownerRow?.user_id || organizerIds[0];
+
+    approvedRsvpMap[eventId] = [];
+
     for (const uid of rsvpUsers) {
-      // Get owner of this event
-      const [ownerMember] = await db.select().from(eventMembers)
-        .where(and(
-          eq(eventMembers.event_id, eventId),
-          eq(eventMembers.role, "owner"),
-        )).limit(1).catch(() => []);
+      if (uid === ownerId) continue;
 
-      const ownerId = ownerMember?.user_id || pick(userIds);
-      if (uid === ownerId) continue; // owner can't RSVP
-
-      const isApproved = Math.random() > 0.3;
-      const isRejected = !isApproved && Math.random() > 0.7;
+      const isApproved = Math.random() > 0.25; // 75% approval rate
+      const isRejected = !isApproved && Math.random() > 0.6;
 
       try {
-        const result = await db.insert(rsvps).values({
+        await db.insert(rsvps).values({
           event_id: eventId,
           user_id: uid,
           owner_user_id: ownerId,
@@ -233,60 +559,90 @@ async function seed() {
           pending: !isApproved && !isRejected,
         });
 
-        // If approved, also create member
         if (isApproved) {
+          approvedRsvpMap[eventId].push(uid);
           await db.insert(eventMembers).values({
             event_id: eventId, user_id: uid,
             role: "attendee", invited: true, joined: true, confirm: true,
           }).catch(() => {});
         }
-
         rsvpCount++;
       } catch (err) {
         // skip duplicates
       }
     }
   }
-  console.log(`  ✅ Created ${rsvpCount} RSVPs`);
+  console.log(`  ✅ Created ${rsvpCount} RSVPs\n`);
 
-  // 4. Seed Notifications (2-5 per user)
-  console.log("\n🔔 Seeding notifications...");
+  // ── 7. Seed Attendance (for events with accepting_attendance) ─────
+  console.log("✅ Seeding attendance...");
+  let attendanceCount = 0;
+
+  for (const eventId of allEventIds) {
+    const approved = approvedRsvpMap[eventId] || [];
+    if (approved.length === 0) continue;
+
+    // Check if event accepts attendance
+    const [eventRow] = await db.select().from(events).where(eq(events.id, eventId)).catch(() => []);
+    if (!eventRow?.accepting_attendance) continue;
+
+    // 60-90% of approved attendees checked in
+    for (const uid of approved) {
+      const isCheckedIn = Math.random() > 0.2; // 80% attendance rate
+      if (isCheckedIn) {
+        try {
+          await db.insert(attendance).values({
+            event_id: eventId,
+            user_id: uid,
+            checked_in: true,
+            check_in_method: Math.random() > 0.5 ? "manual" : "self",
+          });
+          attendanceCount++;
+        } catch (err) {
+          // skip
+        }
+      }
+    }
+  }
+  console.log(`  ✅ Created ${attendanceCount} attendance records\n`);
+
+  // ── 8. Seed Notifications ─────────────────────────────────────────
+  console.log("🔔 Seeding notifications...");
   let notifCount = 0;
   const notifTypes = ["RSVP", "RSVP_APPROVED", "RSVP_REJECTED", "INVITE", "INVITE_ACCEPTED"];
   const notifMessages = {
     RSVP: (name, title) => `${name} has RSVP'd to your event ${title}`,
     RSVP_APPROVED: (name, title) => `Your RSVP to ${title} has been approved`,
     RSVP_REJECTED: (name, title) => `Your RSVP to ${title} has been rejected`,
-    INVITE: (name, title) => `${name} invited you to join ${title}`,
-    INVITE_ACCEPTED: (name, title) => `A member accepted your invitation to ${title}`,
+    INVITE: (name, title) => `${name} invited you to collaborate on ${title}`,
+    INVITE_ACCEPTED: (name, title) => `${name} accepted your invitation to ${title}`,
   };
 
-  for (const uid of userIds) {
+  for (const uid of allUserIds) {
     const numNotifs = rand(2, 5);
     for (let i = 0; i < numNotifs; i++) {
       const type = pick(notifTypes);
-      const fromUser = pick(userIds.filter((id) => id !== uid));
-      const [fromRow] = await db.select().from(users).where(eq(users.id, fromUser)).catch(() => []);
-      const event = eventIds.length > 0 ? pick(eventIds) : null;
+      const fromPool = allUserIds.filter((id) => id !== uid);
+      const fromUserId = pick(fromPool);
+      const [fromRow] = await db.select().from(users).where(eq(users.id, fromUserId)).catch(() => []);
+      const eventId = pick(allEventIds);
 
       let msg = `${fromRow?.name || "Someone"} sent you a notification`;
-      if (event) {
-        const [eventRow] = await db.select().from(events).where(eq(events.id, event)).catch(() => []);
-        if (eventRow) {
-          const fn = notifMessages[type];
-          msg = fn ? fn(fromRow?.name || "Someone", eventRow.title) : msg;
-        }
+      const [eventRow] = await db.select().from(events).where(eq(events.id, eventId)).catch(() => []);
+      if (eventRow) {
+        const fn = notifMessages[type];
+        msg = fn ? fn(fromRow?.name || "Someone", eventRow.title) : msg;
       }
 
       try {
         await db.insert(notifications).values({
           user_id: uid,
-          from_user_id: fromUser,
+          from_user_id: fromUserId,
           from_user_name: fromRow?.name || "Unknown",
           type,
           message: msg,
-          link: event ? `/event/${event}` : null,
-          read: Math.random() > 0.5,
+          link: `/event/${eventId}`,
+          read: Math.random() > 0.4,
         });
         notifCount++;
       } catch (err) {
@@ -294,17 +650,42 @@ async function seed() {
       }
     }
   }
-  console.log(`  ✅ Created ${notifCount} notifications`);
+  console.log(`  ✅ Created ${notifCount} notifications\n`);
 
-  console.log("\n🎉 Seeding complete!");
-  console.log(`   Users:         ${userIds.length}`);
-  console.log(`   Events:        ${eventIds.length}`);
-  console.log(`   RSVPs:         ${rsvpCount}`);
-  console.log(`   Notifications: ${notifCount}`);
+  // ── 9. Seed Certificate Templates ─────────────────────────────────
+  console.log("📜 Seeding certificate templates...");
+  await db.insert(certificateTemplates).values([
+    { name: "Classic", theme: "classic", created_by: organizerIds[0] },
+    { name: "Modern", theme: "modern", created_by: organizerIds[0] },
+    { name: "Sports", theme: "sports", created_by: organizerIds[0] },
+  ]).catch(() => {});
+  console.log("  ✅ Created 3 built-in templates (Classic, Modern, Sports)\n");
+
+  // ── Summary ───────────────────────────────────────────────────────
+  console.log("🎉 Seeding complete!\n");
+  console.log("  ┌──────────────────────────────────────────────┐");
+  console.log("  │  Login Credentials (all use: password123)     │");
+  console.log("  ├──────────────────────────────────────────────┤");
+  console.log(`  │  👑 Admin:    ${ADMIN.email.padEnd(30)}   │`);
+  for (const o of ORGANIZERS) {
+    console.log(`  │  🎓 Organizer: ${o.email.padEnd(29)}   │`);
+  }
+  console.log(`  │  👥 Attendees: ${ATTENDEES[0].email.padEnd(15)} ... ${ATTENDEES[ATTENDEES.length - 1].email}  │`);
+  console.log("  └──────────────────────────────────────────────┘\n");
+
+  console.log(`  Users:           ${allUserIds.length} (1 admin, ${organizerIds.length} organizers, ${attendeeIds.length} attendees)`);
+  console.log(`  Event Groups:    ${SEED_GROUPS.length}`);
+  console.log(`  Sub-events:      ${SEED_GROUPS.reduce((sum, g) => sum + g.subEvents.length, 0)}`);
+  console.log(`  Standalone:      ${STANDALONE_EVENTS.length}`);
+  console.log(`  Total Events:    ${allEventIds.length}`);
+  console.log(`  RSVPs:           ${rsvpCount}`);
+  console.log(`  Attendance:      ${attendanceCount}`);
+  console.log(`  Notifications:   ${notifCount}`);
+
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Seed failed:", err);
+  console.error("❌ Seed failed:", err);
   process.exit(1);
 });

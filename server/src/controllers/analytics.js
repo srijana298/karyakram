@@ -1,17 +1,16 @@
 import { eq, sql, and } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { events, rsvps, eventMembers, notifications, users } from "../db/schema.js";
+import { events, rsvps, eventMembers, notifications } from "../db/schema.js";
 import { Ok, InternalError } from "../utils/ApiResponse.js";
 
 /**
- * Helper: db.execute() for mysql2 returns [rows, fields].
- * This extracts just the rows array.
+ * User-scoped analytics.
+ * Always filters by the requesting user's events.
+ * Admin analytics lives in controllers/admin.js → GET /api/admin/stats
  */
 function rows(result) {
   if (!result) return [];
-  // drizzle mysql2 returns [rows, fields]
   if (Array.isArray(result) && Array.isArray(result[0])) return result[0];
-  // fallback if already an array of rows
   if (Array.isArray(result)) return result;
   return [];
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
+import { adminService } from "../../services/admin";
 
 function GetEventLogic() {
   const [searchParams] = useSearchParams();
@@ -20,20 +21,37 @@ function GetEventLogic() {
 
   const getEvents = useCallback(async () => {
     setLoading(true);
-    const params = { mine: "true" };
+
+    // Determine if user is admin from localStorage
+    let role = "attendee";
+    try {
+      const user = JSON.parse(localStorage.getItem("Mahotsav-user"));
+      role = user?.role || "attendee";
+    } catch {}
+    const isAdmin = role === "admin";
+
+    const params = {};
     if (filter && filter !== "total") {
       if (filter === "private" || filter === "public") params.privacy = filter;
-      if (filter === "offline" || filter === "online") params.filter = filter;
+      if (filter === "offline" || filter === "online") params.medium = filter;
     }
 
-    const res = await eventService.list(params);
+    let res;
+    if (isAdmin) {
+      res = await adminService.listEvents(params);
+    } else {
+      params.mine = "true";
+      res = await eventService.list(params);
+    }
+
     if (res.ok) {
-      setEvents(res.data);
-      setEventCount(res.data.length);
-      setPrivateEvent(res.data.filter((e) => e.privacy === "private"));
-      setPublicEvent(res.data.filter((e) => e.privacy === "public"));
-      setOfflineEvent(res.data.filter((e) => e.medium === "offline"));
-      setOnlineEvent(res.data.filter((e) => e.medium === "online"));
+      const data = res.data || [];
+      setEvents(data);
+      setEventCount(data.length);
+      setPrivateEvent(data.filter((e) => e.privacy === "private"));
+      setPublicEvent(data.filter((e) => e.privacy === "public"));
+      setOfflineEvent(data.filter((e) => e.medium === "offline"));
+      setOnlineEvent(data.filter((e) => e.medium === "online"));
     } else {
       setError(res.error);
     }
