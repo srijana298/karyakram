@@ -29,6 +29,7 @@ import EventAttendance from './pages/dashboard/EventAttendance';
 import EventCertificates from './pages/dashboard/EventCertificates';
 import Users from './pages/dashboard/Users';
 import TemplateEditor from './pages/editor/TemplateEditor';
+import MyRsvps from './pages/landing/MyRsvps';
 
 function App() {
   return (
@@ -37,17 +38,11 @@ function App() {
       <Router>
         <Routes>
           <Route path="/ticket" element={<Ticket />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <LandingLayout />
-              </ProtectedRoute>
-            }
-          >
+          <Route path="/" element={<LandingLayout />}>
             <Route path="/" element={<Landing />} />
             <Route path="explore" element={<Explore />} />
             <Route path="event/:id" element={<EventPage />} />
+            <Route path="my-rsvps" element={<MyRsvps />} />
             <Route path="auth" element={<AuthLayout />}>
               <Route path="login" element={<Login />} />
               <Route path="signup" element={<Signup />} />

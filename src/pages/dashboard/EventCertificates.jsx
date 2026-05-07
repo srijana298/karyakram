@@ -89,74 +89,6 @@ function CertPreviewModal({ cert, userMap, onClose }) {
   );
 }
 
-/* ── Template Card ───────────────────────────────────────────── */
-function TemplateCard({ template, selected, onSelect }) {
-  const hasEditorData = template.background_url || template.canvas_json;
-  return (
-    <div
-      onClick={() => onSelect(String(template.id))}
-      className={`relative text-left rounded-2xl border-2 p-4 transition-all cursor-pointer ${
-        selected
-          ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
-          : "border-stone-100 bg-white hover:border-stone-200"
-      }`}
-    >
-      {selected && (
-        <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-          <IoCheckmarkCircleOutline className="text-xs text-white" />
-        </div>
-      )}
-      {/* Template preview */}
-      <div
-        className={`w-full h-24 rounded-xl mb-3 overflow-hidden flex items-center justify-center ${
-          hasEditorData
-            ? ""
-            : template.name?.toLowerCase().includes("classic")
-            ? "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200"
-            : template.name?.toLowerCase().includes("sport")
-            ? "bg-gradient-to-br from-stone-800 to-stone-900 border border-stone-700"
-            : "bg-gradient-to-br from-primary/10 to-emerald-50 border border-primary/20"
-        }`}
-      >
-        {hasEditorData && template.background_url ? (
-          <img
-            src={template.background_url}
-            alt={template.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <IoDocumentTextOutline
-            className={`text-3xl ${
-              template.name?.toLowerCase().includes("sport")
-                ? "text-stone-400"
-                : "text-primary/50"
-            }`}
-          />
-        )}
-      </div>
-      <p className="text-sm font-semibold text-stone-800">{template.name}</p>
-      <p className="text-[11px] text-stone-400 mt-0.5">
-        {hasEditorData
-          ? "Custom template"
-          : template.name?.toLowerCase().includes("classic")
-          ? "Formal serif, navy & gold"
-          : template.name?.toLowerCase().includes("sport")
-          ? "Bold dynamic, dark theme"
-          : "Clean sans-serif, emerald"}
-      </p>
-      {hasEditorData && (
-        <Link
-          to={`/template-editor/${template.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-        >
-          Edit in Designer →
-        </Link>
-      )}
-    </div>
-  );
-}
-
 /* ── Certificate Row ─────────────────────────────────────────── */
 function CertificateRow({ cert, userMap, onPreview }) {
   const user = userMap[String(cert.user_id)];
@@ -473,12 +405,12 @@ export default function EventCertificates() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* ── Left column: Template selector + Generate ── */}
+        {/* ── Left column: Generate + Verify ── */}
         <div className="space-y-5">
-          {/* Template selector */}
+          {/* Generate certificates */}
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-4">
-              Choose Template
+              Generate Certificates
             </h3>
 
             <Link
@@ -489,25 +421,38 @@ export default function EventCertificates() {
               Design New Template
             </Link>
 
-            {templates.length > 0 ? (
-              <div className="space-y-3">
+            {templates.length > 0 && (
+              <div className="space-y-3 mb-4">
                 {templates.map((t) => (
-                  <TemplateCard
-                    key={t.id}
-                    template={t}
-                    selected={selectedTemplate === String(t.id)}
-                    onSelect={setSelectedTemplate}
-                  />
+                  <div key={t.id} className="relative text-left rounded-2xl border-2 p-4 transition-all cursor-pointer">
+                    <div className="w-full h-24 rounded-xl mb-3 overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/10 to-emerald-50 border border-primary/20">
+                      {t.background_url ? (
+                        <img src={t.background_url} alt={t.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <IoDocumentTextOutline className="text-3xl text-primary/50" />
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold text-stone-800">{t.name}</p>
+                    <Link
+                      to={`/template-editor/${t.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      Edit in Designer →
+                    </Link>
+                  </div>
                 ))}
               </div>
-            ) : (
+            )}
+
+            {templates.length === 0 && (
               <div className="flex flex-col items-center py-8 text-center">
                 <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-3">
                   <IoImageOutline className="text-xl text-stone-300" />
                 </div>
                 <p className="text-sm text-stone-500">No templates available</p>
                 <p className="text-xs text-stone-400 mt-1">
-                  Contact your admin to add templates
+                  Design a template first to generate certificates
                 </p>
               </div>
             )}

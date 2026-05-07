@@ -1,5 +1,16 @@
 import { verifyToken } from "../utils/auth.js";
 
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    try {
+      const token = header.split(" ")[1];
+      req.user = verifyToken(token);
+    } catch {}
+  }
+  next();
+}
+
 export function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {

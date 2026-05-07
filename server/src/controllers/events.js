@@ -94,9 +94,16 @@ export const listEvents = async (req, res) => {
 
   const conditions = [];
 
-  if (mine === 'true') {
+  if (mine === 'true' && req.user) {
     conditions.push(eq(events.created_by, req.user.id));
-  } else {
+  } else if (mine === 'true' && !req.user) {
+    return Ok([]);
+  }
+
+  // Privacy filter
+  if (filter === 'public' || filter === 'private') {
+    conditions.push(eq(events.privacy, filter));
+  } else if (mine !== 'true') {
     conditions.push(eq(events.privacy, 'public'));
   }
 

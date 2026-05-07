@@ -33,21 +33,25 @@ function EventPage() {
     title,
     description,
     medium,
-    price,
     category,
-    startDate,
-    endDate,
-    location,
+    start_date,
+    end_date,
+    location_name,
+    latitude,
+    longitude,
     image,
-    meet,
+    meet_link,
+    meet_id,
+    meet_password,
     tnc,
     language,
     duration,
+    accepting_rsvp,
   } = events;
 
-  const start = startDate ? new Date(startDate?.split("+")[0]) : null;
-  const end = endDate ? new Date(endDate?.split("+")[0]) : null;
-  const isFree = !price || price <= 0;
+  const start = start_date ? new Date(typeof start_date === 'string' ? start_date.split("+")[0] : start_date) : null;
+  const end = end_date ? new Date(typeof end_date === 'string' ? end_date.split("+")[0] : end_date) : null;
+  const isFree = true;
 
   const DetailsCard = () => (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
@@ -92,7 +96,7 @@ function EventPage() {
           </div>
           <div className="flex-1">
             <span className="text-sm text-stone-600">
-              {medium === "offline" ? (Array.isArray(location) ? location[0] : location) : "Online Event"}
+              {medium === "offline" ? (location_name || "Location TBA") : "Online Event"}
             </span>
           </div>
         </div>
@@ -118,21 +122,21 @@ function EventPage() {
         )}
 
         {/* Map */}
-        {medium === "offline" && Array.isArray(location) && location[1] && (
+        {medium === "offline" && latitude && longitude && (
           <div className="rounded-xl overflow-hidden border border-stone-200 mt-2">
             <iframe
               title="map"
               className="w-full h-40"
-              src={`https://maps.google.com/maps?q=${location[1]},${location[2]}&hl=en&output=embed`}
+              src={`https://maps.google.com/maps?q=${latitude},${longitude}&hl=en&output=embed`}
               loading="lazy"
             />
           </div>
         )}
 
         {/* Online link */}
-        {medium === "online" && meet?.[0] && (
+        {medium === "online" && meet_link && (
           <a
-            href={meet[0]}
+            href={meet_link}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline mt-1"
@@ -140,24 +144,27 @@ function EventPage() {
             <IoLinkOutline /> Join Meeting Link
           </a>
         )}
+        {meet_id && (
+          <div className="flex items-center gap-2.5 mt-2">
+            <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+              <IoLinkOutline className="text-xs text-stone-500" />
+            </div>
+            <div>
+              <p className="text-xs text-stone-400">Meeting ID</p>
+              <p className="text-sm text-stone-600">{meet_id}{meet_password ? ` (Pass: ${meet_password})` : ''}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Price & CTA */}
       <div className="p-5 pt-4 border-t border-stone-100">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-xs text-stone-400">Price</p>
-            <p className={`text-lg font-extrabold ${isFree ? "text-primary" : "text-secondary"}`}>
-              {isFree ? "Free" : `Rs. ${price}`}
-            </p>
-          </div>
-        </div>
         <button
-          disabled={adding}
+          disabled={adding || accepting_rsvp === false}
           onClick={handleRSVP}
           className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
         >
-          {adding ? "Processing..." : isFree ? "RSVP — It's Free" : `Buy Ticket — Rs. ${price}`}
+          {adding ? "Processing..." : accepting_rsvp === false ? "RSVP Closed" : "RSVP — It's Free"}
         </button>
       </div>
     </div>
@@ -213,7 +220,7 @@ function EventPage() {
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   {medium === "offline" ? (
-                    <><IoLocationOutline className="text-sm" />{Array.isArray(location) ? location[0] : location}</>
+                    <><IoLocationOutline className="text-sm" />{location_name || "Location TBA"}</>
                   ) : (
                     <><MdComputer className="text-sm" />Online</>
                   )}

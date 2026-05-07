@@ -13,9 +13,15 @@ function Navbar() {
   let token = localStorage.getItem("token");
 
   useEffect(() => {
-    setNavData((prev) => [
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem("Mahotsav-user")); } catch {}
+    const role = user?.role;
+    const isOrganizerOrAdmin = role === "admin" || role === "organizer";
+
+    setNavData([
       { title: "Explore", link: "/explore", show: true },
-      { title: "Dashboard", link: "/dashboard", show: token ? true : false },
+      { title: "Dashboard", link: "/dashboard", show: token ? isOrganizerOrAdmin : false },
+      { title: "My RSVPs", link: "/my-rsvps", show: token ? !isOrganizerOrAdmin : false },
       { title: "Login", link: "/auth/login", show: token ? false : true },
       { title: "Signup", link: "/auth/signup", show: token ? false : true },
     ]);

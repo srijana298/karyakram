@@ -5,7 +5,7 @@ import { eventService } from "../../services/events";
 import { adminService } from "../../services/admin";
 
 function GetEventLogic() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { id } = useParams();
   const { pathname } = useLocation();
@@ -62,17 +62,10 @@ function GetEventLogic() {
     setLoading(true);
     const res = await eventService.getById(id);
     if (res.ok) {
-      if (!pathname.includes("dashboard") && res.data.privacy === "private") {
-        setError("This event is private");
-        toast.error("This event is private");
-        navigate(-1);
-      } else {
-        setEvents(res.data);
-      }
+      setEvents(res.data);
     } else {
       setError(res.error);
       toast.error(res.error);
-      navigate(-1);
     }
     setLoading(false);
   }, [id, pathname, navigate]);
@@ -93,7 +86,7 @@ function GetEventLogic() {
     onlineEvent,
     filter,
     id,
-    setSearchParams: searchParams.setSearchParams,
+    setSearchParams,
     searchParams,
     getEvents,
   };

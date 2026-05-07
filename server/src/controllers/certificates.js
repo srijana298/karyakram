@@ -18,7 +18,6 @@ function getBackgroundUrl(req, file) {
 /* ── Template CRUD ────────────────────────────────────────────── */
 
 export const listTemplates = async (req, res) => {
-  await seedTemplatesIfEmpty();
   const rows = await db.select().from(certificateTemplates).catch(() => []);
   return Ok(rows);
 };
@@ -80,15 +79,6 @@ export const deleteTemplate = async (req, res) => {
   return Ok(null, "Template deleted");
 };
 
-export const seedTemplatesIfEmpty = async () => {
-  const rows = await db.select().from(certificateTemplates).catch(() => []);
-  if (rows.length > 0) return;
-  await db.insert(certificateTemplates).values([
-    { name: "Classic", theme: "classic" },
-    { name: "Modern", theme: "modern" },
-    { name: "Sports", theme: "sports" },
-  ]).catch(() => {});
-};
 
 /* ── Event Certificates ───────────────────────────────────────── */
 

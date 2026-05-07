@@ -49,7 +49,7 @@ export const updateEventSchema = z.object({
 });
 
 export const eventQuerySchema = z.object({
-  filter: z.enum(["online", "offline"]).optional(),
+  filter: z.enum(["online", "offline", "total", "private", "public"]).optional(),
   category: z.string().optional(),
   mine: z.enum(["true", "false"]).optional(),
 });

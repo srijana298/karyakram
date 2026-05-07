@@ -25,6 +25,7 @@ import { resolveImage } from "../../lib/resolveImage";
 import CreateMembershipLogic from "../../Logic/Membership/CreateMembership.logic";
 import GetUsersLogic from "../../Logic/UserLogic.js/GetUsers.logic";
 import UserList from "../../components/UserList";
+import { rsvpService } from "../../services/rsvps";
 
 function Event() {
   const { loading, error, events, id } = GetEventLogic();
@@ -83,6 +84,48 @@ function Event() {
   };
 
   const { createMembership, teamMembers, memberCount } = CreateMembershipLogic(events?.id);
+
+  // ── RSVP management ──────────────────────────────────
+  const [rsvps, setRsvps] = useState([]);
+  const [rsvpsLoading, setRsvpsLoading] = useState(false);
+  const [rsvpTab, setRsvpTab] = useState("pending");
+
+  const fetchRsvps = async () => {
+    if (!events?.id) return;
+    setRsvpsLoading(true);
+    const res = await rsvpService.listForEvent(events.id);
+    if (res.ok) setRsvps(res.data || []);
+    setRsvpsLoading(false);
+  };
+
+  useEffect(() => {
+    if (events?.id) fetchRsvps();
+  }, [events?.id]);
+
+  const handleApproveRsvp = async (rsvpId) => {
+    const res = await rsvpService.approve(rsvpId);
+    if (res.ok) {
+      toast.success("RSVP approved");
+      fetchRsvps();
+    } else {
+      toast.error(res.error || "Failed to approve");
+    }
+  };
+
+  const handleRejectRsvp = async (rsvpId) => {
+    const res = await rsvpService.reject(rsvpId);
+    if (res.ok) {
+      toast.success("RSVP rejected");
+      fetchRsvps();
+    } else {
+      toast.error(res.error || "Failed to reject");
+    }
+  };
+
+  const pendingRsvps = rsvps.filter((r) => r.pending && !r.approved && !r.rejected);
+  const approvedRsvps = rsvps.filter((r) => r.approved);
+  const rejectedRsvps = rsvps.filter((r) => r.rejected);
+  const displayedRsvps = rsvpTab === "pending" ? pendingRsvps : rsvpTab === "approved" ? approvedRsvps : rejectedRsvps;
 
   const checkMembership = (userId) => {
     const member = teamMembers?.find((m) => m.user_id === userId);
@@ -216,6 +259,125 @@ function Event() {
                   {memberCount - 1 > 0 ? `${memberCount - 1} member(s)` : "No members yet"}
                 </p>
               </button>
+            </div>
+
+            {/* ── RSVP Management ──────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-stone-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-stone-800">RSVPs</h3>
+                    <p className="text-[11px] text-stone-400 mt-0.5">
+                      {pendingRsvps.length} pending · {approvedRsvps.length} approved · {rejectedRsvps.length} rejected
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchRsvps}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex items-center gap-1 mt-4 bg-stone-100 rounded-lg p-1">
+                  {[
+                    { key: "pending", label: "Pending", count: pendingRsvps.length },
+                    { key: "approved", label: "Approved", count: approvedRsvps.length },
+                    { key: "rejected", label: "Rejected", count: rejectedRsvps.length },
+                  ].map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setRsvpTab(t.key)}
+                      className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
+                        rsvpTab === t.key
+                          ? "bg-white text-stone-800 shadow-sm"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      {t.label}
+                      {t.count > 0 && (
+                        <span className={`ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                          rsvpTab === t.key
+                            ? t.key === "pending" ? "bg-amber-100 text-amber-700" : t.key === "approved" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                            : "bg-stone-200 text-stone-600"
+                        }`}>
+                          {t.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* RSVP list */}
+              <div className="max-h-96 overflow-y-auto">
+                {rsvpsLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-xs text-stone-400 mt-2">Loading RSVPs...</p>
+                  </div>
+                ) : displayedRsvps.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <IoPeopleOutline className="text-2xl text-stone-300 mx-auto" />
+                    <p className="text-xs text-stone-400 mt-2">
+                      No {rsvpTab} RSVPs
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-stone-100">
+                    {displayedRsvps.map((rsvp) => (
+                      <div
+                        key={rsvp.id}
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-stone-50 transition-colors"
+                      >
+                        {/* Avatar */}
+                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                          {rsvp.user_name ? rsvp.user_name.slice(0, 2).toUpperCase() : "?"}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-stone-800 truncate">
+                            {rsvp.user_name || `User #${rsvp.user_id}`}
+                          </p>
+                          <p className="text-[11px] text-stone-400">
+                            {rsvp.created_at
+                              ? new Date(rsvp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              : "—"}
+                          </p>
+                        </div>
+
+                        {/* Status / Actions */}
+                        {rsvpTab === "pending" ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => handleApproveRsvp(rsvp.id)}
+                              className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectRsvp(rsvp.id)}
+                              className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0 ${
+                            rsvpTab === "approved"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-red-50 text-red-700 border-red-200"
+                          }`}>
+                            {rsvpTab === "approved" ? "Approved" : "Rejected"}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

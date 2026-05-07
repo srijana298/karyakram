@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { rsvps, events, eventMembers, notifications } from "../db/schema.js";
+import { rsvps, events, eventMembers, notifications, users } from "../db/schema.js";
 import { Ok, Created, BadRequest, Forbidden, NotFound, Conflict, InternalError } from "../utils/ApiResponse.js";
 
 export const createRsvp = async (req, res) => {
@@ -51,7 +51,22 @@ export const listRsvpsForEvent = async (req, res) => {
   if (!event) return NotFound("Event not found");
   if (event.created_by !== req.user.id) return Forbidden("Only the event owner can view RSVPs");
 
-  const rows = await db.select().from(rsvps).where(eq(rsvps.event_id, eventId)).catch(() => null);
+  const rows = await db
+    .select({
+      id: rsvps.id,
+      event_id: rsvps.event_id,
+      user_id: rsvps.user_id,
+      user_name: users.name,
+      user_email: users.email,
+      approved: rsvps.approved,
+      rejected: rsvps.rejected,
+      pending: rsvps.pending,
+      created_at: rsvps.created_at,
+    })
+    .from(rsvps)
+    .leftJoin(users, eq(rsvps.user_id, users.id))
+    .where(eq(rsvps.event_id, eventId))
+    .catch(() => null);
   if (!rows) return InternalError("Failed to fetch RSVPs");
 
   return Ok(rows);
@@ -67,9 +82,30 @@ export const listMyRsvps = async (req, res) => {
 
   if (pending === "true") conditions.push(eq(rsvps.pending, true));
 
-  const rows = await db.select().from(rsvps).where(
-    conditions.length > 0 ? and(...conditions) : undefined,
-  ).catch(() => null);
+  const rows = await db
+    .select({
+      rsvp_id: rsvps.id,
+      approved: rsvps.approved,
+      rejected: rsvps.rejected,
+      pending: rsvps.pending,
+      rsvp_created_at: rsvps.created_at,
+      event_id: events.id,
+      event_title: events.title,
+      event_description: events.description,
+      event_image: events.image,
+      event_category: events.category,
+      event_medium: events.medium,
+      event_start_date: events.start_date,
+      event_end_date: events.end_date,
+      event_location_name: events.location_name,
+      event_language: events.language,
+    })
+    .from(rsvps)
+    .leftJoin(events, eq(rsvps.event_id, events.id))
+    .where(
+      conditions.length > 0 ? and(...conditions) : undefined,
+    )
+    .catch(() => null);
 
   if (!rows) return InternalError("Failed to fetch RSVPs");
 

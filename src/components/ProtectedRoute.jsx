@@ -2,14 +2,28 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 function ProtectedRoute({ children }) {
-  const { pathname, state } = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if ((!token) && pathname.includes("dashboard")) {
-      navigate("/");
-    } else if (token && (pathname.includes("login") || pathname.includes("signup"))) {
+
+    if (!token) {
+      navigate("/auth/login");
+      return;
+    }
+
+    if (pathname.includes("dashboard")) {
+      let user = null;
+      try { user = JSON.parse(localStorage.getItem("Mahotsav-user")); } catch {}
+      const role = user?.role;
+      if (role !== "admin" && role !== "organizer") {
+        navigate("/explore");
+        return;
+      }
+    }
+
+    if (pathname.includes("login") || pathname.includes("signup")) {
       navigate("/dashboard");
     }
   }, [pathname, navigate]);
