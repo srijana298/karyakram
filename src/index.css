@@ -128,6 +128,11 @@ input[type='number'] {
     -moz-appearance: textfield;
 }
 
+.flatpickr-wrapper {
+    display: block;
+    width: 100%;
+}
+
 @media screen and (max-width: 640px) {
     .swiper {
         padding-inline: 1rem !important;

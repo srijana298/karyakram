@@ -23,7 +23,7 @@ function formatTime(date) {
 
 function EventPage() {
   const { loading, error, events } = GetEventLogic();
-  const { handleRSVP, adding } = RsvpLogic(events);
+  const { token, handleRSVP, adding } = RsvpLogic(events);
   const { pathname } = useLocation();
 
   if (loading || !events) return <Loading />;
@@ -160,11 +160,11 @@ function EventPage() {
       {/* Price & CTA */}
       <div className="p-5 pt-4 border-t border-stone-100">
         <button
-          disabled={adding || accepting_rsvp === false}
+          disabled={adding || (token && accepting_rsvp === false)}
           onClick={handleRSVP}
           className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
         >
-          {adding ? "Processing..." : accepting_rsvp === false ? "RSVP Closed" : "RSVP — It's Free"}
+          {adding ? "Processing..." : !token ? "Login to RSVP" : accepting_rsvp === false ? "RSVP Closed" : "RSVP — It's Free"}
         </button>
       </div>
     </div>

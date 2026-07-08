@@ -10,7 +10,7 @@ const SEED_USERS = [
   {
     name: 'Admin User',
     email: 'admin@mahotsav.com',
-    password: 'admin123',
+    password: 'password123',
     role: 'admin',
   },
   {

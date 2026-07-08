@@ -82,7 +82,7 @@ export default function DateTimePicker({
     : "";
 
   return (
-    <div>
+    <div className="w-full">
       {label && (
         <label className="text-xs font-medium text-stone-500 mb-1.5 block">
           {label}
@@ -90,7 +90,7 @@ export default function DateTimePicker({
         </label>
       )}
 
-      <div className="relative">
+      <div className="relative w-full">
         <input
           ref={inputRef}
           className="w-full h-10 px-3 text-sm bg-white border border-gray-200 rounded-md outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"

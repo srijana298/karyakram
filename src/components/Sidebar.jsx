@@ -2,14 +2,11 @@ import React, { useCallback, useEffect } from 'react';
 import {
   IoCalendarClearOutline,
   IoHomeOutline,
-  IoInformationCircleOutline,
   IoLayersOutline,
   IoLogOutOutline,
-  IoMoonOutline,
   IoNotificationsOutline,
   IoPersonOutline,
   IoSearchOutline,
-  IoTicketOutline,
   IoPeopleOutline,
 } from 'react-icons/io5';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
@@ -99,13 +96,6 @@ function Sidebar() {
           </NavLink>
         )}
 
-        {/* Organizer-only */}
-        {isOrganizer && (
-          <NavLink className={linkClass} to="invities">
-            <IoTicketOutline className="text-[18px]" /> Invites
-          </NavLink>
-        )}
-
         {/* Admin + Organizer */}
         {(isAdmin || isOrganizer) && (
           <NavLink className={linkClass} to="groups">
@@ -125,15 +115,6 @@ function Sidebar() {
           Notifications
         </NavLink>
 
-        <div className="mt-5 pt-5 border-t border-dashboard-border flex flex-col gap-1">
-          <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Support</p>
-          <button className="inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text text-left">
-            <IoInformationCircleOutline className="text-[18px]" /> Learn More
-          </button>
-          <button className="inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-dashboard-muted hover:bg-dashboard-active hover:text-dashboard-text text-left">
-            <IoMoonOutline className="text-[18px]" /> Dark Mode
-          </button>
-        </div>
       </nav>
 
       <div className="p-2 border-t border-dashboard-border">

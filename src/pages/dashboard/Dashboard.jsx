@@ -5,7 +5,6 @@ import {
   IoCalendarOutline,
   IoLayersOutline,
   IoNotificationsOutline,
-  IoPaperPlaneOutline,
   IoPeopleOutline,
   IoRocketOutline,
   IoPersonOutline,
@@ -64,8 +63,15 @@ function Dashboard() {
         } else {
           res = await eventService.list({});
         }
-        if (res.ok) setEvents(res.data || []);
-        else setError(res.error);
+        if (res.ok) {
+          setEvents(res.data || []);
+        } else if (res.status === 403 && res.error === "Admin access required") {
+          const fallback = await eventService.list({ mine: "true" });
+          if (fallback.ok) setEvents(fallback.data || []);
+          else setError(fallback.error);
+        } else {
+          setError(res.error);
+        }
       } catch (err) {
         setError(err.message);
       }
@@ -81,7 +87,13 @@ function Dashboard() {
         const res = isAdmin
           ? await adminService.stats()
           : await analyticsService.get();
-        if (res.ok && res.data) setAnalytics(res.data);
+
+        if (res.ok && res.data) {
+          setAnalytics(res.data);
+        } else if (res.status === 403 && res.error === "Admin access required") {
+          const fallback = await analyticsService.get();
+          if (fallback.ok && fallback.data) setAnalytics(fallback.data);
+        }
       } catch (err) {
         console.error("Analytics error:", err);
       }
@@ -118,11 +130,10 @@ function Dashboard() {
       delta: 16,
     },
     {
-      label: isAdmin ? "Total Attendees" : "Invites Sent",
-      value: isAdmin
+      label: isAdmin ? "Total Attendees" : "Approved RSVPs",      value: isAdmin
         ? Number(overview.totalMembers ?? 0).toLocaleString()
         : Number(overview.totalRsvps ?? 0).toLocaleString(),
-      icon: isAdmin ? <IoRocketOutline className="text-lg" /> : <IoPaperPlaneOutline className="text-lg" />,
+      icon: isAdmin ? <IoRocketOutline className="text-lg" /> : <IoPeopleOutline className="text-lg" />,
       tone: "amber",
       delta: 20,
     },
@@ -233,7 +244,7 @@ function Dashboard() {
 
               <div className="space-y-4">
                 <div className="dashboard-panel p-4">
-                  <h3 className="text-xl font-semibold text-dashboard-text">Invitations Overview</h3>
+                  <h3 className="text-xl font-semibold text-dashboard-text">RSVP Overview</h3>
                   <div className="flex items-center gap-4 mt-4">
                     <div className="relative w-28 h-28">
                       <div className="w-28 h-28 rounded-full" style={donutStyle} />
@@ -251,9 +262,6 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  <Link to="invities" className="mt-4 pt-3 border-t border-dashboard-border text-sm text-primary inline-flex items-center gap-1 font-medium">
-                    View all invites <IoArrowForward />
-                  </Link>
                 </div>
 
                 <div className="dashboard-panel p-4">
@@ -265,14 +273,6 @@ function Dashboard() {
                         title="Create New Event"
                         subtitle="Start planning your next event"
                         to="create"
-                      />
-                    )}
-                    {(isOrganizer || isAdmin) && (
-                      <QuickAction
-                        icon={<IoPaperPlaneOutline className="text-amber-600" />}
-                        title="Send Invites"
-                        subtitle="Invite people to your events"
-                        to="invities"
                       />
                     )}
                     {(isOrganizer || isAdmin) && (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { groupService } from "../../services/groups";
+import { eventService } from "../../services/events";
 import { toast } from "react-hot-toast";
 import {
   IoAdd,
@@ -66,6 +67,9 @@ export default function CreateGroup() {
   const [creating, setCreating] = useState(false);
   const [events, setEvents] = useState([]);
   const [fetching, setFetching] = useState(!!editId);
+  const [groupMode, setGroupMode] = useState("scratch");
+  const [existingEvents, setExistingEvents] = useState([]);
+  const [selectedEventIds, setSelectedEventIds] = useState([]);
 
   // Load existing group for editing
   useEffect(() => {
@@ -80,6 +84,8 @@ export default function CreateGroup() {
         setPrivacy(g.privacy || "public");
         if (g.subEvents?.length) {
           setEvents(g.subEvents.map((s) => ({ ...s, tempId: s.id })));
+          setSelectedEventIds(g.subEvents.map((s) => s.id));
+          setGroupMode("existing");
         }
       } else {
         toast.error("Group not found");
@@ -87,6 +93,13 @@ export default function CreateGroup() {
       setFetching(false);
     })();
   }, [editId]);
+
+  useEffect(() => {
+    (async () => {
+      const res = await eventService.list({ mine: "true" });
+      if (res.ok) setExistingEvents(res.data || []);
+    })();
+  }, []);
 
   const pageTitle = editId ? "Edit Group" : "Create Group";
 
@@ -122,6 +135,14 @@ export default function CreateGroup() {
     }
 
     if (res.ok) {
+      const groupId = editId || res.data?.id;
+      if (groupMode === "existing" && groupId) {
+        await Promise.all(
+          selectedEventIds.map((eventId) =>
+            eventService.update(eventId, { group_id: Number(groupId) })
+          )
+        );
+      }
       toast.success(editId ? "Group updated!" : "Group created!");
       navigate("/dashboard/groups", { replace: false });
     } else {
@@ -252,155 +273,96 @@ export default function CreateGroup() {
             </div>
           </div>
 
-          {/* ── Sub-events ────────────────────────────── */}
+          {/* ── Events option ────────────────────────────── */}
           <div className="bg-white border border-gray-200 rounded-md p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-dashboard-text">Sub-events</h2>
-                <p className="text-xs text-dashboard-muted mt-0.5">
-                  Add events to this group. You can also add them later from the group detail page.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-lg font-semibold text-dashboard-text">Events in this group</h2>
+              <p className="text-xs text-dashboard-muted mt-0.5">
+                Start with an empty group, or attach events you already created.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={addEvent}
-                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-semibold text-primary border border-emerald-200 bg-emerald-50 rounded-md hover:bg-emerald-100 transition-colors"
+                onClick={() => setGroupMode("scratch")}
+                className={`text-left rounded-md border p-4 transition-colors ${
+                  groupMode === "scratch"
+                    ? "border-emerald-400 bg-emerald-50"
+                    : "border-gray-200 hover:bg-stone-50"
+                }`}
               >
-                <IoAdd className="text-base" />
-                Add Event
+                <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 inline-flex items-center justify-center text-primary mb-3">
+                  <IoAdd />
+                </div>
+                <p className="text-sm font-semibold text-dashboard-text">Create from scratch</p>
+                <p className="text-xs text-dashboard-muted mt-1">
+                  Create the group now and add new events to it later.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGroupMode("existing")}
+                className={`text-left rounded-md border p-4 transition-colors ${
+                  groupMode === "existing"
+                    ? "border-emerald-400 bg-emerald-50"
+                    : "border-gray-200 hover:bg-stone-50"
+                }`}
+              >
+                <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 inline-flex items-center justify-center text-primary mb-3">
+                  <IoCalendarOutline />
+                </div>
+                <p className="text-sm font-semibold text-dashboard-text">Use existing events</p>
+                <p className="text-xs text-dashboard-muted mt-1">
+                  Select existing events and attach them to this group.
+                </p>
               </button>
             </div>
 
-            {events.length === 0 && (
-              <div className="border border-dashed border-gray-300 rounded-md py-10 text-center">
-                <IoCalendarOutline className="text-2xl text-stone-300 mx-auto mb-2" />
-                <p className="text-sm text-dashboard-muted">No sub-events added yet</p>
-                <p className="text-xs text-stone-400 mt-1">Click "Add Event" to start adding sub-events</p>
-              </div>
-            )}
-
-            {events.map((ev, idx) => (
-              <div
-                key={ev.tempId}
-                className="border border-gray-200 rounded-md p-4 space-y-3 relative"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-dashboard-muted uppercase tracking-wide">
-                    Event #{idx + 1}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => removeEvent(ev.tempId)}
-                    className="w-7 h-7 rounded-md inline-flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <IoTrashOutline className="text-sm" />
-                  </button>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">Title</label>
-                    <input
-                      value={ev.title}
-                      onChange={(e) => updateEvent(ev.tempId, "title", e.target.value)}
-                      placeholder="Event title"
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">Category</label>
-                    <input
-                      value={ev.category}
-                      onChange={(e) => updateEvent(ev.tempId, "category", e.target.value)}
-                      placeholder="e.g. Sports"
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">Start</label>
-                    <input
-                      type="datetime-local"
-                      value={ev.start_date}
-                      onChange={(e) => updateEvent(ev.tempId, "start_date", e.target.value)}
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">End</label>
-                    <input
-                      type="datetime-local"
-                      value={ev.end_date}
-                      onChange={(e) => updateEvent(ev.tempId, "end_date", e.target.value)}
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-dashboard-text mb-1.5 block">Medium</label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => updateEvent(ev.tempId, "medium", "offline")}
-                      className={`flex-1 h-9 rounded-md border text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${
-                        ev.medium === "offline"
-                          ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                          : "border-gray-200 text-dashboard-muted"
-                      }`}
-                    >
-                      In Person
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateEvent(ev.tempId, "medium", "online")}
-                      className={`flex-1 h-9 rounded-md border text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${
-                        ev.medium === "online"
-                          ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                          : "border-gray-200 text-dashboard-muted"
-                      }`}
-                    >
-                      <IoLinkOutline /> Online
-                    </button>
-                  </div>
-                </div>
-
-                {ev.medium === "offline" ? (
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">Location</label>
-                    <input
-                      value={ev.location_name}
-                      onChange={(e) => updateEvent(ev.tempId, "location_name", e.target.value)}
-                      placeholder="Venue name or address"
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
+            {groupMode === "existing" && (
+              <div className="border border-gray-200 rounded-md overflow-hidden">
+                {existingEvents.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <IoCalendarOutline className="text-2xl text-stone-300 mx-auto mb-2" />
+                    <p className="text-sm text-dashboard-muted">No existing events found</p>
+                    <p className="text-xs text-stone-400 mt-1">Create events first, then attach them to a group.</p>
                   </div>
                 ) : (
-                  <div>
-                    <label className="text-xs font-semibold text-dashboard-text mb-1 block">Meeting Link</label>
-                    <input
-                      value={ev.meet_link}
-                      onChange={(e) => updateEvent(ev.tempId, "meet_link", e.target.value)}
-                      placeholder="https://meet.google.com/..."
-                      className="w-full px-3 h-10 text-sm border border-gray-200 rounded-md outline-none"
-                    />
+                  <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                    {existingEvents.map((event) => {
+                      const checked = selectedEventIds.includes(event.id);
+                      return (
+                        <label
+                          key={event.id}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-stone-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              setSelectedEventIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, event.id]
+                                  : prev.filter((id) => id !== event.id)
+                              );
+                            }}
+                            className="w-4 h-4 accent-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-dashboard-text truncate">{event.title}</p>
+                            <p className="text-xs text-dashboard-muted">
+                              {event.category || "Uncategorized"}
+                              {event.group_id ? ` · currently in group #${event.group_id}` : " · no group"}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
-
-                <div>
-                  <label className="text-xs font-semibold text-dashboard-text mb-1 block">Description</label>
-                  <textarea
-                    value={ev.description}
-                    onChange={(e) => updateEvent(ev.tempId, "description", e.target.value)}
-                    placeholder="Brief event description (optional)"
-                    rows={2}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md outline-none resize-none"
-                  />
-                </div>
               </div>
-            ))}
+            )}
           </div>
 
           {/* ── Actions ───────────────────────────────── */}

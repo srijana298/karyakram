@@ -10,6 +10,8 @@ import {
   IoLinkOutline,
   IoPeopleOutline,
   IoShieldCheckmarkOutline,
+  IoSparklesOutline,
+  IoStar,
   IoTicketOutline,
 } from "react-icons/io5";
 import { RiGithubFill, RiInstagramLine, RiTwitterLine } from "react-icons/ri";
@@ -54,7 +56,7 @@ function Landing() {
       icon: <IoTicketOutline className="text-2xl" />,
       title: "Manage RSVPs",
       description:
-        "Track attendees, approve requests, and send invitations — all from one dashboard.",
+        "Track attendees and approve RSVP requests — all from one dashboard.",
       color: "bg-amber-50 text-accent",
     },
     {
@@ -83,9 +85,9 @@ function Landing() {
     },
     {
       number: "02",
-      title: "Share & Invite",
+      title: "Share & RSVP",
       description:
-        "Send invitations, share links, and let students RSVP with one click.",
+        "Share event links and let students RSVP with one click.",
       icon: <IoLinkOutline className="text-xl" />,
     },
     {
@@ -108,36 +110,72 @@ function Landing() {
     <div className="flex-1 bg-white font-sans">
       {/* Hero — Full-width background image */}
       <section
-        className="relative min-h-[calc(100vh-72px)] flex items-center"
+        className="relative min-h-[calc(100vh-72px)] flex items-center overflow-hidden"
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(5,150,105,0.85), rgba(28,25,23,0.75)), url(${HeroBg})`,
+          backgroundImage: `linear-gradient(135deg, rgba(5,150,105,0.88), rgba(28,25,23,0.78)), url(${HeroBg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="container text-center text-white py-16 md:py-24">
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight max-w-4xl mx-auto tracking-tight">
+        {/* Ambient glow accents */}
+        <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 bg-primary/40 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -right-16 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
+
+        <div className="container relative z-10 text-center text-white py-16 md:py-24">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-xs font-medium text-white/90">
+            <IoSparklesOutline className="text-accent" />
+            The all-in-one platform for campus events
+          </span>
+          <h1 className="mt-6 text-4xl md:text-6xl font-extrabold leading-[1.05] max-w-4xl mx-auto tracking-tight">
             Campus Events,
             <br />
-            Simplified.
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-amber-200 to-accent">
+              Simplified.
+            </span>
           </h1>
-          <p className="mt-4 text-base md:text-lg text-white/80 max-w-2xl mx-auto">
+          <p className="mt-5 text-base md:text-lg text-white/80 max-w-2xl mx-auto leading-relaxed">
             Create. Manage. Celebrate. — RSVP, ticketing, and event management built for college organizers.
           </p>
           <div className="mt-10 inline-flex flex-wrap justify-center gap-3">
             <Link
               to={token ? "/dashboard" : "/auth/signup"}
-              className="rounded-lg px-8 py-3 text-sm font-semibold bg-accent text-secondary hover:bg-amber-400 shadow-lg shadow-amber-500/20"
+              className="group rounded-lg px-8 py-3 text-sm font-semibold bg-accent text-secondary hover:bg-amber-400 shadow-lg shadow-amber-500/25 inline-flex items-center gap-2 transition-all hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5"
             >
               {token ? "Go to Dashboard" : "Host Your Event"}
+              <IoArrowForward className="text-sm transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/explore"
-              className="rounded-lg px-8 py-3 text-sm font-semibold bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20"
+              className="rounded-lg px-8 py-3 text-sm font-semibold bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all hover:-translate-y-0.5"
             >
               Explore Events
             </Link>
           </div>
+
+          {/* Social proof row */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-white/80">
+            <div className="flex items-center -space-x-2.5">
+              {["bg-emerald-400", "bg-amber-400", "bg-rose-400", "bg-sky-400", "bg-violet-400"].map(
+                (c, i) => (
+                  <span
+                    key={i}
+                    className={`w-8 h-8 rounded-full ${c} ring-2 ring-white/30`}
+                  />
+                )
+              )}
+            </div>
+            <div className="text-sm">
+              <span className="inline-flex items-center gap-1 text-accent">
+                {[...Array(5)].map((_, i) => (
+                  <IoStar key={i} className="text-xs" />
+                ))}
+              </span>
+              <p className="text-white/70 text-xs mt-0.5">
+                Trusted by <span className="font-semibold text-white">200+ organizers</span> across 50+ campuses
+              </p>
+            </div>
+          </div>
+
           <div className="mt-12 flex justify-center">
             <IoChevronDownOutline className="text-2xl text-white/60 animate-bounce" />
           </div>
@@ -147,10 +185,10 @@ function Landing() {
       {/* Stats bar */}
       <section className="py-6 bg-secondary reveal-up" data-reveal>
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:divide-x md:divide-white/10">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center text-white">
-                <div className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 mb-2">
+                <div className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 text-accent mb-2">
                   {stat.icon}
                 </div>
                 <p className="text-2xl md:text-3xl font-extrabold">{stat.value}</p>
@@ -178,9 +216,9 @@ function Landing() {
             {features.map((item) => (
               <div
                 key={item.title}
-                className="group rounded-xl p-6 bg-stone-50/80 border border-stone-100 hover:bg-white hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-200 transition-all duration-300"
+                className="group rounded-xl p-6 bg-stone-50/80 border border-stone-100 hover:bg-white hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-200 transition-all duration-300 hover:-translate-y-1"
               >
-                <div className={`w-11 h-11 rounded-lg ${item.color} flex items-center justify-center mb-4`}>
+                <div className={`w-11 h-11 rounded-lg ${item.color} flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
                   {item.icon}
                 </div>
                 <h3 className="text-base font-bold text-secondary">{item.title}</h3>

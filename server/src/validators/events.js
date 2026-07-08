@@ -14,7 +14,7 @@ export const createEventSchema = z.object({
   end_date: z.string().nullable().optional(),
   duration: z.string().nullable().optional(),
   language: z.string().nullable().optional(),
-  max_participants: z.coerce.number().int().min(0).default(0),
+  max_participants: z.coerce.number({ required_error: "Max participants is required" }).int().min(1, "Max participants must be at least 1"),
   category: z.string().min(1, "Category is required"),
   privacy: z.enum(["public", "private"]).default("public"),
   tnc: z.string().nullable().optional(),

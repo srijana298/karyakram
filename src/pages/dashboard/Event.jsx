@@ -8,11 +8,9 @@ import {
   IoGlobeOutline,
   IoLocationOutline,
   IoPeopleOutline,
-  IoPersonOutline,
   IoRibbonOutline,
   IoTrashOutline,
   IoCreateOutline,
-  IoTicketOutline,
   IoTimeOutline,
   IoLinkOutline,
   IoChevronBackOutline,
@@ -22,14 +20,10 @@ import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
 import Loading from "../../components/Loading";
 import { resolveImage } from "../../lib/resolveImage";
-import CreateMembershipLogic from "../../Logic/Membership/CreateMembership.logic";
-import GetUsersLogic from "../../Logic/UserLogic.js/GetUsers.logic";
-import UserList from "../../components/UserList";
 import { rsvpService } from "../../services/rsvps";
 
 function Event() {
   const { loading, error, events, id } = GetEventLogic();
-  const { users, toggleShowUsers, showUsers, loading: fetchingUsers } = GetUsersLogic();
   const navigate = useNavigate();
 
   const deleteEvent = async () => {
@@ -83,8 +77,6 @@ function Event() {
     ));
   };
 
-  const { createMembership, teamMembers, memberCount } = CreateMembershipLogic(events?.id);
-
   // ── RSVP management ──────────────────────────────────
   const [rsvps, setRsvps] = useState([]);
   const [rsvpsLoading, setRsvpsLoading] = useState(false);
@@ -126,12 +118,6 @@ function Event() {
   const approvedRsvps = rsvps.filter((r) => r.approved);
   const rejectedRsvps = rsvps.filter((r) => r.rejected);
   const displayedRsvps = rsvpTab === "pending" ? pendingRsvps : rsvpTab === "approved" ? approvedRsvps : rejectedRsvps;
-
-  const checkMembership = (userId) => {
-    const member = teamMembers?.find((m) => m.user_id === userId);
-    if (member) return member.joined ? "Joined" : "Pending";
-    return "Invite";
-  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
@@ -247,18 +233,6 @@ function Event() {
                 <p className="text-[11px] text-stone-400 mt-0.5">Issue & download</p>
               </Link>
 
-              <button
-                onClick={toggleShowUsers}
-                className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 hover:border-violet-300 hover:shadow-md transition-all group text-left"
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center mb-3 group-hover:bg-violet-500 group-hover:text-white transition-colors">
-                  <IoPeopleOutline className="text-lg" />
-                </div>
-                <p className="text-sm font-semibold text-stone-800">Invite Users</p>
-                <p className="text-[11px] text-stone-400 mt-0.5">
-                  {memberCount - 1 > 0 ? `${memberCount - 1} member(s)` : "No members yet"}
-                </p>
-              </button>
             </div>
 
             {/* ── RSVP Management ──────────────────────────────── */}
@@ -457,23 +431,6 @@ function Event() {
                 </div>
               </div>
 
-              {/* Members */}
-              <div
-                className="flex items-start gap-3 cursor-pointer hover:bg-stone-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
-                onClick={toggleShowUsers}
-              >
-                <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                  <IoPersonOutline className="text-base" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-stone-800">
-                    {memberCount - 1 > 0
-                      ? `${memberCount - 1} Team Member(s)`
-                      : "No team members"}
-                  </p>
-                  <p className="text-xs text-stone-400">Click to manage</p>
-                </div>
-              </div>
             </div>
 
             {/* Map (offline only) */}
@@ -527,18 +484,6 @@ function Event() {
           </div>
         </div>
 
-        {/* ── User invite panel ──────────────────────────── */}
-        {showUsers && (
-          <UserList
-            toggleShowUsers={toggleShowUsers}
-            users={users}
-            fetchingUsers={fetchingUsers}
-            createMembership={createMembership}
-            id={id}
-            events={events}
-            checkMembership={checkMembership}
-          />
-        )}
       </div>
     )
   );

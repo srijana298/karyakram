@@ -52,17 +52,18 @@ function MyRsvps() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchData = async () => {
+    const rsvpRes = await rsvpService.listMine();
+    if (rsvpRes.ok) {
+      setRsvps(rsvpRes.data || []);
+    } else {
+      setError(rsvpRes.error);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchRsvps = async () => {
-      const res = await rsvpService.listMine();
-      if (res.ok) {
-        setRsvps(res.data || []);
-      } else {
-        setError(res.error);
-      }
-      setLoading(false);
-    };
-    fetchRsvps();
+    fetchData();
   }, []);
 
   if (loading) return <Loading />;
@@ -192,7 +193,7 @@ function MyRsvps() {
                             </>
                           ) : (
                             <>
-                              <IoMdComputer className="text-xs" />
+                              <MdComputer className="text-xs" />
                               Online
                             </>
                           )}

@@ -40,7 +40,7 @@ function CreateEventLogic() {
   const [fetchingDoc, setFetchingDoc] = useState(false);
   const [tnc, setTnc] = useState(null);
   const [acceptingAttendance, setAcceptingAttendance] = useState(false);
-  const [acceptingRsvp, setAcceptingRsvp] = useState(false);
+  const [acceptingRsvp, setAcceptingRsvp] = useState(true);
 
   const handleImage = (e) => {
     if (e.target.files[0]) {
@@ -102,6 +102,7 @@ function CreateEventLogic() {
         throw new Error("End date cannot be before start date.");
       }
       if (!category) throw new Error("Please provide a category for your event.");
+      if (!maxParticipants || Number(maxParticipants) <= 0) throw new Error("Please provide the maximum number of participants for your event.");
       if (!image && !id) throw new Error("Please upload a feature image.");
       if (medium === "offline" && !location) {
         throw new Error("Please provide a location for your event.");
@@ -121,7 +122,7 @@ function CreateEventLogic() {
       start_date: startDate,
       end_date: endDate || null,
       category,
-      max_participants: maxParticipants || 0,
+      max_participants: Number(maxParticipants),
       location_name: medium === "online" ? null : location,
       latitude: medium === "online" ? null : latitude,
       longitude: medium === "online" ? null : longitude,
@@ -175,8 +176,7 @@ function CreateEventLogic() {
     { label: "Start Date-Time", value: startDate, placeholder: "Please provide a start date for your event.", cb: setStartDate, show: true, required: true, type: "datetime-local" },
     { label: "End Date-Time", value: endDate, placeholder: "Please provide an end date for your event.", cb: setEndDate, show: true, type: "datetime-local" },
     { label: "Duration", value: duration, placeholder: "Please provide a duration for your event. (hh:mm)", cb: setDuration, show: true, type: "string" },
-    { label: "Language", value: language, placeholder: "Please provide a language for your event.", cb: setLanguage, show: true, type: "string" },
-    { label: "Max Participants (i.e. RSVPs)", value: maxParticipants, placeholder: "Please provide a maximum number of participants for your event.", cb: setMaxParticipants, type: "number", show: true },
+    { label: "Max Participants (i.e. RSVPs)", value: maxParticipants, placeholder: "Please provide a maximum number of participants for your event.", cb: setMaxParticipants, type: "number", show: true, required: true },
     { label: "Category", value: category, placeholder: "Please provide a category for your event.", cb: setCategory, show: true, options: categories, required: true },
     { label: "Terms and Conditions", value: tnc, placeholder: "Please provide terms and conditions for your event.", cb: setTnc, multiline: true, show: true, type: "textarea" },
     { label: "Location Name", value: location, placeholder: "Please provide a location for your event.", cb: setLocation, show: medium === "offline", required: medium === "offline" },

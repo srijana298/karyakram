@@ -12,8 +12,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Create from './pages/dashboard/Create';
 import Events from './pages/dashboard/Events';
 import Event from './pages/dashboard/Event';
-import AcceptInvite from './pages/AcceptInvite';
-import Invites from './pages/dashboard/Invites';
 import Landing from './pages/landing/Landing';
 import Explore from './pages/landing/Explore';
 import EventPage from './pages/landing/EventPage';
@@ -61,7 +59,6 @@ function App() {
             <Route path="event/:id" element={<Event />} />
             <Route path="account" element={<Account />} />
             <Route path="events" element={<Events />} />
-            <Route path="invities" element={<Invites />} />
             <Route path="users" element={<Users />} />
             <Route path="notifications" element={<NotificationPage />} />
             <Route path="groups/create" element={<CreateGroup />} />
@@ -84,7 +81,6 @@ function App() {
               }
             />
           </Route>
-          <Route path="/accept-invite/:eventId" element={<AcceptInvite />} />
           <Route path="/mark-attendance" element={<MarkAttendance />} />
           <Route path="/checkin/:id" element={<SelfCheckIn />} />
           <Route path="/template-editor" element={<TemplateEditor />} />
