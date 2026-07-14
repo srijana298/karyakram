@@ -1,8 +1,8 @@
 import { api } from "./api";
 
 export const authService = {
-  signup: (name, email, password) =>
-    api.post("/auth/signup", { name, email, password }),
+  signup: (name, email, password, avatar) =>
+    api.post("/auth/signup", { name, email, password, avatar }),
 
   login: (email, password) =>
     api.post("/auth/login", { email, password }),

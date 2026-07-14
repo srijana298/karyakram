@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { IoLocationOutline } from "react-icons/io5";
+import { IoLocationOutline } from "./icons";
 
 /**
  * LocationInput — autocomplete using OpenStreetMap Nominatim API.

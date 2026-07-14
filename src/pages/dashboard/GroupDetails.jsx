@@ -15,7 +15,7 @@ import {
   IoTimeOutline,
   IoTrashOutline,
   IoWarningOutline,
-} from "react-icons/io5";
+} from "../../components/icons";
 
 export default function GroupDetails() {
   const { id } = useParams();

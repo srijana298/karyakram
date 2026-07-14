@@ -14,7 +14,7 @@ import {
 } from '../utils/ApiResponse.js';
 
 export const signup = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, avatar } = req.body;
 
   const [existing] = await db
     .select()
@@ -28,16 +28,15 @@ export const signup = async (req, res) => {
 
   const result = await db
     .insert(users)
-    .values({ name, email, password: hashed })
+    .values({ name, email, password: hashed, avatar: avatar || null, role: 'user' })
     .catch((err) => err);
-  console.log(result);
   if (!result) return InternalError('Failed to create user');
 
   const userId = result[0].insertId;
   const token = generateToken({ id: userId, email, name });
 
   return Created(
-    { token, user: { id: userId, name, email, phone: null, role: 'attendee' } },
+    { token, user: { id: userId, name, email, phone: null, avatar: avatar || null, role: 'user' } },
     'Signed up successfully'
   );
 };
@@ -58,7 +57,7 @@ export const login = async (req, res) => {
   const token = generateToken({ id: user.id, email: user.email, name: user.name });
 
   return Ok(
-    { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } },
+    { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, role: user.role } },
     'Logged in successfully'
   );
 };
@@ -76,6 +75,7 @@ export const getMe = async (req, res) => {
     name: user.name,
     email: user.email,
     phone: user.phone,
+    avatar: user.avatar,
     role: user.role,
   });
 };
@@ -84,6 +84,7 @@ export const updateMe = async (req, res) => {
   const updates = {};
   if (req.body.name) updates.name = req.body.name;
   if (req.body.phone !== undefined) updates.phone = req.body.phone;
+  if (req.body.avatar !== undefined) updates.avatar = req.body.avatar;
 
   if (Object.keys(updates).length === 0) return BadRequest('No fields to update');
 
@@ -107,6 +108,7 @@ export const updateMe = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatar: user.avatar,
       role: user.role,
     },
     'Updated successfully'

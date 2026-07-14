@@ -537,7 +537,7 @@ async function seed() {
         category: sub.cat,
         privacy: 'public',
         image: sub.image,
-        tnc: '1. Participants must carry valid college ID.\n2. Decent behavior expected at all times.\n3. Organizers reserve the right to modify the schedule.',
+        tnc: null,
         accepting_rsvp: true,
         accepting_attendance: sub.acceptingAttendance ? true : false,
         group_id: groupId,
@@ -585,7 +585,7 @@ async function seed() {
       category: ev.cat,
       privacy: 'public',
       image: ev.image,
-      tnc: '1. Participants must carry valid college ID.\n2. Decent behavior expected at all times.\n3. Organizers reserve the right to modify the schedule.',
+      tnc: null,
       accepting_rsvp: true,
       accepting_attendance: ev.acceptingAttendance ? true : false,
       created_by: organizerId

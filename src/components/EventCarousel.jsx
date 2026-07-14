@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { IoArrowBack, IoArrowForward } from "react-icons/io5";
+import { IoArrowBack, IoArrowForward } from "./icons";
 import { Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/react";
 import ExploreEventCard from "./ExploreEventCard";

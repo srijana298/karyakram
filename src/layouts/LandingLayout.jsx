@@ -7,9 +7,12 @@ import { useLocation } from "react-router-dom";
 function LandingLayout() {
   const { pathname } = useLocation();
 
+  // The landing page ("/") ships its own dark header, so hide the global navbar there.
+  const hideNavbar = pathname.includes("auth") || pathname === "/";
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {!pathname.includes("auth") && <Navbar />}
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[#0a0a0b] text-stone-900 dark:text-white">
+      {!hideNavbar && <Navbar />}
       <div className="flex-1">
         <Outlet />
       </div>

@@ -65,15 +65,15 @@ function Account() {
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full gap-4 py-8">
-      <Avatar size={"text-2xl w-14 h-14"} name={userName} />
-      <h1 className="text-xl font-bold text-secondary">Hello, {userName}</h1>
+      <Avatar size={"text-2xl w-14 h-14"} name={userName} avatar={userInfo?.avatar} />
+      <h1 className="text-xl font-bold text-secondary dark:text-white">Hello, {userName}</h1>
       <form onSubmit={handleUpdateFields} className="flex flex-col gap-4 w-full max-w-sm mt-4">
         {inputFields?.map((field, index) => (
           <Input key={index} {...field} show={true} />
         ))}
         <button
           type="button"
-          className="rounded-xl bg-neutral-100 border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-200 transition-colors"
+          className="rounded-xl bg-neutral-100 border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-200 dark:bg-white/10 dark:border-white/10 dark:text-white dark:hover:bg-white/15 transition-colors"
           onClick={(e) => {
             e.preventDefault();
             setUpdateFields((prev) => !prev);

@@ -60,8 +60,8 @@ export const Forbidden = (message = "Forbidden") =>
 export const NotFound = (message = "Not Found") =>
   new Result(false, new ApiResponse(404, null, message));
 
-export const Conflict = (message = "Conflict") =>
-  new Result(false, new ApiResponse(409, null, message));
+export const Conflict = (message = "Conflict", data = null) =>
+  new Result(false, new ApiResponse(409, data, message));
 
 export const InternalError = (message = "Internal Server Error") =>
   new Result(false, new ApiResponse(500, null, message));

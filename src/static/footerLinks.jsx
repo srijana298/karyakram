@@ -1,4 +1,4 @@
-import { RiGithubFill, RiInstagramFill, RiTwitterFill } from 'react-icons/ri';
+import { RiGithubFill, RiInstagramFill, RiTwitterFill } from "../components/icons";
 
 export const footerLinks = [
     {

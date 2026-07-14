@@ -13,7 +13,7 @@ import {
   IoOptionsOutline,
   IoPersonOutline,
   IoSearchOutline,
-} from "react-icons/io5";
+} from "../../components/icons";
 
 export default function Groups() {
   const [groups, setGroups] = useState([]);

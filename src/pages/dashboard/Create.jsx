@@ -1,286 +1,278 @@
 import React, { useEffect, useState } from "react";
-import { IoChevronBackOutline, IoClose } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import CreateEventLogic from "../../Logic/EventsLogic/createEvent.logic";
-import Input from "../../components/Input";
 import LocationInput from "../../components/LocationInput";
 import DateTimePicker from "../../components/DateTimePicker";
-import { groupService } from "../../services/groups";
-import { MdUpload } from "react-icons/md";
 import Loading from "../../components/Loading";
+import { calendarService } from "../../services/calendars";
+import { categoryService } from "../../services/categories";
+import { Switch } from "@/components/ui/switch";
+import {
+  IoChevronBackOutline,
+  IoGlobeOutline,
+  IoLockClosedOutline,
+  IoCalendarClearOutline,
+  IoLocationOutline,
+  IoReorderThreeOutline,
+  IoTicketOutline,
+  IoPeopleOutline,
+  IoPersonAddOutline,
+  IoShuffleOutline,
+  IoImageOutline,
+  IoPencil,
+  IoCloseOutline,
+  IoPricetagOutline,
+} from "../../components/icons";
+import { MdComputer, MdLocationPin } from "../../components/icons";
+
+const THEMES = [
+  { name: "Minimal", css: "linear-gradient(135deg,#64748b,#334155)" },
+  { name: "Sunset", css: "linear-gradient(135deg,#f97316,#db2777,#7c3aed)" },
+  { name: "Emerald", css: "linear-gradient(135deg,#10b981,#059669,#065f46)" },
+  { name: "Ocean", css: "linear-gradient(135deg,#0ea5e9,#6366f1,#8b5cf6)" },
+  { name: "Warm", css: "linear-gradient(135deg,#f59e0b,#ef4444,#ec4899)" },
+];
+
+// Shared theme-aware class fragments.
+const card = "rounded-2xl border border-stone-200 bg-white dark:border-white/10 dark:bg-white/[0.03]";
+const label = "text-sm font-medium text-stone-800 dark:text-white";
+const muted = "text-stone-400 dark:text-white/40";
+const inputField = "bg-white border border-stone-200 text-stone-900 placeholder:text-stone-400 dark:bg-white/5 dark:border-white/10 dark:text-white dark:placeholder:text-white/30 focus:border-primary/40 dark:focus:border-white/25";
+// Applies input styling to the inner <input> of composed components.
+const inputScope = "[&_input]:!bg-white [&_input]:!border-stone-200 [&_input]:!text-stone-900 dark:[&_input]:!bg-white/5 dark:[&_input]:!border-white/10 dark:[&_input]:!text-white";
+
+function Toggle({ checked, onChange }) {
+  return <Switch checked={checked} onCheckedChange={onChange} aria-label="Toggle option" />;
+}
 
 function Create() {
-  const {
-    inputs,
-    signingin,
-    handleImage,
-    imagePreview,
-    fileRef,
-    handleCreateEvent,
-    removeImage,
-    id,
-    fetchingDoc,
-  } = CreateEventLogic();
+  const { fields, signingin, handleImage, imagePreview, fileRef, handleCreateEvent, removeImage, id, fetchingDoc } = CreateEventLogic();
 
-  const [dateErrors, setDateErrors] = useState({ start: "", end: "" });
-  const [groups, setGroups] = useState([]);
+  const [calendars, setCalendars] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [themeIdx, setThemeIdx] = useState(0);
+  const [showLocation, setShowLocation] = useState(false);
+  const [showDescription, setShowDescription] = useState(false);
+  const [editingCapacity, setEditingCapacity] = useState(false);
+  const [dateError, setDateError] = useState("");
 
   useEffect(() => {
-    groupService.list({ mine: "true" }).then((res) => {
-      if (res.ok) setGroups(res.data || []);
-    });
+    calendarService.list({ mine: "true" }).then((r) => r.ok && setCalendars(r.data || []));
+    categoryService.list().then((r) => r.ok && setCategories(r.data || []));
   }, []);
 
-  const pageTitle = id ? "Edit Event" : "Create Event";
+  useEffect(() => {
+    if (fields.location || fields.meetLink) setShowLocation(true);
+    if (fields.description) setShowDescription(true);
+  }, [fields.location, fields.meetLink, fields.description]);
 
-  if (fetchingDoc) return <Loading />;
-
-  // Extract special fields
-  const startDateInput = inputs.find((inp) => inp.label === "Start Date-Time");
-  const endDateInput = inputs.find((inp) => inp.label === "End Date-Time");
-  const showLocation = inputs.find((inp) => inp.label === "Location Name");
-  const groupInput = inputs.find((inp) => inp.label === "Group");
-
-  const locationValue = showLocation?.value || "";
-  const latValue = inputs.find((inp) => inp.label === "Latitude")?.value || "";
-  const lngValue = inputs.find((inp) => inp.label === "Longitude")?.value || "";
-  const setLocationCb = showLocation?.cb;
-  const setLatCb = inputs.find((inp) => inp.label === "Latitude")?.cb;
-  const setLngCb = inputs.find((inp) => inp.label === "Longitude")?.cb;
-
-  // All other regular inputs (exclude location + date fields)
-  const regularInputs = inputs.filter(
-    (inp) =>
-      !["Location Name", "Latitude", "Longitude", "Start Date-Time", "End Date-Time", "Group"].includes(inp.label)
-  );
-
-  // Split regular inputs around Medium for location insertion
-  const mediumIndex = regularInputs.findIndex((inp) => inp.label === "Medium");
-  const beforeMedium = regularInputs.slice(0, mediumIndex + 1);
-  const afterMedium = regularInputs.slice(mediumIndex + 1);
-
-  const handleLocationChange = ({ location, latitude, longitude }) => {
-    if (setLocationCb) setLocationCb(location);
-    if (setLatCb) setLatCb(latitude);
-    if (setLngCb) setLngCb(longitude);
-  };
-
-  const startDate = startDateInput?.value || "";
-  const endDate = endDateInput?.value || "";
-
-  const handleStartChange = (val) => {
-    startDateInput?.cb(val);
-    setDateErrors((prev) => ({ ...prev, start: "" }));
-    // Validate end date against new start
-    if (endDate && val && dayjs(endDate).isBefore(dayjs(val))) {
-      setDateErrors((prev) => ({ ...prev, end: "End date must be after start date" }));
-    } else {
-      setDateErrors((prev) => ({ ...prev, end: "" }));
-    }
-  };
-
-  const handleEndChange = (val) => {
-    endDateInput?.cb(val);
-    if (startDate && val && dayjs(val).isBefore(dayjs(startDate))) {
-      setDateErrors((prev) => ({ ...prev, end: "End date must be after start date" }));
-    } else {
-      setDateErrors((prev) => ({ ...prev, end: "" }));
-    }
-  };
-
-  // Computed duration display
-  const durationDisplay = startDate && endDate && dayjs(endDate).isAfter(dayjs(startDate))
-    ? computeDuration(startDate, endDate)
-    : null;
+  const theme = THEMES[themeIdx];
+  const pageTitle = id ? "Save Changes" : "Create Event";
 
   const onSubmit = (e) => {
-    if (!startDate) {
-      setDateErrors((prev) => ({ ...prev, start: "Start date is required" }));
-      e.preventDefault();
+    e.preventDefault();
+    if (fields.endDate && fields.startDate && dayjs(fields.endDate).isBefore(dayjs(fields.startDate))) {
+      setDateError("End must be after start");
       return;
     }
-    if (endDate && dayjs(endDate).isBefore(dayjs(startDate))) {
-      setDateErrors((prev) => ({ ...prev, end: "End date must be after start date" }));
-      e.preventDefault();
-      return;
-    }
+    setDateError("");
     handleCreateEvent(e);
   };
 
+  if (fetchingDoc) return <Loading />;
+
   return (
-    <div className="space-y-4">
-      <div className="px-1">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-dashboard-muted hover:text-dashboard-text transition-colors"
-        >
-          <IoChevronBackOutline className="text-base" />
-          Back
-        </Link>
-        <h1 className="text-[40px] leading-tight font-semibold text-dashboard-text mt-3">{pageTitle}</h1>
-        <p className="text-dashboard-muted mt-1">Fill in the details below to create a new event.</p>
-      </div>
+    <div className="w-full max-w-none">
+      <Link to="/dashboard/events?filter=total" className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 dark:text-white/50 dark:hover:text-white transition-colors mb-5">
+        <IoChevronBackOutline className="text-base" /> Back
+      </Link>
 
-      <form onSubmit={onSubmit} className="dashboard-panel p-5 md:p-6 space-y-4 rounded-md">
-        {beforeMedium.map((input, index) => (
-          <Input {...input} key={input.label || index} />
-        ))}
-
-        {/* Group select */}
-        {groupInput?.show && (
-          <div>
-            <label className="text-xs font-medium text-stone-500 mb-1.5 block">
-              Group
-            </label>
-            <select
-              value={groupInput.value || ""}
-              onChange={(e) => {
-                e.preventDefault();
-                groupInput.cb(e.target.value);
-              }}
-              className="w-full h-10 px-3 text-sm bg-white border border-gray-200 rounded-md outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
-            >
-              <option value="">No group (standalone event)</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Location autocomplete */}
-        {showLocation?.show && (
-          <div>
-            <label className="text-xs font-medium text-stone-500 mb-1.5 block">
-              Location <span className="text-red-500">*</span>
-            </label>
-            <LocationInput
-              value={locationValue}
-              lat={latValue}
-              lng={lngValue}
-              onChange={handleLocationChange}
-              placeholder="Search for a venue or address..."
-              required={showLocation.required}
-            />
-          </div>
-        )}
-
-        {/* Date & Time section */}
-        <div>
-          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Schedule</p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <DateTimePicker
-              label="Start Date & Time"
-              value={startDate}
-              onChange={handleStartChange}
-              placeholder="Pick start date & time"
-              required={startDateInput?.required}
-              error={dateErrors.start}
-            />
-            <DateTimePicker
-              label="End Date & Time"
-              value={endDate}
-              onChange={handleEndChange}
-              placeholder="Pick end date & time"
-              minDate={startDate || undefined}
-              required={endDateInput?.required}
-              error={dateErrors.end}
-            />
-          </div>
-
-          {/* Auto-computed duration */}
-          {durationDisplay && (
-            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
-              ⏱ Duration: {durationDisplay}
-            </div>
-          )}
-        </div>
-
-        {/* Remaining inputs (skip Duration field since we auto-compute it) */}
-        {afterMedium
-          .filter((inp) => inp.label !== "Duration")
-          .map((input, index) => (
-            <Input {...input} key={input.label || index} />
-          ))}
-
-        <input
-          ref={fileRef}
-          type="file"
-          onChange={handleImage}
-          className="hidden"
-        />
-
-        <div className="pt-1">
-          <label className="text-sm font-semibold text-dashboard-text mb-1.5 block">
-            Feature Image <span className="text-red-500">*</span>
-          </label>
-          {!imagePreview ? (
-            <button
-              onClick={(e) => {
-                e?.preventDefault();
-                fileRef.current.click();
-              }}
-              type="button"
-              className="w-full h-36 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center gap-2 text-dashboard-muted hover:border-primary/40 hover:text-primary transition-colors"
-            >
-              <MdUpload className="text-2xl" />
-              <span className="text-sm font-medium">Click to upload feature image</span>
-              <span className="text-[11px] text-stone-400">PNG, JPG up to 5MB</span>
+      <form onSubmit={onSubmit} className="grid lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] gap-6 lg:gap-8 w-full">
+        {/* Left: image tile + theme */}
+        <div className="space-y-3">
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+          <div className="relative aspect-square w-full rounded-2xl overflow-hidden border border-stone-200 dark:border-white/10 shadow-sm" style={!imagePreview ? { backgroundImage: theme.css } : undefined}>
+            {imagePreview ? (
+              <img src={imagePreview} alt="event" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/90">
+                <IoImageOutline className="text-4xl mb-2 drop-shadow" />
+                <span className="text-sm font-medium drop-shadow">Add a poster</span>
+              </div>
+            )}
+            <button type="button" onClick={() => fileRef.current?.click()} className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white text-stone-900 shadow-md flex items-center justify-center hover:scale-105 transition-transform" title="Upload image">
+              <IoImageOutline className="text-lg" />
             </button>
-          ) : (
-            <div className="w-full max-w-sm rounded-md border border-gray-200 overflow-hidden relative bg-white">
-              <img alt="preview" className="w-full h-44 object-cover" src={imagePreview ?? ""} />
-              <button
-                onClick={removeImage}
-                className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
-                title="Delete Image"
-                type="button"
-              >
-                <IoClose className="text-sm" />
+            {imagePreview && (
+              <button type="button" onClick={removeImage} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors" title="Remove image">
+                <IoCloseOutline />
               </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className={`flex-1 flex items-center gap-3 px-3 py-2.5 ${card}`}>
+              <span className="w-9 h-9 rounded-lg shrink-0 border border-stone-200 dark:border-white/10" style={{ backgroundImage: theme.css }} />
+              <div className="leading-tight">
+                <p className={`text-[11px] ${muted}`}>Theme</p>
+                <p className="text-sm font-semibold text-stone-800 dark:text-white">{theme.name}</p>
+              </div>
             </div>
-          )}
+            <button type="button" onClick={() => setThemeIdx((i) => (i + 1) % THEMES.length)} className={`w-12 h-[52px] ${card} flex items-center justify-center text-stone-500 hover:text-primary dark:text-white/60 dark:hover:text-white transition-colors`} title="Shuffle theme">
+              <IoShuffleOutline className="text-lg" />
+            </button>
+          </div>
         </div>
 
-        <div className="pt-4 mt-2 border-t border-gray-200 flex items-center justify-end gap-3">
-          <Link
-            to="/dashboard"
-            className="px-5 py-2.5 text-sm font-semibold text-dashboard-text border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={signingin}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {signingin ? "Processing..." : pageTitle}
+        {/* Right: details */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className={`inline-flex items-center gap-2 pl-3 pr-2 py-2 ${card}`}>
+              <IoCalendarClearOutline className={`text-sm ${muted}`} />
+              <select value={fields.calendarId || ""} onChange={(e) => fields.setCalendarId(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-4 cursor-pointer [&>option]:text-stone-900">
+                <option value="">Personal Calendar</option>
+                {calendars.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className={`inline-flex items-center gap-2 pl-3 pr-2 py-2 ${card}`}>
+              {fields.privacy === "private" ? <IoLockClosedOutline className={`text-sm ${muted}`} /> : <IoGlobeOutline className={`text-sm ${muted}`} />}
+              <select value={fields.privacy} onChange={(e) => fields.setPrivacy(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-4 cursor-pointer capitalize [&>option]:text-stone-900">
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+          </div>
+
+          <input type="text" value={fields.title} onChange={(e) => fields.setTitle(e.target.value)} placeholder="Event Name" className="w-full bg-transparent text-3xl md:text-4xl font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-white/25 outline-none" />
+
+          {/* Schedule */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className={`flex-1 ${card} p-4 space-y-3`}>
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary dark:bg-white shrink-0" />
+                <span className={`${label} w-12`}>Start</span>
+                <div className={`flex-1 ${inputScope}`}>
+                  <DateTimePicker value={fields.startDate} onChange={fields.setStartDate} placeholder="Pick start" required />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full border-2 border-stone-300 dark:border-white/30 shrink-0" />
+                <span className={`${label} w-12`}>End</span>
+                <div className={`flex-1 ${inputScope}`}>
+                  <DateTimePicker value={fields.endDate} onChange={fields.setEndDate} placeholder="Pick end" minDate={fields.startDate || undefined} />
+                </div>
+              </div>
+              {dateError && <p className="text-xs text-red-500 dark:text-red-400 pl-6">{dateError}</p>}
+            </div>
+            <div className={`sm:w-40 ${card} p-4 flex flex-col justify-center`}>
+              <IoGlobeOutline className={`mb-1.5 ${muted}`} />
+              <p className="text-sm font-semibold text-stone-800 dark:text-white">GMT+05:45</p>
+              <p className={`text-xs ${muted}`}>Kathmandu</p>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className={`${card} ${showLocation ? "" : "overflow-hidden"}`}>
+            {!showLocation ? (
+              <button type="button" onClick={() => setShowLocation(true)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                <IoLocationOutline className={`text-lg ${muted}`} />
+                <span>
+                  <span className={`block ${label}`}>Add Event Location</span>
+                  <span className={`block text-xs ${muted}`}>Offline location or virtual link</span>
+                </span>
+              </button>
+            ) : (
+              <div className="p-4 space-y-3">
+                <div className="inline-flex p-1 bg-stone-100 dark:bg-white/5 rounded-lg text-sm">
+                  {[{ key: "offline", label: "In-person", icon: <MdLocationPin /> }, { key: "online", label: "Online", icon: <MdComputer /> }].map((m) => (
+                    <button key={m.key} type="button" onClick={() => fields.setMedium(m.key)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-colors ${fields.medium === m.key ? "bg-white text-stone-900 shadow-sm dark:bg-white dark:text-stone-900" : "text-stone-500 dark:text-white/60"}`}>
+                      {m.icon} {m.label}
+                    </button>
+                  ))}
+                </div>
+                {fields.medium === "offline" ? (
+                  <div className={`${inputScope} [&_input::placeholder]:!text-stone-400 dark:[&_input::placeholder]:!text-white/30`}>
+                    <LocationInput value={fields.location} lat={fields.latitude} lng={fields.longitude} onChange={({ location, latitude, longitude }) => { fields.setLocation(location); fields.setLatitude(latitude); fields.setLongitude(longitude); }} placeholder="Search for a venue or address..." />
+                  </div>
+                ) : (
+                  <input type="url" value={fields.meetLink} onChange={(e) => fields.setMeetLink(e.target.value)} placeholder="Virtual meeting link (Zoom, Meet, ...)" className={`w-full h-10 px-3 text-sm rounded-lg outline-none ${inputField}`} />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className={`${card} overflow-hidden`}>
+            {!showDescription ? (
+              <button type="button" onClick={() => setShowDescription(true)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                <IoReorderThreeOutline className={`text-lg ${muted}`} />
+                <span className={label}>Add Description</span>
+              </button>
+            ) : (
+              <textarea value={fields.description} onChange={(e) => fields.setDescription(e.target.value)} placeholder="What's this event about?" rows={4} className="w-full p-4 text-sm bg-transparent outline-none resize-none text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-white/30" />
+            )}
+          </div>
+
+          {/* Event Options */}
+          <div>
+            <p className="text-sm font-semibold text-stone-800 dark:text-white mb-2">Event Options</p>
+            <div className={`${card} divide-y divide-stone-100 dark:divide-white/10`}>
+              <div className="flex items-center gap-3 p-4">
+                <IoTicketOutline className={`text-lg ${muted}`} />
+                <span className={`${label} flex-1`}>Ticket Price</span>
+                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">Free</span>
+              </div>
+              <div className="flex items-center gap-3 p-4">
+                <IoPricetagOutline className={`text-lg ${muted}`} />
+                <span className={`${label} flex-1`}>Category</span>
+                <select value={fields.category} onChange={(e) => fields.setCategory(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none text-right cursor-pointer max-w-[55%] [&>option]:text-stone-900" required>
+                  <option value="">Select…</option>
+                  {categories.map((c) => <option key={c.id} value={c.label}>{c.label}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 p-4">
+                <IoPersonAddOutline className={`text-lg ${muted}`} />
+                <span className={`${label} flex-1`}>
+                  Require Approval
+                  <span className={`block text-[11px] font-normal ${muted}`}>Guests need your approval to join</span>
+                </span>
+                <Toggle checked={fields.requireApproval} onChange={fields.setRequireApproval} />
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <IoPeopleOutline className={`text-lg ${muted}`} />
+                  <span className={`${label} flex-1`}>Admission</span>
+                  <div className="inline-flex rounded-lg bg-stone-100 p-1 dark:bg-white/5">
+                    {[{ key: "capacity", label: "Capacity" }, { key: "waitlist", label: "Waitlist" }].map((mode) => (
+                      <button key={mode.key} type="button" onClick={() => fields.setAdmissionMode(mode.key)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${fields.admissionMode === mode.key ? "bg-white text-stone-900 shadow-sm dark:bg-white/10 dark:text-white" : "text-stone-500 dark:text-white/45"}`}>
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between pl-8">
+                  <p className={`text-[11px] ${muted}`}>{fields.admissionMode === "waitlist" ? "Guests join a waitlist for selection when demand exceeds available seats." : "Registration closes automatically when all seats are filled."}</p>
+                  {editingCapacity ? (
+                    <input type="number" min="1" autoFocus value={fields.maxParticipants || ""} onChange={(e) => fields.setMaxParticipants(e.target.value)} onBlur={() => setEditingCapacity(false)} placeholder="Seats" className={`ml-4 w-24 h-8 px-2 text-sm text-right rounded-lg outline-none ${inputField}`} />
+                  ) : (
+                    <button type="button" onClick={() => setEditingCapacity(true)} className="ml-4 shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-stone-800 dark:text-white hover:text-primary dark:hover:text-white/70 transition-colors">
+                      {Number(fields.maxParticipants) > 0 ? `${fields.maxParticipants} seats` : "Set seats"}
+                      <IoPencil className={`text-xs ${muted}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" disabled={signingin} className="w-full py-3.5 rounded-2xl font-semibold bg-primary text-white hover:bg-emerald-600 dark:bg-white dark:text-stone-900 dark:hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            {signingin ? "Processing…" : pageTitle}
           </button>
         </div>
       </form>
     </div>
   );
-}
-
-function computeDuration(start, end) {
-  const s = dayjs(start);
-  const e = dayjs(end);
-  const diffMin = e.diff(s, "minute");
-  if (diffMin <= 0) return null;
-
-  const days = Math.floor(diffMin / 1440);
-  const hours = Math.floor((diffMin % 1440) / 60);
-  const mins = diffMin % 60;
-
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (mins > 0) parts.push(`${mins}m`);
-
-  return parts.join(" ") || "0m";
 }
 
 export default Create;

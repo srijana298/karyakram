@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
+import { Button as ShadcnButton } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-const Button = ({ text, type, cb, loading, style }) => {
-  return (
-    <button
-      type={type}
-      disabled={loading}
-      className={`px-4 py-2.5 text-sm font-semibold text-white text-center rounded-lg bg-primary hover:bg-emerald-600 w-full disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20 ${style || "my-4"}`}
-      onClick={cb}
-    >
-      {loading ? "Processing..." : text}
-    </button>
-  );
-};
+const Button = ({ text, type, cb, loading, style, variant = 'primary' }) => (
+  <ShadcnButton
+    type={type}
+    disabled={loading}
+    variant={variant === 'neutral' || variant === 'primary' ? 'default' : variant}
+    onClick={cb}
+  >
+    {loading ? 'Processing...' : text}
+  </ShadcnButton>
+);
 
 export default Button;

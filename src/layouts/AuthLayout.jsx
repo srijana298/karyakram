@@ -1,75 +1,58 @@
 import React from "react";
-import { Link, Outlet } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import BackBtn from "../components/BackBtn";
 import Brand from "../components/Brand";
-import Splash from "../assets/images/pattern1.jpg";
 
 function AuthLayout() {
   const { pathname } = useLocation();
   const token = localStorage.getItem("token");
+  const isLogin = pathname.includes("login");
   const button = {
-    text: pathname.includes("login") ? "Sign Up" : "Login",
-    link: pathname.includes("login") ? "/auth/signup" : "/auth/login",
+    text: isLogin ? "Create account" : "Sign in",
+    link: isLogin ? "/auth/signup" : "/auth/login",
   };
-  const pageTitle = pathname.includes("login")
-    ? "Sign in"
-    : "Create an account";
+  const pageTitle = isLogin ? "Welcome back" : "Create your account";
+
   return (
-    <div className="p-4 min-h-screen grid md:grid-cols-2 text-stone-800">
-      <div>
-        {!token && <BackBtn to={"/"} />}
-        <div className="flex flex-col items-center md:items-start md:h-full justify-center p-8 md:p-16 gap-4">
-          <Brand size={"w-16 md:hidden"} />
-          <h2 className="text-3xl font-bold tracking-tight">{pageTitle}</h2>
-          <Outlet />
-          {!token && (
-            <p className="text-sm text-stone-500">
-              {pageTitle === "Sign in" ? (
-                <>
-                  New to Mahotsav? Create an account{" "}
-                  <Link className="font-medium text-primary hover:underline" to={button?.link}>
-                    here
+    <main className="min-h-screen bg-[#0a0a0b] text-white lg:p-3">
+      <div className="min-h-screen lg:min-h-[calc(100vh-1.5rem)] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 bg-[#0a0a0b]">
+        <section className="relative flex flex-col min-h-screen lg:min-h-0">
+          <header className="h-20 px-6 sm:px-10 lg:px-14 flex items-center justify-between">
+            {!token ? <BackBtn to="/" /> : <span />}
+            <Brand size="w-12" />
+          </header>
+
+          <div className="flex-1 flex items-center px-6 sm:px-10 lg:px-14 py-8">
+            <div className="w-full max-w-[480px] mx-auto">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/80 mb-3">
+                {isLogin ? "Good to see you again" : "Join Mahotsav"}
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{pageTitle}</h1>
+              <p className="mt-3 mb-8 text-sm leading-relaxed text-white/45">
+                {isLogin
+                  ? "Sign in to manage your events and invitations."
+                  : "Create events, invite your people, and make something memorable."}
+              </p>
+
+              <Outlet />
+
+              {!token && (
+                <p className="mt-6 text-sm text-white/45">
+                  {isLogin ? "New to Mahotsav?" : "Already have an account?"}{" "}
+                  <Link className="font-semibold text-violet-300 hover:text-violet-200 hover:underline underline-offset-4" to={button.link}>
+                    {button.text}
                   </Link>
-                </>
-              ) : (
-                <>
-                  Already have an account?{" "}
-                  <Link className="font-medium text-primary hover:underline" to={button.link}>
-                    Login
-                  </Link>
-                </>
+                </p>
               )}
-            </p>
-          )}
-        </div>
-      </div>
-      <div
-        className="rounded-2xl hidden md:block relative p-4 overflow-hidden"
-        style={{
-          backgroundImage: `url(${Splash})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-secondary/80" />
-        {!token && (
-          <Link
-            to={button.link}
-            className="absolute bg-white text-secondary p-4 py-2 rounded-lg text-sm font-semibold top-4 right-4 z-10"
-          >
-            {button.text}
-          </Link>
-        )}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center p-8">
-          <h3 className="text-2xl font-bold">Welcome to Mahotsav</h3>
-          <p className="mt-2 text-sm text-white/70 max-w-xs">
-            Your campus events, simplified. Create, manage, and celebrate with ease.
+            </div>
+          </div>
+
+          <p className="px-6 sm:px-10 lg:px-14 pb-7 text-[11px] text-white/25">
+            By continuing, you agree to the Terms and Privacy Policy.
           </p>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { AiOutlineLoading } from 'react-icons/ai'
+import { AiOutlineLoading } from "./icons"
 
 function Loading({text}) {
   return (

@@ -7,7 +7,7 @@ import {
   IoCloseCircleOutline,
   IoArrowBackOutline,
   IoKeypadOutline,
-} from "react-icons/io5";
+} from "../components/icons";
 import Loading from "../components/Loading";
 import Brand from "../components/Brand";
 

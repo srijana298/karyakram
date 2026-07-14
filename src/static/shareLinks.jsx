@@ -1,4 +1,4 @@
-import { RiTwitterFill } from "react-icons/ri";
+import { RiTwitterFill } from "../components/icons";
 
 export const shareLinks = [
     {

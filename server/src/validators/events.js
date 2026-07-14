@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const inviteGuestsSchema = z.object({
+  emails: z.array(z.string().email()).min(1).max(100),
+});
+
 export const createEventSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().nullable().optional(),
@@ -14,13 +18,16 @@ export const createEventSchema = z.object({
   end_date: z.string().nullable().optional(),
   duration: z.string().nullable().optional(),
   language: z.string().nullable().optional(),
-  max_participants: z.coerce.number({ required_error: "Max participants is required" }).int().min(1, "Max participants must be at least 1"),
+  max_participants: z.coerce.number().int().min(0).optional().default(0), // 0 = unlimited
+  admission_mode: z.enum(["capacity", "waitlist"]).default("capacity"),
   category: z.string().min(1, "Category is required"),
   privacy: z.enum(["public", "private"]).default("public"),
   tnc: z.string().nullable().optional(),
   accepting_rsvp: z.boolean().default(true),
   accepting_attendance: z.boolean().default(false),
+  require_approval: z.boolean().default(true),
   group_id: z.coerce.number().int().nullable().optional(),
+  calendar_id: z.coerce.number().int().nullable().optional(),
 })
 
 export const updateEventSchema = z.object({
@@ -38,13 +45,16 @@ export const updateEventSchema = z.object({
   duration: z.string().nullable().optional(),
   language: z.string().nullable().optional(),
   max_participants: z.coerce.number().int().min(0).optional(),
+  admission_mode: z.enum(["capacity", "waitlist"]).optional(),
   category: z.string().optional(),
   privacy: z.enum(["public", "private"]).optional(),
   image: z.string().nullable().optional(),
   tnc: z.string().nullable().optional(),
   accepting_rsvp: z.boolean().optional(),
   accepting_attendance: z.boolean().optional(),
+  require_approval: z.boolean().optional(),
   group_id: z.coerce.number().int().nullable().optional(),
+  calendar_id: z.coerce.number().int().nullable().optional(),
   check_in_code: z.string().nullable().optional(),
 });
 

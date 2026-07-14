@@ -3,7 +3,7 @@ import { adminService } from "../../services/admin";
 import { toast } from "react-hot-toast";
 import Loading from "../../components/Loading";
 import DataTable from "../../components/DataTable";
-import { IoPeopleOutline, IoSearchOutline, IoTrashOutline } from "react-icons/io5";
+import { IoPeopleOutline, IoSearchOutline, IoTrashOutline } from "../../components/icons";
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -79,12 +79,12 @@ function Users() {
       render: (row) => {
         const badge = {
           admin: "bg-red-50 text-red-700 border-red-200",
-          organizer: "bg-emerald-50 text-emerald-700 border-emerald-200",
-          attendee: "bg-blue-50 text-blue-700 border-blue-200",
+          user: "bg-emerald-50 text-emerald-700 border-emerald-200",
         };
+        const label = { admin: "Super Admin", user: "Member" };
         return (
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge[row.role] || badge.attendee}`}>
-            {row.role}
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge[row.role] || badge.user}`}>
+            {label[row.role] || "Member"}
           </span>
         );
       },
@@ -123,9 +123,8 @@ function Users() {
             onChange={(e) => handleRoleChange(row.id, e.target.value)}
             className="text-xs bg-white border border-stone-200 rounded-md px-2 py-1.5 outline-none focus:border-primary/40"
           >
-            <option value="attendee">Attendee</option>
-            <option value="organizer">Organizer</option>
-            <option value="admin">Admin</option>
+            <option value="user">Member</option>
+            <option value="admin">Super Admin</option>
           </select>
           <button
             onClick={() => handleDelete(row.id)}
@@ -174,9 +173,8 @@ function Users() {
             className="text-sm bg-transparent outline-none border-l border-gray-200 pl-3 text-dashboard-muted"
           >
             <option value="">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="organizer">Organizer</option>
-            <option value="attendee">Attendee</option>
+            <option value="admin">Super Admin</option>
+            <option value="user">Member</option>
           </select>
         </div>
 

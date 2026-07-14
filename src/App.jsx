@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingLayout from './layouts/LandingLayout';
 import Login from './pages/landing/Login';
 import Signup from './pages/landing/Signup';
@@ -14,6 +14,7 @@ import Events from './pages/dashboard/Events';
 import Event from './pages/dashboard/Event';
 import Landing from './pages/landing/Landing';
 import Explore from './pages/landing/Explore';
+import Calendar from './pages/landing/Calendar';
 import EventPage from './pages/landing/EventPage';
 import Ticket from './components/Ticket';
 import DashboardScreenLayout from './layouts/DashboardScreenLayout';
@@ -28,6 +29,8 @@ import EventCertificates from './pages/dashboard/EventCertificates';
 import Users from './pages/dashboard/Users';
 import TemplateEditor from './pages/editor/TemplateEditor';
 import MyRsvps from './pages/landing/MyRsvps';
+import Calendars from './pages/dashboard/Calendars';
+import CreateCalendar from './pages/dashboard/CreateCalendar';
 
 function App() {
   return (
@@ -39,7 +42,7 @@ function App() {
           <Route path="/" element={<LandingLayout />}>
             <Route path="/" element={<Landing />} />
             <Route path="explore" element={<Explore />} />
-            <Route path="event/:id" element={<EventPage />} />
+            <Route path="calendar/:id" element={<Calendar />} />
             <Route path="my-rsvps" element={<MyRsvps />} />
             <Route path="auth" element={<AuthLayout />}>
               <Route path="login" element={<Login />} />
@@ -54,11 +57,13 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="" element={<Dashboard />} />
+            <Route path="" element={<Navigate to="/dashboard/events?filter=total" replace />} />
             <Route path="create" element={<Create />} />
             <Route path="event/:id" element={<Event />} />
             <Route path="account" element={<Account />} />
             <Route path="events" element={<Events />} />
+            <Route path="calendars" element={<Calendars />} />
+            <Route path="calendars/create" element={<CreateCalendar />} />
             <Route path="users" element={<Users />} />
             <Route path="notifications" element={<NotificationPage />} />
             <Route path="groups/create" element={<CreateGroup />} />
@@ -85,6 +90,8 @@ function App() {
           <Route path="/checkin/:id" element={<SelfCheckIn />} />
           <Route path="/template-editor" element={<TemplateEditor />} />
           <Route path="/template-editor/:id" element={<TemplateEditor />} />
+          {/* Public event links use unguessable random codes. Keep last so it never shadows static routes above. */}
+          <Route path="/:code" element={<EventPage />} />
         </Routes>
       </Router>
     </>

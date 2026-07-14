@@ -12,8 +12,8 @@ import {
   IoTrashOutline,
   IoAddOutline,
   IoRemoveOutline,
-} from "react-icons/io5";
-import { MdFormatBold, MdFormatItalic } from "react-icons/md";
+} from "../../components/icons";
+import { MdFormatBold, MdFormatItalic } from "../../components/icons";
 import Loading from "../../components/Loading";
 
 const FONTS = [

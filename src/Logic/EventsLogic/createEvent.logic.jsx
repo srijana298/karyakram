@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
+import { resolveImage } from "../../lib/resolveImage";
 import { categories } from "./categories";
 
 function CreateEventLogic() {
@@ -26,6 +27,7 @@ function CreateEventLogic() {
   const [duration, setDuration] = useState(null);
   const [language, setLanguage] = useState(null);
   const [maxParticipants, setMaxParticipants] = useState(null);
+  const [admissionMode, setAdmissionMode] = useState("capacity");
   const [category, setCategory] = useState("");
   const [medium, setMedium] = useState("offline");
   const [meetLink, setMeetLink] = useState("");
@@ -33,6 +35,8 @@ function CreateEventLogic() {
   const [meetPassword, setMeetPassword] = useState("");
   const [privacy, setPrivacy] = useState("public");
   const [groupId, setGroupId] = useState(groupIdParam || "");
+  const [calendarId, setCalendarId] = useState("");
+  const [requireApproval, setRequireApproval] = useState(true);
   const [image, setImage] = useState(null);
   const [imageError, setImageError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -71,6 +75,7 @@ function CreateEventLogic() {
     setDuration(data.duration || null);
     setLanguage(data.language || null);
     setMaxParticipants(data.max_participants || null);
+    setAdmissionMode(data.admission_mode || "capacity");
     setCategory(data.category || "");
     setMedium(data.medium || "offline");
     setMeetLink(data.meet_link || "");
@@ -78,8 +83,10 @@ function CreateEventLogic() {
     setMeetPassword(data.meet_password || "");
     setPrivacy(data.privacy || "public");
     setGroupId(data.group_id || "");
+    setCalendarId(data.calendar_id || "");
+    setRequireApproval(data.require_approval !== undefined ? Boolean(data.require_approval) : true);
     setImage(data.image || null);
-    setImagePreview(data.image || null);
+    setImagePreview(data.image ? resolveImage(data.image) : null);
     setTnc(data.tnc || null);
     setAcceptingAttendance(data.accepting_attendance || false);
     setAcceptingRsvp(data.accepting_rsvp !== undefined ? data.accepting_rsvp : true);
@@ -102,7 +109,6 @@ function CreateEventLogic() {
         throw new Error("End date cannot be before start date.");
       }
       if (!category) throw new Error("Please provide a category for your event.");
-      if (!maxParticipants || Number(maxParticipants) <= 0) throw new Error("Please provide the maximum number of participants for your event.");
       if (!image && !id) throw new Error("Please upload a feature image.");
       if (medium === "offline" && !location) {
         throw new Error("Please provide a location for your event.");
@@ -122,7 +128,8 @@ function CreateEventLogic() {
       start_date: startDate,
       end_date: endDate || null,
       category,
-      max_participants: Number(maxParticipants),
+      max_participants: maxParticipants ? Number(maxParticipants) : 0,
+      admission_mode: admissionMode,
       location_name: medium === "online" ? null : location,
       latitude: medium === "online" ? null : latitude,
       longitude: medium === "online" ? null : longitude,
@@ -131,7 +138,9 @@ function CreateEventLogic() {
       meet_password: medium === "offline" ? null : meetPassword,
       privacy,
       group_id: groupId ? Number(groupId) : null,
-      tnc,
+      calendar_id: calendarId ? Number(calendarId) : null,
+      require_approval: requireApproval,
+      tnc: tnc || null,
       accepting_rsvp: acceptingRsvp,
       accepting_attendance: acceptingAttendance,
       duration,
@@ -143,7 +152,13 @@ function CreateEventLogic() {
       // Update existing event
       if (image instanceof File) {
         const uploadRes = await eventService.uploadImage(id, image);
-        if (uploadRes.ok) payload.image = uploadRes.data.image;
+        if (!uploadRes.ok) {
+          setValidateMessage(uploadRes.error || "Image upload failed");
+          toast.error(uploadRes.error || "Image upload failed");
+          setSigningin(false);
+          return;
+        }
+        payload.image = uploadRes.data.image;
       }
       res = await eventService.update(id, payload);
     } else {
@@ -151,7 +166,13 @@ function CreateEventLogic() {
       res = await eventService.create(payload);
       if (res.ok && image instanceof File) {
         const uploadRes = await eventService.uploadImage(res.data.id, image);
-        if (uploadRes.ok) res.data.image = uploadRes.data.image;
+        if (!uploadRes.ok) {
+          setValidateMessage(uploadRes.error || "Image upload failed");
+          toast.error(uploadRes.error || "Image upload failed");
+          setSigningin(false);
+          return;
+        }
+        res.data.image = uploadRes.data.image;
       }
     }
 
@@ -194,8 +215,31 @@ function CreateEventLogic() {
     setImage(null);
   };
 
+  // Direct field access for the custom (Luma-style) create layout.
+  const fields = {
+    title, setTitle,
+    description, setDescription,
+    location, setLocation,
+    latitude, setLatitude,
+    longitude, setLongitude,
+    startDate, setStartDate,
+    endDate, setEndDate,
+    category, setCategory,
+    maxParticipants, setMaxParticipants,
+    admissionMode, setAdmissionMode,
+    medium, setMedium,
+    meetLink, setMeetLink,
+    meetId, setMeetId,
+    meetPassword, setMeetPassword,
+    privacy, setPrivacy,
+    calendarId, setCalendarId,
+    requireApproval, setRequireApproval,
+  };
+
   return {
     inputs,
+    fields,
+    fetchedDoc,
     validateMessage,
     signingin,
     setSigningin,

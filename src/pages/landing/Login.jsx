@@ -1,25 +1,19 @@
-import React from 'react'
+import React from 'react';
 import LoginLogic from '../../Logic/UserLogic.js/Login.logic';
 import Input from '../../components/Input';
-import Button from '../../components/Button';
+import { Button } from '@/components/ui/button';
 
 function Login() {
-  const { inputs, validateMessage, loginUser, signingin } = LoginLogic();
-
-    
-    
-    
+  const { inputs, loginUser } = LoginLogic();
 
   return (
-    <form onSubmit={loginUser} className='w-full'>
-        {
-            inputs.map((input, index) => (
-                <Input {...input} show={true}/>
-            ))
-        }
-        <Button loading={signingin} type={'submit'} text='Sign in' />
+    <form onSubmit={loginUser} className="w-full">
+      {inputs.map((input, index) => (
+        <Input {...input} show={true} />
+      ))}
+      <Button type={'submit'}>Sign In</Button>
     </form>
-  )
+  );
 }
 
-export default Login
+export default Login;

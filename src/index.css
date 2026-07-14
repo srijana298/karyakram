@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import "@fontsource-variable/geist";
 
 @tailwind base;
 @tailwind components;
@@ -56,6 +57,14 @@ body,
 ::-webkit-scrollbar-track {
     background-color: rgba(0, 0, 0, 0.04);
     border-radius: 10px;
+}
+
+.scrollbar-hidden {
+    scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
 }
 
 .container {
@@ -131,6 +140,135 @@ input[type='number'] {
 .flatpickr-wrapper {
     display: block;
     width: 100%;
+}
+
+/* Luma-inspired schedule picker */
+.luma-date-field .flatpickr-wrapper {
+    position: static;
+}
+
+.luma-calendar.flatpickr-calendar {
+    width: 320px;
+    padding: 14px;
+    margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: #202022;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+    color: #fff;
+    overflow: hidden;
+}
+
+.luma-calendar.flatpickr-calendar::before,
+.luma-calendar.flatpickr-calendar::after {
+    display: none;
+}
+
+.luma-calendar .flatpickr-months,
+.luma-calendar .flatpickr-month,
+.luma-calendar .flatpickr-weekdays {
+    background: transparent;
+}
+
+.luma-calendar .flatpickr-months {
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.luma-calendar .flatpickr-current-month {
+    position: static;
+    width: auto;
+    flex: 1;
+    padding: 0;
+    text-align: left;
+    font-size: 20px;
+    font-weight: 750;
+}
+
+.luma-calendar .flatpickr-current-month .cur-month {
+    margin-left: 4px;
+    font-weight: 750;
+}
+
+.luma-calendar .flatpickr-current-month input.cur-year {
+    font-weight: 750;
+}
+
+.luma-calendar .flatpickr-prev-month,
+.luma-calendar .flatpickr-next-month {
+    position: static;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 9px;
+    border-radius: 50%;
+    color: #a8a8ad;
+}
+
+.luma-calendar .flatpickr-prev-month:hover,
+.luma-calendar .flatpickr-next-month:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.luma-calendar .flatpickr-prev-month svg,
+.luma-calendar .flatpickr-next-month svg {
+    fill: currentColor;
+}
+
+.luma-calendar .flatpickr-weekday {
+    color: #9b9b9f;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.luma-calendar .flatpickr-days,
+.luma-calendar .dayContainer {
+    width: 292px;
+    min-width: 292px;
+    max-width: 292px;
+}
+
+.luma-calendar .flatpickr-day {
+    max-width: 41px;
+    height: 41px;
+    line-height: 41px;
+    border: 0;
+    border-radius: 12px;
+    color: #f5f5f5;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.luma-calendar .flatpickr-day:hover,
+.luma-calendar .flatpickr-day:focus {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.luma-calendar .flatpickr-day.prevMonthDay,
+.luma-calendar .flatpickr-day.nextMonthDay,
+.luma-calendar .flatpickr-day.flatpickr-disabled {
+    color: #67676b;
+}
+
+.luma-calendar .flatpickr-day.today {
+    color: #ec4899;
+    background: transparent;
+}
+
+.luma-calendar .flatpickr-day.selected,
+.luma-calendar .flatpickr-day.selected:hover {
+    background: #f8f8f8;
+    color: #171719;
+    box-shadow: none;
+}
+
+@media (max-width: 420px) {
+    .luma-calendar.flatpickr-calendar {
+        width: min(320px, calc(100vw - 32px));
+    }
 }
 
 @media screen and (max-width: 640px) {
@@ -241,4 +379,110 @@ button {
 /* Gradient text utility */
 .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400;
+}
+
+/* Landing hero — floating decorations */
+@keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+    50% { transform: translateY(-14px) rotate(var(--rot, 0deg)); }
+}
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-floaty { animation: none; }
+}
+
+/* Theme-aware page background (fallback for pages without their own bg) */
+body { background-color: #ffffff; }
+html.dark body { background-color: #0a0a0b; }
+
+@layer base {
+  .theme {
+        --font-heading: var(--font-sans);
+        --font-sans: 'Geist Variable', sans-serif;
+    }
+  :root {
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+        --card: oklch(1 0 0);
+        --card-foreground: oklch(0.145 0 0);
+        --popover: oklch(1 0 0);
+        --popover-foreground: oklch(0.145 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-rgb: 38 38 38;
+        --primary-foreground: oklch(0.985 0 0);
+        --secondary: oklch(0.97 0 0);
+        --secondary-foreground: oklch(0.205 0 0);
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+        --accent: oklch(0.97 0 0);
+        --accent-rgb: 245 245 245;
+        --accent-foreground: oklch(0.205 0 0);
+        --destructive: oklch(0.577 0.245 27.325);
+        --border: oklch(0.922 0 0);
+        --input: oklch(0.922 0 0);
+        --ring: oklch(0.708 0 0);
+        --chart-1: oklch(0.87 0 0);
+        --chart-2: oklch(0.556 0 0);
+        --chart-3: oklch(0.439 0 0);
+        --chart-4: oklch(0.371 0 0);
+        --chart-5: oklch(0.269 0 0);
+        --radius: 0.625rem;
+        --sidebar: oklch(0.985 0 0);
+        --sidebar-foreground: oklch(0.145 0 0);
+        --sidebar-primary: oklch(0.205 0 0);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.97 0 0);
+        --sidebar-accent-foreground: oklch(0.205 0 0);
+        --sidebar-border: oklch(0.922 0 0);
+        --sidebar-ring: oklch(0.708 0 0);
+    }
+  .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-rgb: 229 229 229;
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(0.269 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-rgb: 64 64 64;
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.87 0 0);
+        --chart-2: oklch(0.556 0 0);
+        --chart-3: oklch(0.439 0 0);
+        --chart-4: oklch(0.371 0 0);
+        --chart-5: oklch(0.269 0 0);
+        --sidebar: oklch(0.205 0 0);
+        --sidebar-foreground: oklch(0.985 0 0);
+        --sidebar-primary: oklch(0.488 0.243 264.376);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.269 0 0);
+        --sidebar-accent-foreground: oklch(0.985 0 0);
+        --sidebar-border: oklch(1 0 0 / 10%);
+        --sidebar-ring: oklch(0.556 0 0);
+    }
+  * {
+    @apply border-border;
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+    }
+  html {
+    @apply font-sans;
+    }
 }

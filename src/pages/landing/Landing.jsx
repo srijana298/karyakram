@@ -1,349 +1,356 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import HeroBg from "../../assets/images/herobg.jpg";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   IoArrowForward,
   IoCalendarOutline,
-  IoCheckmarkCircleOutline,
-  IoChevronDownOutline,
-  IoGlobeOutline,
   IoLinkOutline,
+  IoCheckmarkCircleOutline,
   IoPeopleOutline,
-  IoShieldCheckmarkOutline,
-  IoSparklesOutline,
-  IoStar,
   IoTicketOutline,
-} from "react-icons/io5";
-import { RiGithubFill, RiInstagramLine, RiTwitterLine } from "react-icons/ri";
+  IoGlobeOutline,
+  IoSparkles
+} from '../../components/icons';
+import { RiGithubFill, RiInstagramLine, RiTwitterLine } from '../../components/icons';
+
+// Live Kathmandu clock for the header (mirrors the reference "GMT+5:45").
+function useNepalClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return now.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Kathmandu',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+function PhoneHero() {
+  return (
+    <div className="relative mx-auto w-full max-w-[640px] select-none">
+      <div className="pointer-events-none absolute inset-[18%] rounded-full bg-violet-600/20 blur-3xl" />
+      <img
+        src="/herosection.png"
+        alt="Mahotsav event experience preview"
+        className="relative block w-full h-auto object-contain border-0 outline-none shadow-none"
+      />
+    </div>
+  );
+}
 
 function Landing() {
-  useEffect(() => {
-    const elements = document.querySelectorAll("[data-reveal]");
+  const time = useNepalClock();
 
+  useEffect(() => {
+    const els = document.querySelectorAll('[data-reveal]');
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+            observer.unobserve(e.target);
           }
         });
       },
-      { threshold: 0.18, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.18, rootMargin: '0px 0px -40px 0px' }
     );
-
-    elements.forEach((el) => observer.observe(el));
-
+    els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
   let token = null;
   try {
-    token = JSON.parse(localStorage.getItem("token"));
+    token = JSON.parse(localStorage.getItem('token'));
   } catch {
     token = null;
   }
 
   const features = [
     {
-      icon: <IoCalendarOutline className="text-2xl" />,
-      title: "Create Events",
+      icon: <IoCalendarOutline />,
+      title: 'Create Events',
       description:
-        "Set up events in minutes with customizable forms, dates, locations, and cover images.",
-      color: "bg-emerald-50 text-primary",
+        'Set up a beautiful event page in minutes — dates, location, cover image, and more.'
     },
     {
-      icon: <IoTicketOutline className="text-2xl" />,
-      title: "Manage RSVPs",
-      description:
-        "Track attendees and approve RSVP requests — all from one dashboard.",
-      color: "bg-amber-50 text-accent",
+      icon: <IoTicketOutline />,
+      title: 'Manage RSVPs',
+      description: "Approve guests or auto-confirm them, and track who's coming from one place."
     },
     {
-      icon: <IoPeopleOutline className="text-2xl" />,
-      title: "Go Live",
+      icon: <IoPeopleOutline />,
+      title: 'Go Live',
       description:
-        "Host online or offline events, scan QR codes for attendance, and download event tickets.",
-      color: "bg-stone-100 text-stone-700",
+        'Host online or in-person, check guests in with QR codes, and issue certificates.'
     },
     {
-      icon: <IoShieldCheckmarkOutline className="text-2xl" />,
-      title: "Secure & Reliable",
-      description:
-        "Your data is safe with us. Built with modern security practices and reliable infrastructure.",
-      color: "bg-rose-50 text-rose-600",
-    },
+      icon: <IoGlobeOutline />,
+      title: 'Free & Local',
+      description: 'Built for Nepal — free to host, with Khalti & eSewa when you need them.'
+    }
   ];
 
   const steps = [
     {
-      number: "01",
-      title: "Create Your Event",
-      description:
-        "Fill in the details, upload a cover image, and set your event preferences.",
-      icon: <IoCalendarOutline className="text-xl" />,
+      number: '01',
+      title: 'Create Your Event',
+      description: 'Fill in the details, add a poster, and pick a calendar.'
     },
     {
-      number: "02",
-      title: "Share & RSVP",
-      description:
-        "Share event links and let students RSVP with one click.",
-      icon: <IoLinkOutline className="text-xl" />,
+      number: '02',
+      title: 'Share & RSVP',
+      description: 'Share the link and let people RSVP with one tap.'
     },
     {
-      number: "03",
-      title: "Manage & Celebrate",
-      description:
-        "Track RSVPs, mark attendance with QR codes, and focus on hosting a great event.",
-      icon: <IoCheckmarkCircleOutline className="text-xl" />,
-    },
+      number: '03',
+      title: 'Manage & Celebrate',
+      description: 'Track RSVPs, scan check-ins, and host a great event.'
+    }
   ];
 
   const stats = [
-    { value: "500+", label: "Events Created", icon: <IoCalendarOutline className="text-lg" /> },
-    { value: "10K+", label: "RSVPs Processed", icon: <IoTicketOutline className="text-lg" /> },
-    { value: "200+", label: "College Organizers", icon: <IoPeopleOutline className="text-lg" /> },
-    { value: "50+", label: "Campuses Reached", icon: <IoGlobeOutline className="text-lg" /> },
+    { value: '500+', label: 'Events Created' },
+    { value: '10K+', label: 'RSVPs Processed' },
+    { value: '200+', label: 'Organizers' },
+    { value: '50+', label: 'Cities Reached' }
   ];
 
   return (
-    <div className="flex-1 bg-white font-sans">
-      {/* Hero — Full-width background image */}
-      <section
-        className="relative min-h-[calc(100vh-72px)] flex items-center overflow-hidden"
-        style={{
-          backgroundImage: `linear-gradient(135deg, rgba(5,150,105,0.88), rgba(28,25,23,0.78)), url(${HeroBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {/* Ambient glow accents */}
-        <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 bg-primary/40 rounded-full blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -right-16 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
+    <div className="flex-1 bg-[#0a0a0b] text-white font-sans">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="relative min-h-screen overflow-hidden">
+        {/* background wash */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_60%_at_70%_10%,rgba(124,58,237,0.18),transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_10%_90%,rgba(16,185,129,0.10),transparent_60%)]" />
 
-        <div className="container relative z-10 text-center text-white py-16 md:py-24">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-xs font-medium text-white/90">
-            <IoSparklesOutline className="text-accent" />
-            The all-in-one platform for campus events
-          </span>
-          <h1 className="mt-6 text-4xl md:text-6xl font-extrabold leading-[1.05] max-w-4xl mx-auto tracking-tight">
-            Campus Events,
-            <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-amber-200 to-accent">
-              Simplified.
-            </span>
-          </h1>
-          <p className="mt-5 text-base md:text-lg text-white/80 max-w-2xl mx-auto leading-relaxed">
-            Create. Manage. Celebrate. — RSVP, ticketing, and event management built for college organizers.
-          </p>
-          <div className="mt-10 inline-flex flex-wrap justify-center gap-3">
+        {/* Header */}
+        <header className="relative z-10">
+          <div className="container flex items-center justify-between h-16">
             <Link
-              to={token ? "/dashboard" : "/auth/signup"}
-              className="group rounded-lg px-8 py-3 text-sm font-semibold bg-accent text-secondary hover:bg-amber-400 shadow-lg shadow-amber-500/25 inline-flex items-center gap-2 transition-all hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5"
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xl font-bold tracking-tight text-white"
             >
-              {token ? "Go to Dashboard" : "Host Your Event"}
-              <IoArrowForward className="text-sm transition-transform group-hover:translate-x-1" />
+              <IoSparkles className="text-accent" /> Mahotsav
             </Link>
-            <Link
-              to="/explore"
-              className="rounded-lg px-8 py-3 text-sm font-semibold bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all hover:-translate-y-0.5"
-            >
-              Explore Events
-            </Link>
-          </div>
-
-          {/* Social proof row */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-white/80">
-            <div className="flex items-center -space-x-2.5">
-              {["bg-emerald-400", "bg-amber-400", "bg-rose-400", "bg-sky-400", "bg-violet-400"].map(
-                (c, i) => (
-                  <span
-                    key={i}
-                    className={`w-8 h-8 rounded-full ${c} ring-2 ring-white/30`}
-                  />
-                )
-              )}
-            </div>
-            <div className="text-sm">
-              <span className="inline-flex items-center gap-1 text-accent">
-                {[...Array(5)].map((_, i) => (
-                  <IoStar key={i} className="text-xs" />
-                ))}
-              </span>
-              <p className="text-white/70 text-xs mt-0.5">
-                Trusted by <span className="font-semibold text-white">200+ organizers</span> across 50+ campuses
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-12 flex justify-center">
-            <IoChevronDownOutline className="text-2xl text-white/60 animate-bounce" />
-          </div>
-        </div>
-      </section>
-
-      {/* Stats bar */}
-      <section className="py-6 bg-secondary reveal-up" data-reveal>
-        <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:divide-x md:divide-white/10">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center text-white">
-                <div className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 text-accent mb-2">
-                  {stat.icon}
-                </div>
-                <p className="text-2xl md:text-3xl font-extrabold">{stat.value}</p>
-                <p className="mt-1 text-xs text-stone-400">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features — 2x2 grid with icon cards */}
-      <section className="py-20 md:py-24 bg-white reveal-up" data-reveal>
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Features</p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-secondary">
-              Everything You Need
-            </h2>
-            <p className="mt-3 text-sm text-stone-500">
-              From planning to execution, we&apos;ve got you covered
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
-            {features.map((item) => (
-              <div
-                key={item.title}
-                className="group rounded-xl p-6 bg-stone-50/80 border border-stone-100 hover:bg-white hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-200 transition-all duration-300 hover:-translate-y-1"
+            <div className="flex items-center gap-4 text-sm">
+              <span className="hidden sm:inline text-white/50 tabular-nums">{time} GMT+5:45</span>
+              <Link to="/explore" className="text-white/80 hover:text-white transition-colors">
+                Discover Events
+              </Link>
+              <Link
+                to={token ? '/dashboard' : '/auth/login'}
+                className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors"
               >
-                <div className={`w-11 h-11 rounded-lg ${item.color} flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
-                  {item.icon}
-                </div>
-                <h3 className="text-base font-bold text-secondary">{item.title}</h3>
-                <p className="mt-2 text-sm text-stone-500 leading-relaxed">
-                  {item.description}
+                {token ? 'Dashboard' : 'Sign In'}
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {/* Hero body */}
+        <div className="container relative z-10">
+          <div className="grid lg:grid-cols-2 gap-10 items-center min-h-[calc(100vh-4rem)] py-12">
+            {/* Left copy */}
+            <div>
+              <h1 className="text-5xl md:text-7xl font-bold leading-[1.02] tracking-tight">
+                Delightful
+                <br />
+                events
+                <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500">
+                  start{' '}
+                </span>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-orange-400">
+                  here.
+                </span>
+              </h1>
+              <p className="mt-6 text-lg text-white/60 max-w-md leading-relaxed">
+                Set up an event page, invite friends, and manage RSVPs. Host a memorable event
+                today.
+              </p>
+              <Link
+                to={token ? '/dashboard/create' : '/auth/signup'}
+                className="group mt-9 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 hover:bg-white/90 transition-all hover:-translate-y-0.5"
+              >
+                {token ? 'Create an Event' : 'Create Your First Event'}
+                <IoArrowForward className="transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+            {/* Right visual */}
+            <div className="flex justify-center lg:justify-end">
+              <PhoneHero />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Stats ────────────────────────────────────────────── */}
+      <section className="py-10 border-y border-white/5 reveal-up" data-reveal>
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                  {s.value}
                 </p>
+                <p className="mt-1 text-xs text-white/40">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works — Horizontal timeline */}
-      <section className="py-20 md:py-24 bg-stone-50 reveal-up" data-reveal>
+      {/* ── Features ─────────────────────────────────────────── */}
+      <section className="py-20 md:py-28 reveal-up" data-reveal>
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">How It Works</p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-secondary">
-              Three Simple Steps
-            </h2>
-            <p className="mt-3 text-sm text-stone-500">
-              From idea to event in minutes
+          <div className="max-w-2xl mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-3">
+              Features
             </p>
+            <h2 className="text-3xl md:text-4xl font-bold">Everything you need to host</h2>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12 relative">
-            {/* Connecting line */}
-            <div className="hidden md:block absolute top-[52px] left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-primary via-accent to-primary opacity-30" />
-
-            {steps.map((step) => (
-              <div key={step.number} className="relative text-center">
-                <div className="w-[52px] h-[52px] rounded-full bg-primary text-white flex items-center justify-center text-lg font-bold mx-auto shadow-lg shadow-primary/20">
-                  {step.number}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map((f) => (
+              <div
+                key={f.title}
+                className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 text-violet-300 flex items-center justify-center text-xl mb-4">
+                  {f.icon}
                 </div>
-                <h3 className="mt-5 text-base font-bold text-secondary">{step.title}</h3>
-                <p className="mt-2 text-sm text-stone-500 leading-relaxed max-w-xs mx-auto">
-                  {step.description}
-                </p>
+                <h3 className="text-base font-semibold">{f.title}</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">{f.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA — Bold gradient */}
-      <section className="py-20 md:py-24 bg-white reveal-up" data-reveal>
+      {/* ── How it works ─────────────────────────────────────── */}
+      <section className="py-20 md:py-24 reveal-up" data-reveal>
         <div className="container">
-          <div className="relative bg-secondary rounded-2xl p-10 md:p-16 text-center overflow-hidden">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute -top-20 -right-20 w-60 h-60 bg-primary rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-accent rounded-full blur-3xl" />
-            </div>
-            <div className="relative z-10">
-              <h2 className="text-2xl md:text-4xl font-extrabold text-white">
-                Ready to Host Your Next Event?
-              </h2>
-              <p className="mt-3 text-sm md:text-base text-stone-400 max-w-lg mx-auto">
-                Join hundreds of college organizers already using Mahotsav.
-              </p>
-              <div className="mt-8 inline-flex flex-wrap justify-center gap-3">
-                <Link
-                  to={token ? "/dashboard" : "/auth/signup"}
-                  className="rounded-lg px-6 py-3 text-sm font-semibold bg-primary text-white hover:bg-emerald-600 inline-flex items-center gap-2 shadow-lg shadow-primary/30"
-                >
-                  Get Started Free
-                  <IoArrowForward className="text-sm" />
-                </Link>
-                <Link
-                  to="/explore"
-                  className="rounded-lg px-6 py-3 text-sm font-semibold border border-white/20 text-white hover:bg-white/10"
-                >
-                  See How It Works
-                </Link>
+          <div className="max-w-2xl mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-3">
+              How it works
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold">From idea to event in minutes</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {steps.map((s) => (
+              <div
+                key={s.number}
+                className="rounded-2xl p-6 bg-white/[0.04] border border-white/10"
+              >
+                <span className="text-sm font-bold text-violet-400">{s.number}</span>
+                <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">{s.description}</p>
               </div>
-              <p className="mt-6 text-xs text-stone-500">
-                No credit card required. Free for college events.
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      <section className="py-20 md:py-24 reveal-up" data-reveal>
+        <div className="container">
+          <div className="relative rounded-3xl p-10 md:p-16 text-center overflow-hidden border border-white/10 bg-[linear-gradient(135deg,rgba(124,58,237,0.25),rgba(236,72,153,0.15))]">
+            <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-violet-500/30 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 bg-fuchsia-500/20 rounded-full blur-3xl" />
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-5xl font-bold">Delightful events start here.</h2>
+              <p className="mt-4 text-white/60 max-w-lg mx-auto">
+                Join organizers across Nepal already hosting with Mahotsav — free.
               </p>
+              <Link
+                to={token ? '/dashboard/create' : '/auth/signup'}
+                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 hover:bg-white/90 transition-all hover:-translate-y-0.5"
+              >
+                {token ? 'Create an Event' : 'Create Your First Event'}
+                <IoArrowForward />
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer — Clean with warm tones */}
-      <footer className="bg-stone-900 text-white pt-16 pb-10 reveal-up" data-reveal>
+      {/* ── Footer ───────────────────────────────────────────── */}
+      <footer className="border-t border-white/5 pt-14 pb-10">
         <div className="container">
           <div className="grid md:grid-cols-4 gap-10">
             <div>
-              <h3 className="text-xl font-extrabold text-white">Mahotsav</h3>
-              <p className="mt-3 text-sm text-stone-400 leading-relaxed">
-                The modern event management platform built for college organizers.
+              <h3 className="text-xl font-bold inline-flex items-center gap-1.5">
+                <IoSparkles className="text-accent" /> Mahotsav
+              </h3>
+              <p className="mt-3 text-sm text-white/40 leading-relaxed">
+                The modern event platform built for Nepal.
               </p>
             </div>
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Platform</h4>
-              <ul className="space-y-2.5 text-sm text-stone-400">
-                <li><Link className="hover:text-white transition-colors" to="/explore">Explore Events</Link></li>
-                <li><Link className="hover:text-white transition-colors" to="/dashboard">Dashboard</Link></li>
-                <li><Link className="hover:text-white transition-colors" to="/dashboard/create">Create Event</Link></li>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
+                Platform
+              </h4>
+              <ul className="space-y-2.5 text-sm text-white/50">
+                <li>
+                  <Link className="hover:text-white transition-colors" to="/explore">
+                    Discover Events
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:text-white transition-colors" to="/dashboard">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:text-white transition-colors" to="/dashboard/create">
+                    Create Event
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Company</h4>
-              <ul className="space-y-2.5 text-sm text-stone-400">
-                <li><a className="hover:text-white transition-colors" href="#">About</a></li>
-                <li><a className="hover:text-white transition-colors" href="#">Contact</a></li>
-                <li><a className="hover:text-white transition-colors" href="#">Privacy Policy</a></li>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
+                Company
+              </h4>
+              <ul className="space-y-2.5 text-sm text-white/50">
+                <li>
+                  <a className="hover:text-white transition-colors" href="#">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-white transition-colors" href="#">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-white transition-colors" href="#">
+                    Privacy
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-4">Connect</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
+                Connect
+              </h4>
               <div className="flex gap-2">
-                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
-                  <RiInstagramLine />
-                </a>
-                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
-                  <RiTwitterLine />
-                </a>
-                <a href="#" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-stone-400 hover:text-white transition-all">
-                  <RiGithubFill />
-                </a>
+                {[RiInstagramLine, RiTwitterLine, RiGithubFill].map((Icon, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-white/50 hover:text-white transition-all"
+                  >
+                    <Icon />
+                  </a>
+                ))}
               </div>
             </div>
           </div>
-          <hr className="my-8 border-stone-800" />
-          <p className="text-center text-xs text-stone-600">
+          <hr className="my-8 border-white/5" />
+          <p className="text-center text-xs text-white/30">
             © {new Date().getFullYear()} Mahotsav. All rights reserved.
           </p>
         </div>

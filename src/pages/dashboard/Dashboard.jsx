@@ -8,7 +8,7 @@ import {
   IoPeopleOutline,
   IoRocketOutline,
   IoPersonOutline,
-} from "react-icons/io5";
+} from "../../components/icons";
 import { Link } from "react-router-dom";
 import { eventService } from "../../services/events";
 import { analyticsService } from "../../services/analytics";
@@ -39,10 +39,11 @@ function StatCard({ icon, label, value, delta, tone = "green" }) {
 
 function Dashboard() {
   const { userInfo } = useUser();
-  const role = userInfo?.role || "attendee";
+  const role = userInfo?.role || "user";
   const isAdmin = role === "admin";
-  const isOrganizer = role === "organizer";
-  const isAttendee = role === "attendee";
+  // Every member can organize events, so members get the organizer home view.
+  const isOrganizer = !isAdmin;
+  const isAttendee = false;
 
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);

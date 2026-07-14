@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import Loading from "../components/Loading";
-import { TiTick } from "react-icons/ti";
-import { AiFillCloseCircle } from "react-icons/ai";
-import { MdInfo } from "react-icons/md";
+import { TiTick } from "../components/icons";
+import { AiFillCloseCircle } from "../components/icons";
+import { MdInfo } from "../components/icons";
 import { memberService } from "../services/members";
 
 function MarkAttendance() {

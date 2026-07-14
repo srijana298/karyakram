@@ -1,115 +1,95 @@
-import React, { useEffect, useRef } from "react";
-import flatpickr from "flatpickr";
+import * as React from "react";
+import { format } from "date-fns";
 import dayjs from "dayjs";
-import "flatpickr/dist/flatpickr.min.css";
+import { ChevronDownIcon } from "lucide-react";
 
-/**
- * DateTimePicker — date + time picker with validation.
- *
- * Props:
- *   label
- *   value        — datetime-local string (YYYY-MM-DDTHH:mm)
- *   onChange(val)
- *   minDate?     — datetime-local string
- *   maxDate?     — datetime-local string
- *   placeholder?
- *   required?
- *   error?
- */
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 export default function DateTimePicker({
   label,
   value,
   onChange,
   minDate,
   maxDate,
-  placeholder = "Select date & time",
+  placeholder = "Select date",
   required = false,
   error,
 }) {
-  const inputRef = useRef(null);
-  const fpRef = useRef(null);
+  const [open, setOpen] = React.useState(false);
+  const selected = React.useMemo(
+    () => value && dayjs(value).isValid() ? new Date(value) : undefined,
+    [value],
+  );
+  const time = selected ? dayjs(selected).format("HH:mm") : "";
 
-  useEffect(() => {
-    if (!inputRef.current) return;
+  const emit = (date, nextTime = time || "12:00") => {
+    if (!date) return;
+    onChange?.(`${dayjs(date).format("YYYY-MM-DD")}T${nextTime}`);
+  };
 
-    fpRef.current = flatpickr(inputRef.current, {
-      enableTime: true,
-      dateFormat: "Y-m-d H:i",
-      minDate: minDate ? new Date(minDate) : "today",
-      maxDate: maxDate ? new Date(maxDate) : undefined,
-      time_24hr: false,
-      allowInput: false,
-      clickOpens: true,
-      minuteIncrement: 5,
-      static: true,
-      disableMobile: true,
-      defaultDate: value ? new Date(value) : undefined,
-      onChange: (selectedDates) => {
-        if (selectedDates[0] && onChange) {
-          const formatted = dayjs(selectedDates[0]).format("YYYY-MM-DDTHH:mm");
-          onChange(formatted);
-        }
-      },
-    });
-
-    return () => {
-      if (fpRef.current) {
-        fpRef.current.destroy();
-        fpRef.current = null;
-      }
-    };
-  }, []); // init once
-
-  // Sync minDate/maxDate when they change
-  useEffect(() => {
-    if (!fpRef.current) return;
-    if (minDate) fpRef.current.set("minDate", new Date(minDate));
-    if (maxDate) fpRef.current.set("maxDate", new Date(maxDate));
-  }, [minDate, maxDate]);
-
-  // Sync value from outside (e.g. form reset or edit load)
-  useEffect(() => {
-    if (!fpRef.current) return;
-    if (value) {
-      fpRef.current.setDate(new Date(value), false);
-    } else {
-      fpRef.current.clear(false);
-    }
-  }, [value]);
-
-  const displayValue = value
-    ? dayjs(value).format("MMM D, YYYY · h:mm A")
-    : "";
+  const disabled = [
+    { before: minDate ? dayjs(minDate).startOf("day").toDate() : dayjs().startOf("day").toDate() },
+    ...(maxDate ? [{ after: dayjs(maxDate).endOf("day").toDate() }] : []),
+  ];
 
   return (
     <div className="w-full">
       {label && (
-        <label className="text-xs font-medium text-stone-500 mb-1.5 block">
-          {label}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
+        <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+          {label}{required && <span className="ml-0.5 text-destructive">*</span>}
+        </div>
       )}
+      <FieldGroup className="flex-row gap-2">
+        <Field className="min-w-0 flex-1 gap-1.5">
+          <FieldLabel htmlFor={`date-picker-${label || placeholder}`} className="sr-only">Date</FieldLabel>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  id={`date-picker-${label || placeholder}`}
+                  className="h-11 w-full justify-between px-3 font-normal"
+                >
+                  <span className={selected ? "truncate" : "truncate text-muted-foreground"}>
+                    {selected ? format(selected, "PPP") : placeholder}
+                  </span>
+                  <ChevronDownIcon data-icon="inline-end" />
+                </Button>
+              }
+            />
+            <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selected}
+                defaultMonth={selected || (minDate ? new Date(minDate) : new Date())}
+                disabled={disabled}
+                onSelect={(date) => {
+                  if (!date) return;
+                  emit(date);
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </Field>
 
-      <div className="relative w-full">
-        <input
-          ref={inputRef}
-          className="w-full h-10 px-3 text-sm bg-white border border-gray-200 rounded-md outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
-          placeholder={placeholder}
-          data-input
-          readOnly
-        />
-        {displayValue && (
-          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-            <span className="text-[11px] text-dashboard-muted bg-stone-50 px-1.5 py-0.5 rounded">
-              {dayjs(value).format("h:mm A")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <p className="text-[11px] text-red-500 mt-1">{error}</p>
-      )}
+        <Field className="w-32 shrink-0 gap-1.5">
+          <FieldLabel htmlFor={`time-picker-${label || placeholder}`} className="sr-only">Time</FieldLabel>
+          <Input
+            type="time"
+            id={`time-picker-${label || placeholder}`}
+            step="60"
+            value={time}
+            onChange={(event) => emit(selected || new Date(), event.target.value)}
+            className="h-11 appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+          />
+        </Field>
+      </FieldGroup>
+      {error && <FieldError className="mt-1 text-xs">{error}</FieldError>}
     </div>
   );
 }

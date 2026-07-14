@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}'
@@ -7,9 +8,33 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: 'rgb(5,150,105)',
-        accent: 'rgb(245,158,11)',
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        primary: {
+          DEFAULT: 'rgb(var(--primary-rgb) / <alpha-value>)',
+          foreground: 'var(--primary-foreground)',
+        },
         secondary: 'rgb(28,25,23)',
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          foreground: 'var(--accent-foreground)',
+        },
+        destructive: 'var(--destructive)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
         dashboard: {
           bg: '#f3f3f3',
           surface: '#f8f8f8',

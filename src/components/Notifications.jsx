@@ -1,7 +1,7 @@
 import React from "react";
 import { useNotifications } from "../context/notificationContext";
 import NotificationCard from "./NotificationCard";
-import { IoArrowBack, IoNotificationsOutline } from "react-icons/io5";
+import { IoArrowBack, IoNotificationsOutline } from "./icons";
 
 function Notifications() {
   const { show, toggleNotificationBar, notifications } = useNotifications();

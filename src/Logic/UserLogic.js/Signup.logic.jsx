@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "../../components/icons";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth";
+import { createAvatarUrl } from "../../lib/avatar";
+import { useUser } from "../../context/userContext";
 
 function SignupLogic() {
   const [showPass, setShowPass] = useState(false);
@@ -15,6 +17,7 @@ function SignupLogic() {
   const [signingin, setSigningin] = useState(false);
 
   const navigate = useNavigate();
+  const { setUserInfo } = useUser();
 
   const inputs = [
     {
@@ -97,7 +100,7 @@ function SignupLogic() {
     setSigningin(true);
     setValidateMessage(null);
 
-    const res = await authService.signup(name, email, password);
+    const res = await authService.signup(name, email, password, createAvatarUrl());
 
     if (!res.ok) {
       setValidateMessage(res.error);
@@ -108,6 +111,7 @@ function SignupLogic() {
 
     localStorage.setItem("token", JSON.stringify(res.data.token));
     localStorage.setItem("Mahotsav-user", JSON.stringify(res.data.user));
+    setUserInfo(res.data.user);
     toast.success("Signed up successfully");
     navigate("/dashboard", { replace: true });
     setSigningin(false);

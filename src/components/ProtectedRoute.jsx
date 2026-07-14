@@ -13,12 +13,13 @@ function ProtectedRoute({ children }) {
       return;
     }
 
-    if (pathname.includes("dashboard")) {
+    // Any registered user can organize events, so the dashboard is open to all
+    // authenticated users. Admin-only areas (e.g. Users) guard themselves.
+    if (pathname.includes("/dashboard/users")) {
       let user = null;
       try { user = JSON.parse(localStorage.getItem("Mahotsav-user")); } catch {}
-      const role = user?.role;
-      if (role !== "admin" && role !== "organizer") {
-        navigate("/explore");
+      if (user?.role !== "admin") {
+        navigate("/dashboard");
         return;
       }
     }

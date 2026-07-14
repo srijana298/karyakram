@@ -1,7 +1,7 @@
 import { api } from "./api";
 
 export const rsvpService = {
-  create: (eventId) => api.post(`/rsvps/${eventId}`),
+  create: (eventId, data) => api.post(`/rsvps/${eventId}`, data),
 
   listForEvent: (eventId) => api.get(`/rsvps/${eventId}/rsvps`),
 

@@ -8,7 +8,7 @@ import {
   IoPersonOutline,
   IoSearchOutline,
   IoPeopleOutline,
-} from 'react-icons/io5';
+} from "./icons";
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import LogoutLogic from '../Logic/UserLogic.js/Logout.logic';
 import { authService } from '../services/auth';
@@ -21,10 +21,8 @@ function Sidebar() {
   const { unreadNotifications } = useNotifications();
   const navigate = useNavigate();
 
-  const role = userInfo?.role || 'attendee';
+  const role = userInfo?.role || 'user';
   const isAdmin = role === 'admin';
-  const isOrganizer = role === 'organizer';
-  const isAttendee = role === 'attendee';
 
   const getUserInfo = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -54,9 +52,9 @@ function Sidebar() {
 
   const roleBadge = {
     admin: 'bg-red-50 text-red-700 border-red-200',
-    organizer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    attendee: 'bg-blue-50 text-blue-700 border-blue-200',
+    user: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
+  const roleLabel = { admin: 'Super Admin', user: 'Member' };
 
   return (
     <aside className="flex flex-col w-72 shrink-0 border-r border-dashboard-border bg-dashboard-panel h-full">
@@ -96,12 +94,10 @@ function Sidebar() {
           </NavLink>
         )}
 
-        {/* Admin + Organizer */}
-        {(isAdmin || isOrganizer) && (
-          <NavLink className={linkClass} to="groups">
-            <IoLayersOutline className="text-[18px]" /> Groups
-          </NavLink>
-        )}
+        {/* Any member can organize events & groups */}
+        <NavLink className={linkClass} to="groups">
+          <IoLayersOutline className="text-[18px]" /> Groups
+        </NavLink>
 
         <NavLink className={linkClass} to="notifications">
           <div className="relative">
@@ -119,8 +115,8 @@ function Sidebar() {
 
       <div className="p-2 border-t border-dashboard-border">
         <div className="bg-white border border-dashboard-border rounded-xl p-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-stone-900 text-white flex items-center justify-center text-xs font-bold uppercase">
-            {(userInfo?.name || 'U').slice(0, 2)}
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-stone-900 text-white flex items-center justify-center text-xs font-bold uppercase">
+            {userInfo?.avatar ? <img src={userInfo.avatar} alt="Your avatar" className="w-full h-full object-cover" /> : (userInfo?.name || 'U').slice(0, 2)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-dashboard-text truncate">
@@ -128,8 +124,8 @@ function Sidebar() {
             </p>
             <p className="text-[11px] text-dashboard-muted truncate">{userInfo?.email || ''}</p>
           </div>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${roleBadge[role] || roleBadge.attendee}`}>
-            {role}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${roleBadge[role] || roleBadge.user}`}>
+            {roleLabel[role] || 'Member'}
           </span>
           <NavLink
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-dashboard-muted hover:text-red-500 hover:bg-red-50 transition-colors"

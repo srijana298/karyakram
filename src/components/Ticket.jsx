@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Loading from "./Loading";
 import Barcode from "../assets/images/barcode.png";
-import { RiDownloadFill } from "react-icons/ri";
+import { RiDownloadFill } from "./icons";
 import { exportComponentAsPNG } from "react-component-export-image";
 import { resolveImage } from "../lib/resolveImage";
 

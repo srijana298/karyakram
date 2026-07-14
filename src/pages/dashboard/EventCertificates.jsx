@@ -18,7 +18,7 @@ import {
   IoSearchOutline,
   IoShieldCheckmarkOutline,
   IoCheckmarkCircleOutline,
-} from "react-icons/io5";
+} from "../../components/icons";
 import Loading from "../../components/Loading";
 
 /* ── Certificate Preview Modal ───────────────────────────────── */

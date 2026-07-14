@@ -227,8 +227,8 @@ export const updateUserRole = async (req, res) => {
   const userId = parseInt(req.params.id);
   const { role } = req.body;
 
-  const validRoles = ["admin", "organizer", "attendee"];
-  if (!validRoles.includes(role)) return BadRequest("Invalid role. Must be: admin, organizer, or attendee");
+  const validRoles = ["admin", "user"];
+  if (!validRoles.includes(role)) return BadRequest("Invalid role. Must be: admin or user");
 
   const [existing] = await db.select().from(users).where(eq(users.id, userId)).catch(() => []);
   if (!existing) return NotFound("User not found");

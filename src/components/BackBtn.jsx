@@ -1,5 +1,5 @@
 import React from "react";
-import { MdOutlineArrowBack } from "react-icons/md";
+import { MdOutlineArrowBack } from "./icons";
 import { Link } from "react-router-dom";
 
 function BackBtn({to}) {

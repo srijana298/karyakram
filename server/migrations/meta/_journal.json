@@ -29,6 +29,27 @@
       "when": 1777481730945,
       "tag": "0003_striped_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1783990800000,
+      "tag": "0004_fun_user_avatars",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1783994400000,
+      "tag": "0005_event_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783998000000,
+      "tag": "0006_unique_event_invitation_email",
+      "breakpoints": true
     }
   ]
 }

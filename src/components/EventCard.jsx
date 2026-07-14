@@ -1,7 +1,7 @@
 import React from "react";
-import { IoLocation, IoPersonOutline } from "react-icons/io5";
+import { IoLocation, IoPersonOutline } from "./icons";
 import { Link } from "react-router-dom";
-import { MdComputer } from "react-icons/md";
+import { MdComputer } from "./icons";
 import { resolveImage } from "../lib/resolveImage";
 
 const EventCard = ({

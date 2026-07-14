@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { rsvpService } from "../../services/rsvps";
 import { useNotifications } from "../../context/notificationContext";
@@ -11,7 +11,25 @@ export default function RsvpLogic(event) {
   try { MahotsavUser = JSON.parse(localStorage.getItem("Mahotsav-user")); } catch { MahotsavUser = null; }
 
   const [adding, setAdding] = useState(false);
+  // The current user's RSVP for this event (null = none). Used to hide the
+  // RSVP button once they've already responded.
+  const [myRsvp, setMyRsvp] = useState(null);
   const { sendNotification } = useNotifications();
+
+  // Load the user's existing RSVP for this event so we don't offer to RSVP
+  // again after they've already done so.
+  useEffect(() => {
+    if (!token || !event?.id) return;
+    let active = true;
+    rsvpService.listMine().then((res) => {
+      if (!active || !res.ok) return;
+      const mine = (res.data || []).find((r) => r.event_id === event.id);
+      if (mine) setMyRsvp(mine);
+    });
+    return () => {
+      active = false;
+    };
+  }, [token, event?.id]);
 
   const checkUserIsOwner = () => {
     if (token && MahotsavUser && event?.created_by === MahotsavUser?.id) {
@@ -20,8 +38,8 @@ export default function RsvpLogic(event) {
     return false;
   };
 
-  const addRsvp = async (user) => {
-    const res = await rsvpService.create(event?.id);
+  const addRsvp = async (user, options) => {
+    const res = await rsvpService.create(event?.id, options);
     return res;
   };
 
@@ -86,7 +104,14 @@ export default function RsvpLogic(event) {
     }
 
     setAdding(true);
-    const res = await rsvpService.create(event?.id);
+    let res = await rsvpService.create(event?.id);
+
+    if (!res.ok && res.status === 409 && res.data?.data?.code === "TRAVEL_RISK") {
+      const proceed = window.confirm(`${res.error}\n\nContinue RSVP anyway?`);
+      if (proceed) {
+        res = await rsvpService.create(event?.id, { forceTravelRisk: true });
+      }
+    }
 
     if (!res.ok) {
       toast.error(res.error);
@@ -95,6 +120,7 @@ export default function RsvpLogic(event) {
     }
 
     toast.success("RSVP has been sent to the event owner. You will be notified when they approve your request.");
+    setMyRsvp({ event_id: event?.id, pending: true, approved: false, rejected: false });
     await sendNotification({
       user_id: event?.created_by,
       from_user_id: MahotsavUser?.id,
@@ -110,6 +136,7 @@ export default function RsvpLogic(event) {
     handleRSVP,
     checkUserIsOwner,
     adding,
+    myRsvp,
     approveRsvp,
     rejectRsvp,
   };

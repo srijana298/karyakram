@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { IoLocationOutline } from "react-icons/io5";
-import { MdComputer } from "react-icons/md";
+import { IoLocationOutline } from "./icons";
+import { MdComputer } from "./icons";
 import { resolveImage } from "../lib/resolveImage";
 
 function ExploreEventCard({
@@ -11,6 +11,7 @@ function ExploreEventCard({
   image,
   location_name,
   id,
+  short_code,
   medium,
   start_date,
   end_date,
@@ -21,7 +22,7 @@ function ExploreEventCard({
   const month = start.toDateString().slice(4, 7).toUpperCase();
 
   return (
-    <Link to={`/event/${id}`} className="block group">
+    <Link to={`/${short_code || id}`} className="block group">
       <div className="bg-white rounded-xl border border-stone-200/80 overflow-hidden hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-300 transition-all duration-300">
         {/* Image */}
         <div className="relative overflow-hidden">
@@ -36,14 +37,14 @@ function ExploreEventCard({
             <p className="text-[10px] text-stone-400 mt-0.5">{month}</p>
           </div>
           {/* Category badge */}
-          <div className="absolute bottom-2.5 left-2.5 rounded-lg text-xs bg-primary/90 backdrop-blur-sm text-white px-2.5 py-1 shadow-sm font-medium">
+          <div className="absolute bottom-2.5 left-2.5 rounded-lg text-xs bg-stone-800/90 backdrop-blur-sm text-white px-2.5 py-1 shadow-sm font-medium">
             {category}
           </div>
         </div>
 
         {/* Content */}
         <div className="p-3.5">
-          <h3 className="text-sm font-semibold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="text-sm font-semibold text-secondary leading-snug line-clamp-2 group-hover:text-stone-600 transition-colors">
             {title}
           </h3>
 

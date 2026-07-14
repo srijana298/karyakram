@@ -18,7 +18,7 @@ import {
   IoPeopleOutline,
   IoTrophyOutline,
   IoTrashOutline,
-} from "react-icons/io5";
+} from "../../components/icons";
 
 const ICON_OPTIONS = [
   { key: "trophy", icon: <IoTrophyOutline /> },

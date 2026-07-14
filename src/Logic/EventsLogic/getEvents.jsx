@@ -7,7 +7,7 @@ import { adminService } from "../../services/admin";
 function GetEventLogic() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id, code } = useParams();
   const { pathname } = useLocation();
   const filter = searchParams.get("filter");
   const [events, setEvents] = useState(null);
@@ -60,7 +60,7 @@ function GetEventLogic() {
 
   const getEventById = useCallback(async () => {
     setLoading(true);
-    const res = await eventService.getById(id);
+    const res = id ? await eventService.getById(id) : await eventService.resolveCode(code);
     if (res.ok) {
       setEvents(res.data);
     } else {
@@ -68,12 +68,12 @@ function GetEventLogic() {
       toast.error(res.error);
     }
     setLoading(false);
-  }, [id, pathname, navigate]);
+  }, [id, code, pathname, navigate]);
 
   useEffect(() => {
-    if (id) getEventById();
+    if (id || code) getEventById();
     else getEvents();
-  }, [getEvents, getEventById, id]);
+  }, [getEvents, getEventById, id, code]);
 
   return {
     loading,
