@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { certificateService } from "../../services/certificates";
 import { eventService } from "../../services/events";
@@ -97,21 +98,27 @@ function CertificateRow({ cert, userMap, onPreview }) {
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
     `User ${cert.user_id}`;
 
-  const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(null);
 
-  const verify = async () => {
-    if (!cert.verification_code) return;
-    setVerifying(true);
-    const res = await certificateService.verify(cert.verification_code);
-    if (res.ok) {
+  const verifyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await certificateService.verify(cert.verification_code);
+      if (!res.ok) throw new Error(res.error || "Invalid certificate");
+      return res.data;
+    },
+    onSuccess: () => {
       setVerified(true);
       toast.success("Certificate is valid ✓");
-    } else {
+    },
+    onError: () => {
       setVerified(false);
       toast.error("Invalid certificate");
-    }
-    setVerifying(false);
+    },
+  });
+  const verifying = verifyMutation.isPending;
+  const verify = () => {
+    if (!cert.verification_code) return;
+    verifyMutation.mutate();
   };
 
   return (
@@ -208,14 +215,8 @@ function CertificateRow({ cert, userMap, onPreview }) {
 /* ── Main Component ──────────────────────────────────────────── */
 export default function EventCertificates() {
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [event, setEvent] = useState(null);
-  const [templates, setTemplates] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [certificates, setCertificates] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [userMap, setUserMap] = useState({});
   const [generateResult, setGenerateResult] = useState(null);
   const [search, setSearch] = useState("");
   const [previewCert, setPreviewCert] = useState(null);
@@ -223,40 +224,90 @@ export default function EventCertificates() {
   // Verify certificate section
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyResult, setVerifyResult] = useState(null);
-  const [verifying, setVerifying] = useState(false);
 
   /* ── Data loading ──────────────────────────────────── */
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [ev, t, u, a] = await Promise.all([
-      eventService.getById(id),
-      certificateService.templates(),
-      userService.list(),
-      attendanceService.list(id),
-    ]);
-    if (ev.ok) setEvent(ev.data);
-    if (t.ok) {
-      setTemplates(t.data || []);
-      if (t.data?.length) setSelectedTemplate(String(t.data[0].id));
-    }
-    if (u.ok) {
-      const map = {};
-      (u.data || []).forEach((user) => {
-        map[String(user.id)] = user;
-      });
-      setUserMap(map);
-    }
-    if (a.ok) setAttendance(a.data || []);
+  const eventQuery = useQuery({
+    queryKey: ["event", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await eventService.getById(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load event");
+      return res.data;
+    },
+  });
+  const templatesQuery = useQuery({
+    queryKey: ["certificate-templates"],
+    queryFn: async () => {
+      const res = await certificateService.templates();
+      if (!res.ok) throw new Error(res.error || "Failed to load templates");
+      return res.data || [];
+    },
+  });
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await userService.list();
+      if (!res.ok) throw new Error(res.error || "Failed to load users");
+      return res.data || [];
+    },
+  });
+  const attendanceQuery = useQuery({
+    queryKey: ["attendance", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await attendanceService.list(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load attendance");
+      return res.data || [];
+    },
+  });
+  const certificatesQuery = useQuery({
+    queryKey: ["certificates", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await certificateService.listForEvent(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load certificates");
+      return res.data || [];
+    },
+  });
 
-    const c = await certificateService.listForEvent(id);
-    if (c.ok) setCertificates(c.data || []);
+  const event = eventQuery.data ?? null;
+  const templates = templatesQuery.data || [];
+  const certificates = certificatesQuery.data || [];
+  const attendance = attendanceQuery.data || [];
+  const userMap = useMemo(() => {
+    const map = {};
+    (usersQuery.data || []).forEach((user) => {
+      map[String(user.id)] = user;
+    });
+    return map;
+  }, [usersQuery.data]);
 
-    setLoading(false);
-  }, [id]);
+  const loading =
+    eventQuery.isPending ||
+    templatesQuery.isPending ||
+    usersQuery.isPending ||
+    attendanceQuery.isPending ||
+    certificatesQuery.isPending;
+  const isFetchingAny =
+    eventQuery.isFetching ||
+    templatesQuery.isFetching ||
+    usersQuery.isFetching ||
+    attendanceQuery.isFetching ||
+    certificatesQuery.isFetching;
+  const refresh = () => {
+    eventQuery.refetch();
+    templatesQuery.refetch();
+    usersQuery.refetch();
+    attendanceQuery.refetch();
+    certificatesQuery.refetch();
+  };
 
+  // Default the selected template to the first available one.
   useEffect(() => {
-    load();
-  }, [load]);
+    if (templates.length && !selectedTemplate) {
+      setSelectedTemplate(String(templates[0].id));
+    }
+  }, [templates, selectedTemplate]);
 
   // Close modal on Escape
   useEffect(() => {
@@ -273,44 +324,53 @@ export default function EventCertificates() {
   const pendingCount = Math.max(checkedInCount - certCount, 0);
 
   /* ── Generate certificates ─────────────────────────── */
-  const generate = async () => {
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await certificateService.generateForEvent(id, {
+        templateId: Number(selectedTemplate),
+      });
+      if (!res.ok) throw new Error(res.error || "Failed to generate certificates");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setGenerateResult(data);
+      toast.success(`${data?.generatedCount ?? 0} certificate(s) generated`);
+      queryClient.invalidateQueries({ queryKey: ["certificates", Number(id)] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const generating = generateMutation.isPending;
+  const generate = () => {
     if (!selectedTemplate) {
       toast.error("Select a template first");
       return;
     }
-    setGenerating(true);
     setGenerateResult(null);
-    const res = await certificateService.generateForEvent(id, {
-      templateId: Number(selectedTemplate),
-    });
-    if (res.ok) {
-      setGenerateResult(res.data);
-      toast.success(
-        `${res.data?.generatedCount ?? 0} certificate(s) generated`
-      );
-      const c = await certificateService.listForEvent(id);
-      if (c.ok) setCertificates(c.data || []);
-    } else {
-      toast.error(res.error || "Failed to generate certificates");
-    }
-    setGenerating(false);
+    generateMutation.mutate();
   };
 
   /* ── Verify certificate ────────────────────────────── */
-  const verifyCertificate = async (e) => {
-    e?.preventDefault();
-    if (!verifyCode.trim()) return;
-    setVerifying(true);
-    setVerifyResult(null);
-    const res = await certificateService.verify(verifyCode.trim());
-    if (res.ok) {
-      setVerifyResult({ valid: true, data: res.data });
+  const verifyMutation = useMutation({
+    mutationFn: async (code) => {
+      const res = await certificateService.verify(code);
+      if (!res.ok) throw new Error(res.error || "Certificate not found or invalid");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setVerifyResult({ valid: true, data });
       toast.success("Certificate is valid ✓");
-    } else {
+    },
+    onError: () => {
       setVerifyResult({ valid: false });
       toast.error("Certificate not found or invalid");
-    }
-    setVerifying(false);
+    },
+  });
+  const verifying = verifyMutation.isPending;
+  const verifyCertificate = (e) => {
+    e?.preventDefault();
+    if (!verifyCode.trim()) return;
+    setVerifyResult(null);
+    verifyMutation.mutate(verifyCode.trim());
   };
 
   /* ── Filtered certificates ─────────────────────────── */
@@ -362,11 +422,11 @@ export default function EventCertificates() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={load}
+            onClick={refresh}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-stone-500 bg-white border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
           >
             <IoRefreshOutline
-              className={`text-base ${loading ? "animate-spin" : ""}`}
+              className={`text-base ${isFetchingAny ? "animate-spin" : ""}`}
             />
             Refresh
           </button>

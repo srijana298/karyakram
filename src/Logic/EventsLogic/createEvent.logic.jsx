@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -8,13 +9,13 @@ import { categories } from "./categories";
 
 function CreateEventLogic() {
   const [validateMessage, setValidateMessage] = useState(null);
-  const [signingin, setSigningin] = useState(false);
 
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const groupIdParam = searchParams.get("groupId");
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fileRef = useRef(null);
 
   const [title, setTitle] = useState("");
@@ -40,8 +41,6 @@ function CreateEventLogic() {
   const [image, setImage] = useState(null);
   const [imageError, setImageError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
-  const [fetchedDoc, setFetchedDoc] = useState(null);
-  const [fetchingDoc, setFetchingDoc] = useState(false);
   const [tnc, setTnc] = useState(null);
   const [acceptingAttendance, setAcceptingAttendance] = useState(false);
   const [acceptingRsvp, setAcceptingRsvp] = useState(true);
@@ -54,17 +53,23 @@ function CreateEventLogic() {
     }
   };
 
-  const getEventById = useCallback(async () => {
-    setFetchingDoc(true);
-    const res = await eventService.getById(id);
-    if (!res.ok) {
-      toast.error(res.error);
-      setFetchingDoc(false);
-      return;
-    }
+  const { data: fetchedDoc, isFetching: fetchingDoc } = useQuery({
+    queryKey: ["event", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await eventService.getById(id);
+      if (!res.ok) {
+        toast.error(res.error);
+        throw new Error(res.error || "Failed to load event");
+      }
+      return res.data;
+    },
+  });
 
-    const data = res.data;
-    setFetchedDoc(data);
+  // Populate the form once the existing event has loaded (edit mode).
+  useEffect(() => {
+    if (!fetchedDoc) return;
+    const data = fetchedDoc;
     setTitle(data.title);
     setDescription(data.description || "");
     setLocation(data.location_name || "");
@@ -90,14 +95,71 @@ function CreateEventLogic() {
     setTnc(data.tnc || null);
     setAcceptingAttendance(data.accepting_attendance || false);
     setAcceptingRsvp(data.accepting_rsvp !== undefined ? data.accepting_rsvp : true);
-    setFetchingDoc(false);
-  }, [id]);
+  }, [fetchedDoc]);
 
-  useEffect(() => {
-    if (id) getEventById();
-  }, [getEventById]);
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        title,
+        description,
+        medium,
+        start_date: startDate,
+        end_date: endDate || null,
+        category,
+        max_participants: maxParticipants ? Number(maxParticipants) : 0,
+        admission_mode: admissionMode,
+        location_name: medium === "online" ? null : location,
+        latitude: medium === "online" ? null : latitude,
+        longitude: medium === "online" ? null : longitude,
+        meet_link: medium === "offline" ? null : meetLink,
+        meet_id: medium === "offline" ? null : meetId,
+        meet_password: medium === "offline" ? null : meetPassword,
+        privacy,
+        group_id: groupId ? Number(groupId) : null,
+        calendar_id: calendarId ? Number(calendarId) : null,
+        require_approval: requireApproval,
+        tnc: tnc || null,
+        accepting_rsvp: acceptingRsvp,
+        accepting_attendance: acceptingAttendance,
+        duration,
+        language,
+      };
 
-  const handleCreateEvent = async (e) => {
+      let res;
+      if (id) {
+        // Update existing event
+        if (image instanceof File) {
+          const uploadRes = await eventService.uploadImage(id, image);
+          if (!uploadRes.ok) throw new Error(uploadRes.error || "Image upload failed");
+          payload.image = uploadRes.data.image;
+        }
+        res = await eventService.update(id, payload);
+      } else {
+        // Create event first, then upload image
+        res = await eventService.create(payload);
+        if (res.ok && image instanceof File) {
+          const uploadRes = await eventService.uploadImage(res.data.id, image);
+          if (!uploadRes.ok) throw new Error(uploadRes.error || "Image upload failed");
+          res.data.image = uploadRes.data.image;
+        }
+      }
+
+      if (!res.ok) throw new Error(res.error || "Failed to save event");
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      if (id) queryClient.invalidateQueries({ queryKey: ["event", Number(id)] });
+      toast.success(`Event ${id ? "updated" : "created"} successfully`);
+      navigate(-1);
+    },
+    onError: (err) => {
+      setValidateMessage(err.message);
+      toast.error(err.message);
+    },
+  });
+
+  const handleCreateEvent = (e) => {
     e?.preventDefault();
 
     try {
@@ -118,74 +180,8 @@ function CreateEventLogic() {
       return;
     }
 
-    setSigningin(true);
     setValidateMessage(null);
-
-    const payload = {
-      title,
-      description,
-      medium,
-      start_date: startDate,
-      end_date: endDate || null,
-      category,
-      max_participants: maxParticipants ? Number(maxParticipants) : 0,
-      admission_mode: admissionMode,
-      location_name: medium === "online" ? null : location,
-      latitude: medium === "online" ? null : latitude,
-      longitude: medium === "online" ? null : longitude,
-      meet_link: medium === "offline" ? null : meetLink,
-      meet_id: medium === "offline" ? null : meetId,
-      meet_password: medium === "offline" ? null : meetPassword,
-      privacy,
-      group_id: groupId ? Number(groupId) : null,
-      calendar_id: calendarId ? Number(calendarId) : null,
-      require_approval: requireApproval,
-      tnc: tnc || null,
-      accepting_rsvp: acceptingRsvp,
-      accepting_attendance: acceptingAttendance,
-      duration,
-      language,
-    };
-
-    let res;
-    if (id) {
-      // Update existing event
-      if (image instanceof File) {
-        const uploadRes = await eventService.uploadImage(id, image);
-        if (!uploadRes.ok) {
-          setValidateMessage(uploadRes.error || "Image upload failed");
-          toast.error(uploadRes.error || "Image upload failed");
-          setSigningin(false);
-          return;
-        }
-        payload.image = uploadRes.data.image;
-      }
-      res = await eventService.update(id, payload);
-    } else {
-      // Create event first, then upload image
-      res = await eventService.create(payload);
-      if (res.ok && image instanceof File) {
-        const uploadRes = await eventService.uploadImage(res.data.id, image);
-        if (!uploadRes.ok) {
-          setValidateMessage(uploadRes.error || "Image upload failed");
-          toast.error(uploadRes.error || "Image upload failed");
-          setSigningin(false);
-          return;
-        }
-        res.data.image = uploadRes.data.image;
-      }
-    }
-
-    if (!res.ok) {
-      setValidateMessage(res.error);
-      toast.error(res.error);
-      setSigningin(false);
-      return;
-    }
-
-    toast.success(`Event ${id ? "updated" : "created"} successfully`);
-    navigate(-1);
-    setSigningin(false);
+    saveMutation.mutate();
   };
 
   const inputs = [
@@ -239,10 +235,9 @@ function CreateEventLogic() {
   return {
     inputs,
     fields,
-    fetchedDoc,
+    fetchedDoc: fetchedDoc ?? null,
     validateMessage,
-    signingin,
-    setSigningin,
+    signingin: saveMutation.isPending,
     setValidateMessage,
     imageError,
     setImageError,

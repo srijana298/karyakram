@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { calendarService } from "../../services/calendars";
 
@@ -7,38 +7,49 @@ import { calendarService } from "../../services/calendars";
 // follow toggle mirroring the Discover page behaviour.
 export default function GetCalendarLogic() {
   const { id } = useParams();
-  const [calendar, setCalendar] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
+  const queryKey = ["calendar", id];
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const res = await calendarService.getById(id);
-    if (res.ok) setCalendar(res.data);
-    else setError(res.error || "Calendar not found");
-    setLoading(false);
-  }, [id]);
+  const { data: calendar, isPending, error } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const res = await calendarService.getById(id);
+      if (!res.ok) throw new Error(res.error || "Calendar not found");
+      return res.data;
+    },
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const followMutation = useMutation({
+    mutationFn: async (next) => {
+      const res = next
+        ? await calendarService.follow(calendar.id)
+        : await calendarService.unfollow(calendar.id);
+      if (!res.ok) throw new Error(res.error || "Failed to update follow");
+      return res;
+    },
+    onMutate: async (next) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (c) =>
+        c
+          ? { ...c, is_following: next, follower_count: Number(c.follower_count) + (next ? 1 : -1) }
+          : c
+      );
+      return { prev };
+    },
+    onError: (_err, _next, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+    },
+  });
 
-  const toggleFollow = useCallback(async () => {
+  const toggleFollow = async () => {
     if (!calendar) return { ok: false };
-    const next = !calendar.is_following;
-    const prev = calendar;
-    setCalendar((c) => ({
-      ...c,
-      is_following: next,
-      follower_count: Number(c.follower_count) + (next ? 1 : -1),
-    }));
-    const res = next
-      ? await calendarService.follow(calendar.id)
-      : await calendarService.unfollow(calendar.id);
-    if (!res.ok) setCalendar(prev); // revert
-    return res;
-  }, [calendar]);
+    try {
+      return await followMutation.mutateAsync(!calendar.is_following);
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
 
-  return { calendar, loading, error, toggleFollow };
+  return { calendar: calendar ?? null, loading: isPending, error: error?.message ?? null, toggleFollow };
 }

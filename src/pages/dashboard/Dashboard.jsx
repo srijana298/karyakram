@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   IoAdd,
   IoArrowForward,
@@ -45,64 +46,47 @@ function Dashboard() {
   const isOrganizer = !isAdmin;
   const isAttendee = false;
 
-  const [events, setEvents] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [analytics, setAnalytics] = useState(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Fetch events: admin gets all via admin service, organizer gets mine, attendee gets public
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setEventsLoading(true);
-      try {
-        let res;
-        if (isAdmin) {
-          res = await adminService.listEvents();
-        } else if (isOrganizer) {
-          res = await eventService.list({ mine: "true" });
-        } else {
-          res = await eventService.list({});
-        }
-        if (res.ok) {
-          setEvents(res.data || []);
-        } else if (res.status === 403 && res.error === "Admin access required") {
-          const fallback = await eventService.list({ mine: "true" });
-          if (fallback.ok) setEvents(fallback.data || []);
-          else setError(fallback.error);
-        } else {
-          setError(res.error);
-        }
-      } catch (err) {
-        setError(err.message);
+  // Fetch events: admin gets all via admin service, organizer gets mine, attendee gets public.
+  // Admins fall back to their own events if the admin endpoint is forbidden.
+  const {
+    data: events = [],
+    isPending: eventsLoading,
+    error: eventsError,
+  } = useQuery({
+    queryKey: ["events", { scope: isAdmin ? "admin" : "mine" }],
+    queryFn: async () => {
+      let res;
+      if (isAdmin) {
+        res = await adminService.listEvents();
+      } else if (isOrganizer) {
+        res = await eventService.list({ mine: "true" });
+      } else {
+        res = await eventService.list({});
       }
-      setEventsLoading(false);
-    };
-    fetchEvents();
-  }, [isAdmin, isOrganizer]);
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoadingAnalytics(true);
-      try {
-        const res = isAdmin
-          ? await adminService.stats()
-          : await analyticsService.get();
-
-        if (res.ok && res.data) {
-          setAnalytics(res.data);
-        } else if (res.status === 403 && res.error === "Admin access required") {
-          const fallback = await analyticsService.get();
-          if (fallback.ok && fallback.data) setAnalytics(fallback.data);
-        }
-      } catch (err) {
-        console.error("Analytics error:", err);
+      if (res.ok) return res.data || [];
+      if (res.status === 403 && res.error === "Admin access required") {
+        const fallback = await eventService.list({ mine: "true" });
+        if (fallback.ok) return fallback.data || [];
+        throw new Error(fallback.error || "Failed to load events");
       }
-      setLoadingAnalytics(false);
-    };
-    fetchAnalytics();
-  }, [isAdmin]);
+      throw new Error(res.error || "Failed to load events");
+    },
+  });
 
+  const { data: analytics, isPending: loadingAnalytics } = useQuery({
+    queryKey: isAdmin ? ["admin", "stats"] : ["analytics"],
+    queryFn: async () => {
+      const res = isAdmin ? await adminService.stats() : await analyticsService.get();
+      if (res.ok && res.data) return res.data;
+      if (res.status === 403 && res.error === "Admin access required") {
+        const fallback = await analyticsService.get();
+        if (fallback.ok && fallback.data) return fallback.data;
+      }
+      throw new Error(res.error || "Failed to load analytics");
+    },
+  });
+
+  const error = eventsError?.message ?? null;
   const overview = analytics?.overview || {};
   const stats = [
     {

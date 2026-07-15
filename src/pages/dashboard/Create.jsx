@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import CreateEventLogic from "../../Logic/EventsLogic/createEvent.logic";
@@ -49,18 +50,29 @@ function Toggle({ checked, onChange }) {
 function Create() {
   const { fields, signingin, handleImage, imagePreview, fileRef, handleCreateEvent, removeImage, id, fetchingDoc } = CreateEventLogic();
 
-  const [calendars, setCalendars] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [themeIdx, setThemeIdx] = useState(0);
   const [showLocation, setShowLocation] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [editingCapacity, setEditingCapacity] = useState(false);
   const [dateError, setDateError] = useState("");
 
-  useEffect(() => {
-    calendarService.list({ mine: "true" }).then((r) => r.ok && setCalendars(r.data || []));
-    categoryService.list().then((r) => r.ok && setCategories(r.data || []));
-  }, []);
+  const { data: calendars = [] } = useQuery({
+    queryKey: ["calendars", { mine: true }],
+    queryFn: async () => {
+      const res = await calendarService.list({ mine: "true" });
+      if (!res.ok) throw new Error(res.error || "Failed to load calendars");
+      return res.data || [];
+    },
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await categoryService.list();
+      if (!res.ok) throw new Error(res.error || "Failed to load categories");
+      return res.data || [];
+    },
+  });
 
   useEffect(() => {
     if (fields.location || fields.meetLink) setShowLocation(true);

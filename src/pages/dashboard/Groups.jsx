@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { groupService } from "../../services/groups";
 import { adminService } from "../../services/admin";
 import Loading from "../../components/Loading";
@@ -16,8 +17,7 @@ import {
 } from "../../components/icons";
 
 export default function Groups() {
-  const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [expandedSubEvents, setExpandedSubEvents] = useState({});
@@ -31,6 +31,18 @@ export default function Groups() {
   const isAdmin = role === "admin";
   const isOrganizer = role === "organizer";
 
+  const listParams = isAdmin ? { admin: true } : { mine: "true" };
+  const { data: groups = [], isPending: loading } = useQuery({
+    queryKey: ["groups", listParams],
+    queryFn: async () => {
+      const res = isAdmin
+        ? await adminService.listGroups()
+        : await groupService.list({ mine: "true" });
+      if (!res.ok) throw new Error(res.error || "Failed to load groups");
+      return res.data || [];
+    },
+  });
+
   const handleExpand = async (groupId) => {
     if (expanded === groupId) {
       setExpanded(null);
@@ -41,32 +53,23 @@ export default function Groups() {
     // Fetch sub-events for this group if not already loaded
     if (!expandedSubEvents[groupId]) {
       setLoadingExpand((prev) => ({ ...prev, [groupId]: true }));
-      const res = await groupService.getById(groupId);
-      if (res.ok && res.data) {
+      try {
+        const data = await queryClient.fetchQuery({
+          queryKey: ["group", groupId],
+          queryFn: async () => {
+            const res = await groupService.getById(groupId);
+            if (!res.ok) throw new Error(res.error || "Failed to load group");
+            return res.data;
+          },
+        });
         setExpandedSubEvents((prev) => ({
           ...prev,
-          [groupId]: res.data.subEvents || [],
+          [groupId]: data?.subEvents || [],
         }));
-      }
+      } catch {}
       setLoadingExpand((prev) => ({ ...prev, [groupId]: false }));
     }
   };
-
-  const load = async () => {
-    setLoading(true);
-    let res;
-    if (isAdmin) {
-      res = await adminService.listGroups();
-    } else {
-      res = await groupService.list({ mine: "true" });
-    }
-    if (res.ok) setGroups(res.data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const filtered = useMemo(() => {
     return groups.filter((g) =>

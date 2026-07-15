@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminService } from "../../services/admin";
 import { toast } from "react-hot-toast";
 import Loading from "../../components/Loading";
@@ -6,55 +7,68 @@ import DataTable from "../../components/DataTable";
 import { IoPeopleOutline, IoSearchOutline, IoTrashOutline } from "../../components/icons";
 
 function Users() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  // Search only applies when submitted (Enter/button), not on every keystroke.
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const [updatingRole, setUpdatingRole] = useState(null);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    const params = {};
-    if (roleFilter) params.role = roleFilter;
-    if (search) params.search = search;
-    const res = await adminService.listUsers(params);
-    if (res.ok) setUsers(res.data || []);
-    else toast.error(res.error || "Failed to fetch users");
-    setLoading(false);
-  };
+  const params = {};
+  if (roleFilter) params.role = roleFilter;
+  if (submittedSearch) params.search = submittedSearch;
 
-  useEffect(() => {
-    fetchUsers();
-  }, [roleFilter]);
+  const {
+    data: users = [],
+    isPending: loading,
+  } = useQuery({
+    queryKey: ["users", params],
+    queryFn: async () => {
+      const res = await adminService.listUsers(params);
+      if (!res.ok) throw new Error(res.error || "Failed to fetch users");
+      return res.data || [];
+    },
+  });
 
   const handleSearch = (e) => {
     e?.preventDefault();
-    fetchUsers();
+    setSubmittedSearch(search);
   };
 
-  const handleRoleChange = async (userId, newRole) => {
-    setUpdatingRole(userId);
-    const res = await adminService.updateUserRole(userId, newRole);
-    if (res.ok) {
+  const roleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }) => {
+      const res = await adminService.updateUserRole(userId, newRole);
+      if (!res.ok) throw new Error(res.error || "Failed to update role");
+      return { userId, newRole };
+    },
+    onSuccess: () => {
       toast.success("Role updated");
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-      );
-    } else {
-      toast.error(res.error || "Failed to update role");
-    }
-    setUpdatingRole(null);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (userId) => {
+      const res = await adminService.deleteUser(userId);
+      if (!res.ok) throw new Error(res.error || "Failed to delete user");
+      return userId;
+    },
+    onSuccess: () => {
+      toast.success("User deleted");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updatingRole = roleMutation.isPending ? roleMutation.variables?.userId : null;
+
+  const handleRoleChange = (userId, newRole) => {
+    roleMutation.mutate({ userId, newRole });
   };
 
-  const handleDelete = async (userId) => {
+  const handleDelete = (userId) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    const res = await adminService.deleteUser(userId);
-    if (res.ok) {
-      toast.success("User deleted");
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    } else {
-      toast.error(res.error || "Failed to delete user");
-    }
+    deleteMutation.mutate(userId);
   };
 
   const columns = [

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { groupService } from "../../services/groups";
 import Loading from "../../components/Loading";
 import DataTable from "../../components/DataTable";
@@ -20,31 +21,49 @@ import {
 export default function GroupDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [group, setGroup] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [conflicts, setConflicts] = useState(null);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("events");
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const [g, s, c, a] = await Promise.all([
-        groupService.getById(id),
-        groupService.stats(id),
-        groupService.conflicts(id),
-        groupService.attendanceSummary(id),
-      ]);
-      if (g.ok) setGroup(g.data);
-      if (s.ok) setStats(s.data);
-      if (c.ok) setConflicts(c.data);
-      if (a.ok) setSummary(a.data);
-      setLoading(false);
-    })();
-  }, [id]);
+  const { data: group, isPending: groupPending } = useQuery({
+    queryKey: ["group", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await groupService.getById(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load group");
+      return res.data;
+    },
+  });
 
-  if (loading) return <Loading />;
+  const { data: stats } = useQuery({
+    queryKey: ["group", id, "stats"],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await groupService.stats(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load stats");
+      return res.data;
+    },
+  });
+
+  const { data: conflicts } = useQuery({
+    queryKey: ["group", id, "conflicts"],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await groupService.conflicts(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load conflicts");
+      return res.data;
+    },
+  });
+
+  const { data: summary } = useQuery({
+    queryKey: ["group", id, "attendance"],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await groupService.attendanceSummary(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load attendance");
+      return res.data;
+    },
+  });
+
+  if (groupPending) return <Loading />;
   if (!group) return <p className="text-sm text-dashboard-muted">Group not found</p>;
 
   const visibility = (group.privacy || "public").toLowerCase();

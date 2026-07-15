@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import Loading from "../components/Loading";
@@ -11,8 +12,8 @@ function MarkAttendance() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get("eventId");
   const memberId = searchParams.get("memberId");
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(false);
   const [state, setState] = useState({
     new: false,
     attended: false,
@@ -20,30 +21,35 @@ function MarkAttendance() {
     message: "",
   });
 
-  useEffect(() => {
-    if (eventId && memberId) markAttendance();
-    else setState((prev) => ({ ...prev, invalid: true, message: "Invalid Ticket" }));
-  }, [eventId, memberId]);
-
-  const markAttendance = async () => {
-    setLoading(true);
-    const res = await memberService.markAttendance(eventId, memberId);
-    if (res.ok) {
+  const markMutation = useMutation({
+    mutationFn: async () => {
+      const res = await memberService.markAttendance(eventId, memberId);
+      if (!res.ok) throw new Error(res.error || "Something went wrong");
+      return res.data;
+    },
+    onSuccess: () => {
       toast.success("Attendance Marked successfully!");
       setState((prev) => ({ ...prev, new: true, message: "Attendance Marked successfully!" }));
-    } else {
-      const msg = res.error || "Something went wrong";
+      queryClient.invalidateQueries({ queryKey: ["attendance", Number(eventId)] });
+    },
+    onError: (err) => {
+      const msg = err.message;
       if (msg.includes("already")) {
         setState((prev) => ({ ...prev, attended: true, message: "Already marked attendance!" }));
       } else {
         setState((prev) => ({ ...prev, invalid: true, message: msg }));
       }
       toast.error(msg);
-    }
-    setLoading(false);
-  };
+    },
+  });
 
-  if (loading) return <Loading text={"Marking Attendance"} />;
+  useEffect(() => {
+    if (eventId && memberId) markMutation.mutate();
+    else setState((prev) => ({ ...prev, invalid: true, message: "Invalid Ticket" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, memberId]);
+
+  if (markMutation.isPending) return <Loading text={"Marking Attendance"} />;
 
   return (
     <div className="flex flex-col items-center justify-center font-geist h-screen gap-8">

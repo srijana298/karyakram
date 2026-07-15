@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import GetEventLogic from "../../Logic/EventsLogic/getEvents";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -60,42 +61,63 @@ function Event() {
   const { loading, error, events, id } = GetEventLogic();
   const { userInfo } = useUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState("Overview");
   const [inviteOpen, setInviteOpen] = useState(false);
 
   // ── RSVPs ──────────────────────────────────────────────────
-  const [rsvps, setRsvps] = useState([]);
-  const [rsvpsLoading, setRsvpsLoading] = useState(false);
   const [rsvpTab, setRsvpTab] = useState("pending");
-  const [invitations, setInvitations] = useState([]);
+  const eventId = events?.id;
 
-  const fetchRsvps = async () => {
-    if (!events?.id) return;
-    setRsvpsLoading(true);
-    const res = await rsvpService.listForEvent(events.id);
-    if (res.ok) setRsvps(res.data || []);
-    setRsvpsLoading(false);
-  };
-  const fetchInvitations = async () => {
-    if (!events?.id) return;
-    const res = await eventService.listInvitations(events.id);
-    if (res.ok) setInvitations(res.data || []);
-  };
-  useEffect(() => {
-    if (events?.id) {
-      fetchRsvps();
-      fetchInvitations();
-    }
-  }, [events?.id]);
+  const rsvpsQuery = useQuery({
+    queryKey: ["rsvps", "event", Number(eventId)],
+    enabled: !!eventId,
+    queryFn: async () => {
+      const res = await rsvpService.listForEvent(eventId);
+      if (!res.ok) throw new Error(res.error || "Failed to load RSVPs");
+      return res.data || [];
+    },
+  });
+  const rsvps = rsvpsQuery.data || [];
+  const rsvpsLoading = rsvpsQuery.isPending;
 
-  const handleApprove = async (rid) => {
-    const res = await rsvpService.approve(rid);
-    res.ok ? (toast.success("RSVP approved"), fetchRsvps()) : toast.error(res.error || "Failed");
-  };
-  const handleReject = async (rid) => {
-    const res = await rsvpService.reject(rid);
-    res.ok ? (toast.success("RSVP rejected"), fetchRsvps()) : toast.error(res.error || "Failed");
-  };
+  const invitationsQuery = useQuery({
+    queryKey: ["event", Number(eventId), "invitations"],
+    enabled: !!eventId,
+    queryFn: async () => {
+      const res = await eventService.listInvitations(eventId);
+      if (!res.ok) throw new Error(res.error || "Failed to load invitations");
+      return res.data || [];
+    },
+  });
+  const invitations = invitationsQuery.data || [];
+
+  const approveMutation = useMutation({
+    mutationFn: async (rid) => {
+      const res = await rsvpService.approve(rid);
+      if (!res.ok) throw new Error(res.error || "Failed");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("RSVP approved");
+      queryClient.invalidateQueries({ queryKey: ["rsvps", "event", Number(eventId)] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const rejectMutation = useMutation({
+    mutationFn: async (rid) => {
+      const res = await rsvpService.reject(rid);
+      if (!res.ok) throw new Error(res.error || "Failed");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("RSVP rejected");
+      queryClient.invalidateQueries({ queryKey: ["rsvps", "event", Number(eventId)] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const handleApprove = (rid) => approveMutation.mutate(rid);
+  const handleReject = (rid) => rejectMutation.mutate(rid);
 
   const pending = rsvps.filter((r) => r.pending && !r.approved && !r.rejected);
   const approved = rsvps.filter((r) => r.approved);
@@ -129,12 +151,23 @@ function Event() {
   // ── Visibility (local, persisted) ──────────────────────────
   const [privacy, setPrivacy] = useState(null);
   useEffect(() => { setPrivacy(events?.privacy); }, [events?.privacy]);
-  const changeVisibility = async () => {
+  const visibilityMutation = useMutation({
+    mutationFn: async (next) => {
+      const res = await eventService.update(eventId, { privacy: next });
+      if (!res.ok) throw new Error(res.error || "Failed to update");
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(`Event is now ${next}`);
+      queryClient.invalidateQueries({ queryKey: ["event", Number(eventId)] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const changeVisibility = () => {
+    const prev = privacy;
     const next = privacy === "private" ? "public" : "private";
     setPrivacy(next);
-    const res = await eventService.update(events.id, { privacy: next });
-    if (res.ok) toast.success(`Event is now ${next}`);
-    else { setPrivacy(privacy); toast.error(res.error || "Failed to update"); }
+    visibilityMutation.mutate(next, { onError: () => setPrivacy(prev) });
   };
 
   // ── Actions ────────────────────────────────────────────────
@@ -172,12 +205,18 @@ function Event() {
     toast.success("Guest list exported");
   };
 
-  const deleteEvent = async () => {
-    const res = await eventService.delete(id);
-    res.ok
-      ? (toast.success("Event deleted"), navigate("/dashboard/events?filter=total"))
-      : toast.error(res.error || "Error deleting event");
-  };
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await eventService.delete(id);
+      if (!res.ok) throw new Error(res.error || "Error deleting event");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Event deleted");
+      navigate("/dashboard/events?filter=total");
+    },
+    onError: (err) => toast.error(err.message),
+  });
   const confirmDelete = () => {
     toast.custom((t) => (
       <div className={`${t.visible ? "animate-enter" : "animate-leave"} max-w-sm w-full bg-white dark:bg-white/[0.04] shadow-xl rounded-2xl overflow-hidden`}>
@@ -187,7 +226,7 @@ function Event() {
         </div>
         <div className="flex border-t border-stone-100 dark:border-white/10">
           <button onClick={() => toast.dismiss(t.id)} className="flex-1 py-3 text-xs font-medium text-stone-500 dark:text-white/50 hover:bg-stone-50 dark:hover:bg-white/5">Cancel</button>
-          <button onClick={async () => { await deleteEvent(); toast.dismiss(t.id); }} className="flex-1 py-3 text-xs font-semibold text-red-600 border-l border-stone-100 dark:border-white/10 hover:bg-red-50">Delete</button>
+          <button onClick={async () => { await deleteMutation.mutateAsync().catch(() => {}); toast.dismiss(t.id); }} className="flex-1 py-3 text-xs font-semibold text-red-600 border-l border-stone-100 dark:border-white/10 hover:bg-red-50">Delete</button>
         </div>
       </div>
     ));
@@ -522,7 +561,7 @@ function Event() {
                 <h2 className="text-lg font-bold text-stone-900 dark:text-white">Guest List</h2>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setInviteOpen(true)} className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-stone-500 dark:text-white/60 flex items-center justify-center text-lg"><IoPersonAddOutline /></button>
-                  <button onClick={() => { fetchRsvps(); fetchInvitations(); }} className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-stone-500 dark:text-white/60 flex items-center justify-center text-lg"><IoRefreshOutline /></button>
+                  <button onClick={() => { rsvpsQuery.refetch(); invitationsQuery.refetch(); }} className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-stone-500 dark:text-white/60 flex items-center justify-center text-lg"><IoRefreshOutline /></button>
                   <button onClick={exportGuests} className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-stone-500 dark:text-white/60 flex items-center justify-center text-lg"><IoDownloadOutline /></button>
                 </div>
               </div>
@@ -558,7 +597,7 @@ function Event() {
           event={events}
           guestCount={approved.length}
           onClose={() => setInviteOpen(false)}
-          onSent={fetchInvitations}
+          onSent={() => invitationsQuery.refetch()}
         />
       )}
     </div>

@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import { useNotifications } from "../../context/notificationContext";
 import NotificationCard from "../../components/NotificationCard";
 import { IoCheckmarkDoneOutline, IoNotificationsOutline, IoRefreshOutline } from "../../components/icons";
@@ -6,6 +8,7 @@ import { notificationService } from "../../services/notifications";
 
 function Notifications() {
   const { notifications, fetchNotifications, unreadNotifications } = useNotifications();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
 
   const refresh = async () => {
@@ -14,13 +17,17 @@ function Notifications() {
     setLoading(false);
   };
 
-  const markAllRead = async () => {
-    const unread = notifications.filter((n) => !n.read);
-    for (const n of unread) {
-      await notificationService.markRead(n.id);
-    }
-    await fetchNotifications();
-  };
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const unread = notifications.filter((n) => !n.read);
+      const results = await Promise.all(unread.map((n) => notificationService.markRead(n.id)));
+      const failed = results.find((r) => !r.ok);
+      if (failed) throw new Error(failed.error || "Failed to mark notifications read");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onError: (err) => toast.error(err.message),
+  });
+  const markAllRead = () => markAllReadMutation.mutate();
 
   return (
     <div className="max-w-2xl">

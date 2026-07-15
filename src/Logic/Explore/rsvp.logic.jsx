@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { rsvpService } from "../../services/rsvps";
 import { useNotifications } from "../../context/notificationContext";
@@ -10,26 +10,21 @@ export default function RsvpLogic(event) {
   let MahotsavUser = null;
   try { MahotsavUser = JSON.parse(localStorage.getItem("Mahotsav-user")); } catch { MahotsavUser = null; }
 
-  const [adding, setAdding] = useState(false);
-  // The current user's RSVP for this event (null = none). Used to hide the
-  // RSVP button once they've already responded.
-  const [myRsvp, setMyRsvp] = useState(null);
+  const queryClient = useQueryClient();
   const { sendNotification } = useNotifications();
 
   // Load the user's existing RSVP for this event so we don't offer to RSVP
-  // again after they've already done so.
-  useEffect(() => {
-    if (!token || !event?.id) return;
-    let active = true;
-    rsvpService.listMine().then((res) => {
-      if (!active || !res.ok) return;
-      const mine = (res.data || []).find((r) => r.event_id === event.id);
-      if (mine) setMyRsvp(mine);
-    });
-    return () => {
-      active = false;
-    };
-  }, [token, event?.id]);
+  // again after they've already responded.
+  const { data: myRsvp } = useQuery({
+    queryKey: ["rsvps", "mine"],
+    enabled: !!token,
+    select: (rows) => rows.find((r) => r.event_id === event?.id) ?? null,
+    queryFn: async () => {
+      const res = await rsvpService.listMine();
+      if (!res.ok) throw new Error(res.error || "Failed to load RSVPs");
+      return res.data || [];
+    },
+  });
 
   const checkUserIsOwner = () => {
     if (token && MahotsavUser && event?.created_by === MahotsavUser?.id) {
@@ -38,23 +33,13 @@ export default function RsvpLogic(event) {
     return false;
   };
 
-  const addRsvp = async (user, options) => {
-    const res = await rsvpService.create(event?.id, options);
-    return res;
-  };
-
-  const getRsvp = async (userId) => {
-    // Handled server-side in createRsvp (duplicate check)
-    return { ok: true, data: [] };
-  };
-
-  const approveRsvp = async (rsvpItem) => {
-    try {
+  const approveMutation = useMutation({
+    mutationFn: async (rsvpItem) => {
       const res = await rsvpService.approve(rsvpItem.id || rsvpItem.documentId);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
+      if (!res.ok) throw new Error(res.error || "Failed to approve RSVP");
+      return rsvpItem;
+    },
+    onSuccess: async (rsvpItem) => {
       await sendNotification({
         user_id: rsvpItem.user_id || rsvpItem.userId,
         from_user_id: MahotsavUser?.id,
@@ -62,19 +47,19 @@ export default function RsvpLogic(event) {
         type: "RSVP_APPROVED",
         message: `Your RSVP to ${event?.title} has been approved.`,
       });
-      toast.success(`RSVP has been approved`);
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["rsvps"] });
+      toast.success("RSVP has been approved");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const rejectRsvp = async (rsvpItem) => {
-    try {
+  const rejectMutation = useMutation({
+    mutationFn: async (rsvpItem) => {
       const res = await rsvpService.reject(rsvpItem.id || rsvpItem.documentId);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
+      if (!res.ok) throw new Error(res.error || "Failed to reject RSVP");
+      return rsvpItem;
+    },
+    onSuccess: async (rsvpItem) => {
       await sendNotification({
         user_id: rsvpItem.user_id || rsvpItem.userId,
         from_user_id: MahotsavUser?.id,
@@ -82,62 +67,51 @@ export default function RsvpLogic(event) {
         type: "RSVP_REJECTED",
         message: `Your RSVP to ${event?.title} has been rejected by the owner.`,
       });
+      queryClient.invalidateQueries({ queryKey: ["rsvps"] });
       toast.success("RSVP has been rejected");
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const handleRSVP = async (e) => {
-    e.preventDefault();
-    if (checkUserIsOwner()) {
-      toast.error("You cannot RSVP to your own event");
-      return;
-    }
-    if (!token) {
-      toast.error("Please login to RSVP");
-      return;
-    }
-    if (event?.accepting_rsvp === false) {
-      toast.error("RSVP for this event is closed");
-      return;
-    }
-
-    setAdding(true);
-    let res = await rsvpService.create(event?.id);
-
-    if (!res.ok && res.status === 409 && res.data?.data?.code === "TRAVEL_RISK") {
-      const proceed = window.confirm(`${res.error}\n\nContinue RSVP anyway?`);
-      if (proceed) {
-        res = await rsvpService.create(event?.id, { forceTravelRisk: true });
+  const rsvpMutation = useMutation({
+    mutationFn: async () => {
+      let res = await rsvpService.create(event?.id);
+      if (!res.ok && res.status === 409 && res.data?.data?.code === "TRAVEL_RISK") {
+        const proceed = window.confirm(`${res.error}\n\nContinue RSVP anyway?`);
+        if (proceed) res = await rsvpService.create(event?.id, { forceTravelRisk: true });
       }
-    }
+      if (!res.ok) throw new Error(res.error || "Failed to RSVP");
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("RSVP has been sent to the event owner. You will be notified when they approve your request.");
+      await sendNotification({
+        user_id: event?.created_by,
+        from_user_id: MahotsavUser?.id,
+        from_user_name: MahotsavUser?.name,
+        type: "RSVP",
+        message: `${MahotsavUser?.name} has RSVP'd to your event ${event?.title}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["rsvps"] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-    if (!res.ok) {
-      toast.error(res.error);
-      setAdding(false);
-      return;
-    }
-
-    toast.success("RSVP has been sent to the event owner. You will be notified when they approve your request.");
-    setMyRsvp({ event_id: event?.id, pending: true, approved: false, rejected: false });
-    await sendNotification({
-      user_id: event?.created_by,
-      from_user_id: MahotsavUser?.id,
-      from_user_name: MahotsavUser?.name,
-      type: "RSVP",
-      message: `${MahotsavUser?.name} has RSVP'd to your event ${event?.title}`,
-    });
-    setAdding(false);
+  const handleRSVP = (e) => {
+    e?.preventDefault();
+    if (checkUserIsOwner()) return toast.error("You cannot RSVP to your own event");
+    if (!token) return toast.error("Please login to RSVP");
+    if (event?.accepting_rsvp === false) return toast.error("RSVP for this event is closed");
+    rsvpMutation.mutate();
   };
 
   return {
     token,
     handleRSVP,
     checkUserIsOwner,
-    adding,
-    myRsvp,
-    approveRsvp,
-    rejectRsvp,
+    adding: rsvpMutation.isPending,
+    myRsvp: myRsvp ?? null,
+    approveRsvp: (item) => approveMutation.mutate(item),
+    rejectRsvp: (item) => rejectMutation.mutate(item),
   };
 }

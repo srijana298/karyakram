@@ -1,38 +1,32 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { userService } from "../../services/users";
 import { toast } from "react-hot-toast";
 
 function GetUsersLogic() {
-  const [users, setUsers] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showUsers, setShowUsers] = useState(null);
 
   const toggleShowUsers = useCallback(() => {
     setShowUsers((prev) => !prev);
   }, []);
 
-  const getUsers = useCallback(async () => {
-    setLoading(true);
-    const res = await userService.list();
-    if (res.ok) {
-      setUsers(res.data);
-    } else {
-      setError(res.error);
-      toast.error(res.error);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    getUsers();
-  }, [getUsers]);
+  const { data, isPending, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await userService.list();
+      if (!res.ok) {
+        toast.error(res.error);
+        throw new Error(res.error || "Failed to load users");
+      }
+      return res.data;
+    },
+  });
 
   return {
-    users,
+    users: data ?? null,
     showUsers,
-    loading,
-    error,
+    loading: isPending,
+    error: error?.message ?? null,
     toggleShowUsers,
   };
 }

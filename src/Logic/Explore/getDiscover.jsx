@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { categoryService } from "../../services/categories";
 import { calendarService } from "../../services/calendars";
 
@@ -6,50 +6,66 @@ import { calendarService } from "../../services/calendars";
 // featured calendars (Featured Calendars). Exposes an optimistic follow
 // toggle that updates the follower count locally before the request resolves.
 export default function GetDiscoverLogic() {
-  const [categories, setCategories] = useState([]);
-  const [calendars, setCalendars] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const calendarsKey = ["calendars", { featured: true }];
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [catRes, calRes] = await Promise.all([
-      categoryService.list(),
-      calendarService.list({ featured: true }),
-    ]);
-    if (catRes.ok) setCategories(catRes.data || []);
-    if (calRes.ok) setCalendars(calRes.data || []);
-    setLoading(false);
-  }, []);
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await categoryService.list();
+      if (!res.ok) throw new Error(res.error || "Failed to load categories");
+      return res.data || [];
+    },
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const calendarsQuery = useQuery({
+    queryKey: calendarsKey,
+    queryFn: async () => {
+      const res = await calendarService.list({ featured: true });
+      if (!res.ok) throw new Error(res.error || "Failed to load calendars");
+      return res.data || [];
+    },
+  });
 
-  const toggleFollow = useCallback(async (cal) => {
-    const next = !cal.is_following;
-    // Optimistic update
-    setCalendars((prev) =>
-      prev.map((c) =>
-        c.id === cal.id
-          ? { ...c, is_following: next, follower_count: Number(c.follower_count) + (next ? 1 : -1) }
-          : c,
-      ),
-    );
-    const res = next
-      ? await calendarService.follow(cal.id)
-      : await calendarService.unfollow(cal.id);
-    // Revert on failure
-    if (!res.ok) {
-      setCalendars((prev) =>
-        prev.map((c) =>
+  const followMutation = useMutation({
+    mutationFn: async (cal) => {
+      const next = !cal.is_following;
+      const res = next
+        ? await calendarService.follow(cal.id)
+        : await calendarService.unfollow(cal.id);
+      if (!res.ok) throw new Error(res.error || "Failed to update follow");
+      return res;
+    },
+    onMutate: async (cal) => {
+      const next = !cal.is_following;
+      await queryClient.cancelQueries({ queryKey: calendarsKey });
+      const prev = queryClient.getQueryData(calendarsKey);
+      queryClient.setQueryData(calendarsKey, (list) =>
+        (list || []).map((c) =>
           c.id === cal.id
-            ? { ...c, is_following: cal.is_following, follower_count: Number(cal.follower_count) }
-            : c,
-        ),
+            ? { ...c, is_following: next, follower_count: Number(c.follower_count) + (next ? 1 : -1) }
+            : c
+        )
       );
-    }
-    return res;
-  }, []);
+      return { prev };
+    },
+    onError: (_err, _cal, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(calendarsKey, ctx.prev);
+    },
+  });
 
-  return { categories, calendars, loading, toggleFollow };
+  const toggleFollow = async (cal) => {
+    try {
+      return await followMutation.mutateAsync(cal);
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
+  return {
+    categories: categoriesQuery.data || [],
+    calendars: calendarsQuery.data || [],
+    loading: categoriesQuery.isPending || calendarsQuery.isPending,
+    toggleFollow,
+  };
 }

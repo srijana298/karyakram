@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   IoCalendarClearOutline,
   IoHomeOutline,
@@ -24,24 +25,30 @@ function Sidebar() {
   const role = userInfo?.role || 'user';
   const isAdmin = role === 'admin';
 
-  const getUserInfo = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const token = localStorage.getItem('token');
 
-    const res = await authService.getMe();
-    if (res.ok) {
-      localStorage.setItem('Mahotsav-user', JSON.stringify(res.data));
-      setUserInfo(res.data);
-    } else {
-      localStorage.removeItem('Mahotsav-user');
-      localStorage.removeItem('token');
-      navigate('/');
-    }
-  }, [navigate, setUserInfo]);
+  const { data: me, isError } = useQuery({
+    queryKey: ['me'],
+    enabled: !!token,
+    queryFn: async () => {
+      const res = await authService.getMe();
+      if (!res.ok) throw new Error(res.error || 'Failed to load user');
+      return res.data;
+    },
+  });
 
   useEffect(() => {
-    getUserInfo();
-  }, [getUserInfo]);
+    if (!me) return;
+    localStorage.setItem('Mahotsav-user', JSON.stringify(me));
+    setUserInfo(me);
+  }, [me, setUserInfo]);
+
+  useEffect(() => {
+    if (!isError) return;
+    localStorage.removeItem('Mahotsav-user');
+    localStorage.removeItem('token');
+    navigate('/');
+  }, [isError, navigate]);
 
   const linkClass = ({ isActive }) =>
     `inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${

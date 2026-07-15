@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { calendarService } from "../../services/calendars";
@@ -16,28 +17,39 @@ const COLORS = ["#d6d3d1", "#e879a9", "#b56be8", "#9b87f5", "#6f9fec", "#82cf67"
 
 export default function CreateCalendar() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const avatarRef = useRef(); const coverRef = useRef();
   const [name, setName] = useState(""); const [description, setDescription] = useState("");
   const [slug, setSlug] = useState(""); const [color, setColor] = useState(COLORS[4]);
   const [cityQuery, setCityQuery] = useState(""); const [city, setCity] = useState(null);
-  const [avatar, setAvatar] = useState(null); const [cover, setCover] = useState(null); const [saving, setSaving] = useState(false);
+  const [avatar, setAvatar] = useState(null); const [cover, setCover] = useState(null);
   const matches = useMemo(() => CITIES.filter(([n]) => n.toLowerCase().includes(cityQuery.toLowerCase())).slice(0, 7), [cityQuery]);
   const coverUrl = cover && URL.createObjectURL(cover); const avatarUrl = avatar && URL.createObjectURL(avatar);
   const chooseName = (value) => { setName(value); if (!slug) setSlug(value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")); };
   const mapUrl = city ? `https://www.openstreetmap.org/export/embed.html?bbox=${city[2]-0.12}%2C${city[1]-0.08}%2C${city[2]+0.12}%2C${city[1]+0.08}&layer=mapnik&marker=${city[1]}%2C${city[2]}` : "https://www.openstreetmap.org/export/embed.html?bbox=80.0%2C26.3%2C88.3%2C30.5&layer=mapnik";
 
-  async function submit(e) {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const data = new FormData();
+      Object.entries({ name, description, slug, color, city: city[0], latitude: city[1], longitude: city[2] }).forEach(([k,v]) => data.append(k,v));
+      if (avatar) data.append("avatar", avatar); if (cover) data.append("cover", cover);
+      const res = await calendarService.create(data);
+      if (!res.ok) throw new Error(res.error || "Failed to create calendar");
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendars"] });
+      toast.success("Calendar created"); navigate("/dashboard/calendars");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const saving = createMutation.isPending;
+
+  function submit(e) {
     e.preventDefault();
     if (!name.trim()) return toast.error("Calendar name is required");
     if (!city) return toast.error("Choose a city in Nepal");
-    setSaving(true);
-    const data = new FormData();
-    Object.entries({ name, description, slug, color, city: city[0], latitude: city[1], longitude: city[2] }).forEach(([k,v]) => data.append(k,v));
-    if (avatar) data.append("avatar", avatar); if (cover) data.append("cover", cover);
-    const res = await calendarService.create(data);
-    setSaving(false);
-    if (!res.ok) return toast.error(res.error || "Failed to create calendar");
-    toast.success("Calendar created"); navigate("/dashboard/calendars");
+    createMutation.mutate();
   }
 
   return (

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { certificateService } from "../../services/certificates";
@@ -61,6 +62,7 @@ function createTextObject(opts = {}) {
 export default function TemplateEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -72,7 +74,6 @@ export default function TemplateEditor() {
   const animFrameRef = useRef(null);
 
   const [loading, setLoading] = useState(!!id);
-  const [saving, setSaving] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [backgroundFile, setBackgroundFile] = useState(null);
   const [backgroundPreview, setBackgroundPreview] = useState(null);
@@ -98,36 +99,42 @@ export default function TemplateEditor() {
 
 
   /* ── Load template if editing ───────────────────────── */
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-    (async () => {
+  const templateQuery = useQuery({
+    queryKey: ["certificate-templates", id],
+    enabled: !!id,
+    queryFn: async () => {
       const res = await certificateService.getTemplate(id);
-      if (!res.ok) {
-        toast.error(res.error || "Template not found");
-        navigate(-1);
-        return;
-      }
-      const t = res.data;
-      setTemplateName(t.name || "");
-      setCanvasWidth(t.canvas_width || 1400);
-      setCanvasHeight(t.canvas_height || 1000);
-      if (t.background_url) setBackgroundPreview(t.background_url);
-      if (t.canvas_json) {
-        try {
-          const json = typeof t.canvas_json === "string" ? JSON.parse(t.canvas_json) : t.canvas_json;
-          if (json.objects) {
-            objectsRef.current = json.objects.map((o) => createTextObject(o));
-          }
-        } catch (e) {
-          console.error("Failed to parse canvas_json:", e);
+      if (!res.ok) throw new Error(res.error || "Template not found");
+      return res.data;
+    },
+  });
+
+  // Sync fetched template into local editor state (once loaded).
+  useEffect(() => {
+    const t = templateQuery.data;
+    if (!t) return;
+    setTemplateName(t.name || "");
+    setCanvasWidth(t.canvas_width || 1400);
+    setCanvasHeight(t.canvas_height || 1000);
+    if (t.background_url) setBackgroundPreview(t.background_url);
+    if (t.canvas_json) {
+      try {
+        const json = typeof t.canvas_json === "string" ? JSON.parse(t.canvas_json) : t.canvas_json;
+        if (json.objects) {
+          objectsRef.current = json.objects.map((o) => createTextObject(o));
         }
+      } catch (e) {
+        console.error("Failed to parse canvas_json:", e);
       }
-      setLoading(false);
-    })();
-  }, [id, navigate]);
+    }
+    setLoading(false);
+  }, [templateQuery.data]);
+
+  useEffect(() => {
+    if (!templateQuery.isError) return;
+    toast.error(templateQuery.error?.message || "Template not found");
+    navigate(-1);
+  }, [templateQuery.isError, templateQuery.error, navigate]);
 
   /* ── Canvas context + fit ───────────────────────────── */
   const fitCanvas = useCallback(() => {
@@ -785,7 +792,36 @@ export default function TemplateEditor() {
 
 
   /* ── Save template ──────────────────────────────────── */
-  const handleSave = async () => {
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      // Serialize objects (no background image in JSON)
+      const json = JSON.stringify({ objects: objectsRef.current });
+
+      const formData = new FormData();
+      formData.append("name", templateName.trim());
+      formData.append("canvas_json", json);
+      formData.append("canvas_width", canvasWidth);
+      formData.append("canvas_height", canvasHeight);
+      if (backgroundFile) formData.append("background", backgroundFile);
+
+      const res = id
+        ? await certificateService.updateTemplate(id, formData)
+        : await certificateService.createTemplate(formData);
+      if (!res.ok) throw new Error(res.error || "Failed to save template");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(id ? "Template updated" : "Template created");
+      queryClient.invalidateQueries({ queryKey: ["certificate-templates"] });
+      if (!id && data?.id) {
+        navigate(`/template-editor/${data.id}`, { replace: true });
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
     if (!templateName.trim()) {
       toast.error("Give the template a name");
       return;
@@ -794,35 +830,7 @@ export default function TemplateEditor() {
       toast.error("Upload a background image first");
       return;
     }
-
-    setSaving(true);
-
-    // Serialize objects (no background image in JSON)
-    const json = JSON.stringify({ objects: objectsRef.current });
-
-    const formData = new FormData();
-    formData.append("name", templateName.trim());
-    formData.append("canvas_json", json);
-    formData.append("canvas_width", canvasWidth);
-    formData.append("canvas_height", canvasHeight);
-    if (backgroundFile) formData.append("background", backgroundFile);
-
-    let res;
-    if (id) {
-      res = await certificateService.updateTemplate(id, formData);
-    } else {
-      res = await certificateService.createTemplate(formData);
-    }
-
-    if (res.ok) {
-      toast.success(id ? "Template updated" : "Template created");
-      if (!id && res.data?.id) {
-        navigate(`/template-editor/${res.data.id}`, { replace: true });
-      }
-    } else {
-      toast.error(res.error || "Failed to save template");
-    }
-    setSaving(false);
+    saveMutation.mutate();
   };
 
   /* ── Preview ────────────────────────────────────────── */

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { attendanceService } from "../services/attendance";
 import { toast } from "react-hot-toast";
@@ -14,35 +15,39 @@ import Brand from "../components/Brand";
 export default function SelfCheckIn() {
   const { id: eventId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null); // null | "success" | "error"
 
-  const handleCheckIn = async (e) => {
+  const checkInMutation = useMutation({
+    mutationFn: async () => {
+      const res = await attendanceService.selfCheckIn(eventId, {
+        code: code.trim(),
+      });
+      if (!res.ok) throw new Error(res.error || "Invalid code");
+      return res.data;
+    },
+    onSuccess: () => {
+      setStatus("success");
+      toast.success("You're checked in!");
+      queryClient.invalidateQueries({ queryKey: ["attendance", Number(eventId)] });
+    },
+    onError: (err) => {
+      setStatus("error");
+      toast.error(err.message);
+    },
+  });
+
+  const loading = checkInMutation.isPending;
+
+  const handleCheckIn = (e) => {
     e?.preventDefault();
     if (!code.trim()) {
       toast.error("Please enter the check-in code");
       return;
     }
-
-    setLoading(true);
     setStatus(null);
-    try {
-      const res = await attendanceService.selfCheckIn(eventId, {
-        code: code.trim(),
-      });
-      if (res.ok) {
-        setStatus("success");
-        toast.success("You're checked in!");
-      } else {
-        setStatus("error");
-        toast.error(res.error || "Invalid code");
-      }
-    } catch {
-      setStatus("error");
-      toast.error("Something went wrong");
-    }
-    setLoading(false);
+    checkInMutation.mutate();
   };
 
   return (

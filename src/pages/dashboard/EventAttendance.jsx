@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { attendanceService } from "../../services/attendance";
 import { rsvpService } from "../../services/rsvps";
@@ -84,14 +85,67 @@ function AttendeeRow({ rsvp, checked, onToggle, getUserName, getUserEmail }) {
 /* ── Main Component ──────────────────────────────────────────── */
 export default function EventAttendance() {
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [event, setEvent] = useState(null);
-  const [approvedRsvps, setApprovedRsvps] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [userMap, setUserMap] = useState({});
+  const queryClient = useQueryClient();
   const [code, setCode] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all | checked | pending
+
+  /* ── Data loading ──────────────────────────────────── */
+  const eventQuery = useQuery({
+    queryKey: ["event", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await eventService.getById(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load event");
+      return res.data;
+    },
+  });
+  const rsvpsQuery = useQuery({
+    queryKey: ["rsvps", "event", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await rsvpService.listForEvent(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load RSVPs");
+      return res.data || [];
+    },
+  });
+  const attendanceQuery = useQuery({
+    queryKey: ["attendance", Number(id)],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await attendanceService.list(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load attendance");
+      return res.data || [];
+    },
+  });
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await userService.list();
+      if (!res.ok) throw new Error(res.error || "Failed to load users");
+      return res.data || [];
+    },
+  });
+
+  const event = eventQuery.data ?? null;
+  const approvedRsvps = useMemo(
+    () => (rsvpsQuery.data || []).filter((x) => x.approved),
+    [rsvpsQuery.data]
+  );
+  const attendance = attendanceQuery.data || [];
+  const userMap = useMemo(() => {
+    const map = {};
+    (usersQuery.data || []).forEach((user) => {
+      map[String(user.id)] = user;
+    });
+    return map;
+  }, [usersQuery.data]);
+
+  const loading =
+    eventQuery.isPending ||
+    rsvpsQuery.isPending ||
+    attendanceQuery.isPending ||
+    usersQuery.isPending;
 
   /* ── Helper: resolve display name from RSVP + userMap ── */
   const getUserName = useCallback(
@@ -117,32 +171,6 @@ export default function EventAttendance() {
     [userMap]
   );
 
-  /* ── Data loading ──────────────────────────────────── */
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [ev, r, a, u] = await Promise.all([
-      eventService.getById(id),
-      rsvpService.listForEvent(id),
-      attendanceService.list(id),
-      userService.list(),
-    ]);
-    if (ev.ok) setEvent(ev.data);
-    if (r.ok) setApprovedRsvps((r.data || []).filter((x) => x.approved));
-    if (a.ok) setAttendance(a.data || []);
-    if (u.ok) {
-      const map = {};
-      (u.data || []).forEach((user) => {
-        map[String(user.id)] = user;
-      });
-      setUserMap(map);
-    }
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
   const checkedSet = useMemo(
     () => new Set(attendance.map((a) => a.user_id)),
     [attendance]
@@ -156,18 +184,34 @@ export default function EventAttendance() {
   const totalPending = totalApproved - totalChecked;
 
   /* ── Toggle check-in ───────────────────────────────── */
-  const toggle = async (userId, checked) => {
-    try {
-      await attendanceService.mark(id, { userId, checkedIn: checked });
-      toast.success(checked ? "Checked in successfully" : "Check-in reverted");
-      load();
-    } catch {
-      toast.error("Failed to update attendance");
-    }
-  };
+  const markMutation = useMutation({
+    mutationFn: async ({ userId, checkedIn }) => {
+      const res = await attendanceService.mark(id, { userId, checkedIn });
+      if (!res.ok) throw new Error(res.error || "Failed to update attendance");
+      return res.data;
+    },
+    onSuccess: (_data, { checkedIn }) => {
+      toast.success(checkedIn ? "Checked in successfully" : "Check-in reverted");
+      queryClient.invalidateQueries({ queryKey: ["attendance", Number(id)] });
+    },
+    onError: () => toast.error("Failed to update attendance"),
+  });
+  const toggle = (userId, checked) => markMutation.mutate({ userId, checkedIn: checked });
 
   /* ── Bulk check-in ─────────────────────────────────── */
-  const bulkCheckIn = async () => {
+  const bulkMutation = useMutation({
+    mutationFn: async (pendingIds) => {
+      const res = await attendanceService.bulk(id, { userIds: pendingIds, checkedIn: true });
+      if (!res.ok) throw new Error(res.error || "Bulk check-in failed");
+      return { count: pendingIds.length };
+    },
+    onSuccess: ({ count }) => {
+      toast.success(`${count} attendees checked in`);
+      queryClient.invalidateQueries({ queryKey: ["attendance", Number(id)] });
+    },
+    onError: () => toast.error("Bulk check-in failed"),
+  });
+  const bulkCheckIn = () => {
     const pendingIds = approvedRsvps
       .filter((r) => !checkedSet.has(r.user_id))
       .map((r) => r.user_id);
@@ -175,28 +219,23 @@ export default function EventAttendance() {
       toast("Everyone is already checked in", { icon: "✅" });
       return;
     }
-    try {
-      await attendanceService.bulk(id, {
-        userIds: pendingIds,
-        checkedIn: true,
-      });
-      toast.success(`${pendingIds.length} attendees checked in`);
-      load();
-    } catch {
-      toast.error("Bulk check-in failed");
-    }
+    bulkMutation.mutate(pendingIds);
   };
 
   /* ── Generate check-in code ────────────────────────── */
-  const generateCode = async () => {
-    const res = await attendanceService.generateCode(id);
-    if (res.ok) {
-      setCode(res.data.code);
+  const generateCodeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await attendanceService.generateCode(id);
+      if (!res.ok) throw new Error(res.error || "Failed to generate code");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setCode(data.code);
       toast.success("Check-in code generated");
-    } else {
-      toast.error(res.error || "Failed to generate code");
-    }
-  };
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const generateCode = () => generateCodeMutation.mutate();
 
   /* ── Filtered list ─────────────────────────────────── */
   const filteredRsvps = useMemo(() => {

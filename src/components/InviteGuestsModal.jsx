@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { IoDownloadOutline, IoMailOutline } from "./icons";
 import { eventService } from "../services/events";
@@ -20,8 +21,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function InviteGuestsModal({ event, guestCount = 0, onClose, onSent }) {
   const [value, setValue] = useState("");
   const [emails, setEmails] = useState([]);
-  const [sending, setSending] = useState(false);
   const fileRef = useRef(null);
+  const queryClient = useQueryClient();
   const capacity = event?.max_participants > 0 ? event.max_participants : null;
   const seatsLeft = capacity ? Math.max(capacity - guestCount - emails.length, 0) : null;
 
@@ -49,16 +50,27 @@ export default function InviteGuestsModal({ event, guestCount = 0, onClose, onSe
     URL.revokeObjectURL(url);
   };
 
-  const continueInvite = async () => {
+  const inviteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await eventService.inviteGuests(event.id, emails);
+      if (!res.ok) throw new Error(res.error || "Failed to send invitations");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      const skipped = data.skipped || 0;
+      toast.success(`${data.sent} invitation${data.sent === 1 ? "" : "s"} sent${skipped ? ` · ${skipped} already invited` : ""}`);
+      queryClient.invalidateQueries({ queryKey: ["event", Number(event.id), "invitations"] });
+      onSent?.();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const sending = inviteMutation.isPending;
+
+  const continueInvite = () => {
     if (!emails.length) return toast.error("Add at least one guest email");
-    setSending(true);
-    const res = await eventService.inviteGuests(event.id, emails);
-    setSending(false);
-    if (!res.ok) return toast.error(res.error || "Failed to send invitations");
-    const skipped = res.data.skipped || 0;
-    toast.success(`${res.data.sent} invitation${res.data.sent === 1 ? "" : "s"} sent${skipped ? ` · ${skipped} already invited` : ""}`);
-    onSent?.();
-    onClose();
+    inviteMutation.mutate();
   };
 
   return (

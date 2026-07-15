@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useParams } from "react-router-dom";
 import { eventService } from "../../services/events";
 
@@ -7,64 +8,53 @@ function GetExploreLogic() {
   const { id } = useParams();
   const filter = searchParams.get("filter");
   const category = searchParams.get("category");
-  const [events, setEvents] = useState(null);
-  const [eventCount, setEventCount] = useState(null);
-  const [publicEvent, setPublicEvent] = useState(null);
-  const [offlineEvent, setOfflineEvent] = useState(null);
-  const [onlineEvent, setOnlineEvent] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const getEvents = useCallback(async () => {
-    setError(null);
-    setLoading(true);
+  const isDetail = !!id;
 
+  const listParams = useMemo(() => {
     const params = {};
     if (category) params.category = category;
     if (filter === "online" || filter === "offline") params.filter = filter;
+    return params;
+  }, [category, filter]);
 
-    const res = await eventService.list(params);
-    if (res.ok) {
-      setEvents(res.data);
-      setEventCount(res.data.length);
-      setPublicEvent(res.data.filter((e) => e.privacy === "public"));
-      setOfflineEvent(res.data.filter((e) => e.medium === "offline"));
-      setOnlineEvent(res.data.filter((e) => e.medium === "online"));
-    } else {
-      setError(res.error);
-    }
-    setLoading(false);
-  }, [searchParams]);
+  const listQuery = useQuery({
+    queryKey: ["explore-events", listParams],
+    enabled: !isDetail,
+    queryFn: async () => {
+      const res = await eventService.list(listParams);
+      if (!res.ok) throw new Error(res.error || "Failed to load events");
+      return res.data || [];
+    },
+  });
 
-  const getEventById = useCallback(async () => {
-    setLoading(true);
-    const res = await eventService.getById(id);
-    if (res.ok) {
-      setEvents(res.data);
-    } else {
-      setError(res.error);
-    }
-    setLoading(false);
-  }, [id]);
+  const detailQuery = useQuery({
+    queryKey: ["event", Number(id)],
+    enabled: isDetail,
+    queryFn: async () => {
+      const res = await eventService.getById(id);
+      if (!res.ok) throw new Error(res.error || "Failed to load event");
+      return res.data;
+    },
+  });
 
-  useEffect(() => {
-    if (id) getEventById();
-    else getEvents();
-  }, [getEvents, getEventById, id]);
+  const listData = listQuery.data || [];
+  const events = isDetail ? (detailQuery.data ?? null) : (listQuery.data ?? null);
+  const activeQuery = isDetail ? detailQuery : listQuery;
 
   return {
-    loading,
-    error,
+    loading: activeQuery.isPending,
+    error: activeQuery.error?.message ?? null,
     events,
-    eventCount,
-    publicEvent,
-    offlineEvent,
-    onlineEvent,
+    eventCount: isDetail ? null : listData.length,
+    publicEvent: listData.filter((e) => e.privacy === "public"),
+    offlineEvent: listData.filter((e) => e.medium === "offline"),
+    onlineEvent: listData.filter((e) => e.medium === "online"),
     filter,
     id,
     setSearchParams,
     searchParams,
-    getEvents,
+    getEvents: listQuery.refetch,
     category,
   };
 }

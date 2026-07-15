@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "../../components/icons";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -14,9 +15,9 @@ function SignupLogic() {
   const [password, setPassword] = useState("");
   const [CPassword, setCPassword] = useState("");
   const [validateMessage, setValidateMessage] = useState(null);
-  const [signingin, setSigningin] = useState(false);
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { setUserInfo } = useUser();
 
   const inputs = [
@@ -85,7 +86,27 @@ function SignupLogic() {
     },
   ];
 
-  const signUpUser = async (e) => {
+  const signupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await authService.signup(name, email, password, createAvatarUrl());
+      if (!res.ok) throw new Error(res.error || "Sign up failed");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("token", JSON.stringify(data.token));
+      localStorage.setItem("Mahotsav-user", JSON.stringify(data.user));
+      setUserInfo(data.user);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      toast.success("Signed up successfully");
+      navigate("/dashboard", { replace: true });
+    },
+    onError: (err) => {
+      setValidateMessage(err.message);
+      toast.error(err.message);
+    },
+  });
+
+  const signUpUser = (e) => {
     e?.preventDefault();
     if (!name || !email || !password || !CPassword) {
       toast.error("Please fill all fields");
@@ -97,31 +118,14 @@ function SignupLogic() {
       setValidateMessage("Passwords do not match");
       return;
     }
-    setSigningin(true);
     setValidateMessage(null);
-
-    const res = await authService.signup(name, email, password, createAvatarUrl());
-
-    if (!res.ok) {
-      setValidateMessage(res.error);
-      toast.error(res.error);
-      setSigningin(false);
-      return;
-    }
-
-    localStorage.setItem("token", JSON.stringify(res.data.token));
-    localStorage.setItem("Mahotsav-user", JSON.stringify(res.data.user));
-    setUserInfo(res.data.user);
-    toast.success("Signed up successfully");
-    navigate("/dashboard", { replace: true });
-    setSigningin(false);
+    signupMutation.mutate();
   };
 
   return {
     inputs,
     validateMessage,
-    signingin,
-    setSigningin,
+    signingin: signupMutation.isPending,
     setValidateMessage,
     showPass,
     setShowCPass,

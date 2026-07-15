@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import GetEventLogic from '../../Logic/EventsLogic/getEvents';
 import Loading from '../../components/Loading';
 import { MdComputer } from '../../components/icons';
@@ -46,27 +47,38 @@ function EventPage() {
   const { token, handleRSVP, adding, myRsvp } = RsvpLogic(events);
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const params = new URLSearchParams(search);
   const isInvitation = params.get('invited') === '1';
   const inviteToken = params.get('token');
-  const [responding, setResponding] = useState(false);
 
-  const respondToInvitation = async (action) => {
+  const invitationMutation = useMutation({
+    mutationFn: async (action) => {
+      const res =
+        action === 'accept'
+          ? await eventService.acceptInvitation(inviteToken)
+          : await eventService.rejectInvitation(inviteToken);
+      if (!res.ok) throw new Error(res.error || 'Could not update invitation');
+      return action;
+    },
+    onSuccess: (action) => {
+      toast.success(action === 'accept' ? 'Invitation accepted' : 'Invitation rejected');
+      if (events?.id) queryClient.invalidateQueries({ queryKey: ['event', Number(events.id)] });
+      queryClient.invalidateQueries({ queryKey: ['rsvps'] });
+      navigate(pathname, { replace: true });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const responding = invitationMutation.isPending;
+
+  const respondToInvitation = (action) => {
     if (!token) {
       toast.error('Please login to respond to this invitation');
       navigate(`/auth/login?redirect=${encodeURIComponent(pathname + search)}`);
       return;
     }
     if (!inviteToken) return toast.error('Invitation token is missing');
-    setResponding(true);
-    const res =
-      action === 'accept'
-        ? await eventService.acceptInvitation(inviteToken)
-        : await eventService.rejectInvitation(inviteToken);
-    setResponding(false);
-    if (!res.ok) return toast.error(res.error || 'Could not update invitation');
-    toast.success(action === 'accept' ? 'Invitation accepted' : 'Invitation rejected');
-    navigate(pathname, { replace: true });
+    invitationMutation.mutate(action);
   };
 
   if (loading || !events) return <Loading />;

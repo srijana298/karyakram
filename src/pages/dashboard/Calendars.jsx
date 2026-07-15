@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { calendarService } from "../../services/calendars";
 import { resolveImage } from "../../lib/resolveImage";
 import { IoAdd, IoArrowForward, IoCalendarOutline } from "../../components/icons";
@@ -58,19 +59,26 @@ function FollowingCard({ calendar }) {
 
 export default function Calendars() {
   const { userInfo } = useUser();
-  const [mine, setMine] = useState([]);
-  const [following, setFollowing] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([calendarService.list({ mine: true }), calendarService.list({ following: true })]).then(([a, b]) => {
-      if (a.ok) setMine(a.data || []);
-      if (b.ok) setFollowing(b.data || []);
-      setLoading(false);
-    });
-  }, []);
+  const { data: mine = [], isPending: minePending } = useQuery({
+    queryKey: ["calendars", { mine: true }],
+    queryFn: async () => {
+      const res = await calendarService.list({ mine: true });
+      if (!res.ok) throw new Error(res.error || "Failed to load calendars");
+      return res.data || [];
+    },
+  });
 
-  if (loading) return <Loading />;
+  const { data: following = [], isPending: followingPending } = useQuery({
+    queryKey: ["calendars", { following: true }],
+    queryFn: async () => {
+      const res = await calendarService.list({ following: true });
+      if (!res.ok) throw new Error(res.error || "Failed to load calendars");
+      return res.data || [];
+    },
+  });
+
+  if (minePending || followingPending) return <Loading />;
   return (
     <div className="max-w-5xl mx-auto pb-12">
       <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 dark:text-white">Calendars</h1>

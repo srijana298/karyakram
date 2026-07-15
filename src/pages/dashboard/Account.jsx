@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Avatar from "../../components/Avatar";
 import Input from "../../components/Input";
 import { toast } from "react-hot-toast";
@@ -7,7 +8,6 @@ import { useUser } from "../../context/userContext";
 import { authService } from "../../services/auth";
 
 function Account() {
-  const [loading, setLoading] = useState(false);
   const [updateFields, setUpdateFields] = useState(false);
   const { userInfo, setUserInfo } = useUser();
 
@@ -37,22 +37,26 @@ function Account() {
     }
   };
 
-  const handleUpdateFields = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    if (name !== userName) {
+  const updateMutation = useMutation({
+    mutationFn: async () => {
       const res = await authService.updateMe({ name, phone });
-      if (res.ok) {
-        toast.success("Name updated successfully!");
-        localStorage.setItem("Mahotsav-user", JSON.stringify(res.data));
-        setUserInfo(res.data);
-        revalidateFields();
-      } else {
-        toast.error(res.error);
-      }
+      if (!res.ok) throw new Error(res.error || "Failed to update profile");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success("Name updated successfully!");
+      localStorage.setItem("Mahotsav-user", JSON.stringify(data));
+      setUserInfo(data);
+      revalidateFields();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleUpdateFields = (e) => {
+    e.preventDefault();
+    if (name !== userName) {
+      updateMutation.mutate();
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -82,7 +86,7 @@ function Account() {
           {updateFields ? "Cancel" : "Edit Profile"}
         </button>
         {updateFields && (
-          <Button type="submit" text="Save" style="my-0" disabled={!updateFields} loading={loading} />
+          <Button type="submit" text="Save" style="my-0" disabled={!updateFields} loading={updateMutation.isPending} />
         )}
       </form>
     </div>

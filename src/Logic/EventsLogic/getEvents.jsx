@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
@@ -10,85 +11,69 @@ function GetEventLogic() {
   const { id, code } = useParams();
   const { pathname } = useLocation();
   const filter = searchParams.get("filter");
-  const [events, setEvents] = useState(null);
-  const [eventCount, setEventCount] = useState(null);
-  const [privateEvent, setPrivateEvent] = useState(null);
-  const [publicEvent, setPublicEvent] = useState(null);
-  const [offlineEvent, setOfflineEvent] = useState(null);
-  const [onlineEvent, setOnlineEvent] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const getEvents = useCallback(async () => {
-    setLoading(true);
+  const isDetail = !!(id || code);
 
-    // Determine if user is admin from localStorage
-    let role = "attendee";
-    try {
-      const user = JSON.parse(localStorage.getItem("Mahotsav-user"));
-      role = user?.role || "attendee";
-    } catch {}
-    const isAdmin = role === "admin";
+  // Admin sees all events; everyone else sees only their own.
+  let role = "attendee";
+  try {
+    role = JSON.parse(localStorage.getItem("Mahotsav-user"))?.role || "attendee";
+  } catch {}
+  const isAdmin = role === "admin";
 
+  const listParams = useMemo(() => {
     const params = {};
     if (filter && filter !== "total") {
       if (filter === "private" || filter === "public") params.privacy = filter;
       if (filter === "offline" || filter === "online") params.medium = filter;
     }
+    if (!isAdmin) params.mine = "true";
+    return params;
+  }, [filter, isAdmin]);
 
-    let res;
-    if (isAdmin) {
-      res = await adminService.listEvents(params);
-    } else {
-      params.mine = "true";
-      res = await eventService.list(params);
-    }
+  const listQuery = useQuery({
+    queryKey: ["events", { scope: isAdmin ? "admin" : "mine", ...listParams }],
+    enabled: !isDetail,
+    queryFn: async () => {
+      const res = isAdmin
+        ? await adminService.listEvents(listParams)
+        : await eventService.list(listParams);
+      if (!res.ok) throw new Error(res.error || "Failed to load events");
+      return res.data || [];
+    },
+  });
 
-    if (res.ok) {
-      const data = res.data || [];
-      setEvents(data);
-      setEventCount(data.length);
-      setPrivateEvent(data.filter((e) => e.privacy === "private"));
-      setPublicEvent(data.filter((e) => e.privacy === "public"));
-      setOfflineEvent(data.filter((e) => e.medium === "offline"));
-      setOnlineEvent(data.filter((e) => e.medium === "online"));
-    } else {
-      setError(res.error);
-    }
-    setLoading(false);
-  }, [searchParams]);
+  const detailQuery = useQuery({
+    queryKey: id ? ["event", Number(id)] : ["event-code", code],
+    enabled: isDetail,
+    queryFn: async () => {
+      const res = id ? await eventService.getById(id) : await eventService.resolveCode(code);
+      if (!res.ok) {
+        toast.error(res.error);
+        throw new Error(res.error || "Failed to load event");
+      }
+      return res.data;
+    },
+  });
 
-  const getEventById = useCallback(async () => {
-    setLoading(true);
-    const res = id ? await eventService.getById(id) : await eventService.resolveCode(code);
-    if (res.ok) {
-      setEvents(res.data);
-    } else {
-      setError(res.error);
-      toast.error(res.error);
-    }
-    setLoading(false);
-  }, [id, code, pathname, navigate]);
-
-  useEffect(() => {
-    if (id || code) getEventById();
-    else getEvents();
-  }, [getEvents, getEventById, id, code]);
+  const listData = listQuery.data || [];
+  const events = isDetail ? (detailQuery.data ?? null) : (listQuery.data ?? null);
+  const activeQuery = isDetail ? detailQuery : listQuery;
 
   return {
-    loading,
-    error,
+    loading: activeQuery.isPending,
+    error: activeQuery.error?.message ?? null,
     events,
-    eventCount,
-    privateEvent,
-    publicEvent,
-    offlineEvent,
-    onlineEvent,
+    eventCount: isDetail ? null : listData.length,
+    privateEvent: listData.filter((e) => e.privacy === "private"),
+    publicEvent: listData.filter((e) => e.privacy === "public"),
+    offlineEvent: listData.filter((e) => e.medium === "offline"),
+    onlineEvent: listData.filter((e) => e.medium === "online"),
     filter,
     id,
     setSearchParams,
     searchParams,
-    getEvents,
+    getEvents: listQuery.refetch,
   };
 }
 

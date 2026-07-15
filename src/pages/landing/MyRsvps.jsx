@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { rsvpService } from "../../services/rsvps";
 import { resolveImage } from "../../lib/resolveImage";
@@ -48,23 +49,18 @@ function formatEventDate(dateStr) {
 }
 
 function MyRsvps() {
-  const [rsvps, setRsvps] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchData = async () => {
-    const rsvpRes = await rsvpService.listMine();
-    if (rsvpRes.ok) {
-      setRsvps(rsvpRes.data || []);
-    } else {
-      setError(rsvpRes.error);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const {
+    data: rsvps = [],
+    isPending: loading,
+    error,
+  } = useQuery({
+    queryKey: ["rsvps", "mine"],
+    queryFn: async () => {
+      const res = await rsvpService.listMine();
+      if (!res.ok) throw new Error(res.error || "Failed to load RSVPs");
+      return res.data || [];
+    },
+  });
 
   if (loading) return <Loading />;
 
@@ -118,7 +114,7 @@ function MyRsvps() {
       <div className="container py-8">
         {error ? (
           <div className="text-sm text-red-500 p-8 text-center bg-red-50 rounded-xl">
-            {error}
+            {error.message}
           </div>
         ) : !rsvps.length ? (
           <div className="text-center py-20">

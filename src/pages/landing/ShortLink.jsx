@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { eventService } from "../../services/events";
 import Loading from "../../components/Loading";
@@ -8,18 +9,22 @@ import Loading from "../../components/Loading";
 function ShortLink() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const [notFound, setNotFound] = useState(false);
+
+  const { data, isError } = useQuery({
+    queryKey: ["event-code", code],
+    enabled: !!code,
+    queryFn: async () => {
+      const res = await eventService.resolveCode(code);
+      if (!res.ok) throw new Error(res.error || "Event not found");
+      return res.data;
+    },
+  });
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const res = await eventService.resolveCode(code);
-      if (!active) return;
-      if (res.ok && res.data?.id) navigate(`/event/${res.data.id}`, { replace: true });
-      else setNotFound(true);
-    })();
-    return () => { active = false; };
-  }, [code, navigate]);
+    if (data?.id) navigate(`/event/${data.id}`, { replace: true });
+  }, [data, navigate]);
+
+  const notFound = isError || (data !== undefined && !data?.id);
 
   if (!notFound) return <Loading />;
 

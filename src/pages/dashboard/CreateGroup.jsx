@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { groupService } from "../../services/groups";
 import { eventService } from "../../services/events";
@@ -56,6 +57,7 @@ function emptyEvent() {
 
 export default function CreateGroup() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
 
@@ -64,42 +66,48 @@ export default function CreateGroup() {
   const [privacy, setPrivacy] = useState("public");
   const [groupIcon, setGroupIcon] = useState("trophy");
   const [themeColor, setThemeColor] = useState("green");
-  const [creating, setCreating] = useState(false);
   const [events, setEvents] = useState([]);
-  const [fetching, setFetching] = useState(!!editId);
   const [groupMode, setGroupMode] = useState("scratch");
-  const [existingEvents, setExistingEvents] = useState([]);
   const [selectedEventIds, setSelectedEventIds] = useState([]);
 
   // Load existing group for editing
-  useEffect(() => {
-    if (!editId) return;
-    (async () => {
-      setFetching(true);
+  const { data: group, isPending: fetchingGroup } = useQuery({
+    queryKey: ["group", editId],
+    enabled: !!editId,
+    queryFn: async () => {
       const res = await groupService.getById(editId);
-      if (res.ok && res.data) {
-        const g = res.data;
-        setTitle(g.title || "");
-        setDescription(g.description || "");
-        setPrivacy(g.privacy || "public");
-        if (g.subEvents?.length) {
-          setEvents(g.subEvents.map((s) => ({ ...s, tempId: s.id })));
-          setSelectedEventIds(g.subEvents.map((s) => s.id));
-          setGroupMode("existing");
-        }
-      } else {
+      if (!res.ok || !res.data) {
         toast.error("Group not found");
+        throw new Error(res.error || "Group not found");
       }
-      setFetching(false);
-    })();
-  }, [editId]);
+      return res.data;
+    },
+  });
 
+  // Populate the form once the existing group has loaded (edit mode).
   useEffect(() => {
-    (async () => {
+    if (!group) return;
+    const g = group;
+    setTitle(g.title || "");
+    setDescription(g.description || "");
+    setPrivacy(g.privacy || "public");
+    if (g.subEvents?.length) {
+      setEvents(g.subEvents.map((s) => ({ ...s, tempId: s.id })));
+      setSelectedEventIds(g.subEvents.map((s) => s.id));
+      setGroupMode("existing");
+    }
+  }, [group]);
+
+  const { data: existingEvents = [] } = useQuery({
+    queryKey: ["events", { mine: true }],
+    queryFn: async () => {
       const res = await eventService.list({ mine: "true" });
-      if (res.ok) setExistingEvents(res.data || []);
-    })();
-  }, []);
+      if (!res.ok) throw new Error(res.error || "Failed to load events");
+      return res.data || [];
+    },
+  });
+
+  const fetching = !!editId && fetchingGroup;
 
   const pageTitle = editId ? "Edit Group" : "Create Group";
 
@@ -117,24 +125,14 @@ export default function CreateGroup() {
     );
   };
 
-  const create = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Group name is required");
-      return;
-    }
-    setCreating(true);
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = { title, description, privacy };
+      const res = editId
+        ? await groupService.update(editId, payload)
+        : await groupService.create(payload);
+      if (!res.ok) throw new Error(res.error || "Failed to save group");
 
-    const payload = { title, description, privacy };
-    let res;
-
-    if (editId) {
-      res = await groupService.update(editId, payload);
-    } else {
-      res = await groupService.create(payload);
-    }
-
-    if (res.ok) {
       const groupId = editId || res.data?.id;
       if (groupMode === "existing" && groupId) {
         await Promise.all(
@@ -143,12 +141,26 @@ export default function CreateGroup() {
           )
         );
       }
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      if (editId) queryClient.invalidateQueries({ queryKey: ["group", editId] });
       toast.success(editId ? "Group updated!" : "Group created!");
       navigate("/dashboard/groups", { replace: false });
-    } else {
-      toast.error(res.error || "Failed to save group");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const creating = saveMutation.isPending;
+
+  const create = (e) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      toast.error("Group name is required");
+      return;
     }
-    setCreating(false);
+    saveMutation.mutate();
   };
 
   if (fetching) return null;
