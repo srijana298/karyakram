@@ -247,6 +247,34 @@ function Event() {
     </button>
   );
 
+  // Smart RSVP prediction: likelihood this pending guest will actually attend.
+  const PredictionBadge = ({ prediction }) => {
+    if (!prediction) return null;
+    const { score, confidence } = prediction;
+    const tone =
+      score >= 70
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : score >= 45
+          ? "bg-amber-50 text-amber-700 border-amber-200"
+          : "bg-red-50 text-red-700 border-red-200";
+    const factors = prediction.factors;
+    const title = factors
+      ? `Attendance likelihood ${score}% (${confidence} confidence)\n`
+        + `• Past attendance: ${factors.previousAttendance}%\n`
+        + `• RSVP acceptance: ${factors.acceptanceRate}%\n`
+        + `• Category interest: ${factors.categoryInterest}%\n`
+        + `• Response speed: ${factors.responseSpeed}%`
+      : `Not enough history yet — neutral estimate (${confidence} confidence)`;
+    return (
+      <span
+        title={title}
+        className={`px-2 py-1 rounded-full text-[11px] font-semibold border shrink-0 ${tone}`}
+      >
+        {score}% likely
+      </span>
+    );
+  };
+
   const GuestList = ({ list, mode }) => (
     <div className="divide-y divide-stone-100 dark:divide-white/10">
       {list.length === 0 ? (
@@ -266,6 +294,7 @@ function Event() {
             </div>
             {r.pending && !r.approved && !r.rejected ? (
               <div className="flex items-center gap-1.5 shrink-0">
+                <PredictionBadge prediction={r.prediction} />
                 <button onClick={() => handleApprove(r.id)} className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg">Approve</button>
                 <button onClick={() => handleReject(r.id)} className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg">Reject</button>
               </div>
@@ -540,18 +569,18 @@ function Event() {
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: events.max_participants > 0 ? `${Math.min((approved.length / events.max_participants) * 100, 100)}%` : approved.length > 0 ? "100%" : "0%" }} />
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <button onClick={() => setInviteOpen(true)} className="flex items-center gap-3 rounded-2xl bg-stone-50 dark:bg-white/[0.04] border border-stone-200 dark:border-white/10 p-3.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
-                  <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl"><IoMailOutline /></span>
-                  <span className="text-base font-bold text-stone-900 dark:text-white">Invite Guests</span>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                <button onClick={() => setInviteOpen(true)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
+                  <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-base"><IoMailOutline /></span>
+                  <span className="text-sm font-semibold text-stone-900 dark:text-white">Invite Guests</span>
                 </button>
-                <button onClick={() => navigate(`/dashboard/events/${events.id}/attendance`)} className="flex items-center gap-3 rounded-2xl bg-stone-50 dark:bg-white/[0.04] border border-stone-200 dark:border-white/10 p-3.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
-                  <span className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl"><IoQrCodeOutline /></span>
-                  <span className="text-base font-bold text-stone-900 dark:text-white">Check In Guests</span>
+                <button onClick={() => navigate(`/dashboard/events/${events.id}/attendance`)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
+                  <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base"><IoQrCodeOutline /></span>
+                  <span className="text-sm font-semibold text-stone-900 dark:text-white">Check In Guests</span>
                 </button>
-                <button onClick={copyLink} className="flex items-center gap-3 rounded-2xl bg-stone-50 dark:bg-white/[0.04] border border-stone-200 dark:border-white/10 p-3.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
-                  <span className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl"><IoPeopleOutline /></span>
-                  <span><span className="block text-base font-bold text-stone-900 dark:text-white">Guest List</span><span className="text-xs font-medium text-stone-500 dark:text-white/50">Shown to guests</span></span>
+                <button onClick={copyLink} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
+                  <span className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base"><IoPeopleOutline /></span>
+                  <span><span className="block text-sm font-semibold text-stone-900 dark:text-white">Guest List</span><span className="text-[11px] font-medium text-stone-500 dark:text-white/50">Shown to guests</span></span>
                 </button>
               </div>
             </div>

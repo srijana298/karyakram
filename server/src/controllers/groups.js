@@ -2,6 +2,7 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { eventGroups, events, rsvps, attendance, users } from "../db/schema.js";
 import { Ok, Created, NotFound, Forbidden, BadRequest, InternalError } from "../utils/ApiResponse.js";
+import { findEventConflicts } from "../utils/eventConflicts.js";
 
 export const createGroup = async (req, res) => {
   const { title, description, cover_image, category, privacy } = req.body;
@@ -168,38 +169,10 @@ export const groupConflicts = async (req, res) => {
   const subEvents = await db.select().from(events).where(eq(events.group_id, groupId)).catch(() => null);
   if (!subEvents) return InternalError("Failed to fetch sub-events");
 
-  const conflicts = [];
-
-  for (let i = 0; i < subEvents.length; i++) {
-    for (let j = i + 1; j < subEvents.length; j++) {
-      const a = subEvents[i];
-      const b = subEvents[j];
-      if (!a.start_date || !a.end_date || !b.start_date || !b.end_date) continue;
-
-      const aStart = new Date(a.start_date).getTime();
-      const aEnd = new Date(a.end_date).getTime();
-      const bStart = new Date(b.start_date).getTime();
-      const bEnd = new Date(b.end_date).getTime();
-
-      const overlaps = aStart < bEnd && bStart < aEnd;
-      if (!overlaps) continue;
-
-      const rA = await db.select().from(rsvps).where(eq(rsvps.event_id, a.id)).catch(() => []);
-      const rB = await db.select().from(rsvps).where(eq(rsvps.event_id, b.id)).catch(() => []);
-      const setA = new Set(rA.map((x) => x.user_id));
-      const setB = new Set(rB.map((x) => x.user_id));
-      const sharedUsers = [...setA].filter((u) => setB.has(u));
-
-      conflicts.push({
-        eventA: { id: a.id, title: a.title, start: a.start_date, end: a.end_date, location: a.location_name },
-        eventB: { id: b.id, title: b.title, start: b.start_date, end: b.end_date, location: b.location_name },
-        overlaps: true,
-        sharedUsersCount: sharedUsers.length,
-        sharedUsers,
-        severity: a.location_name && b.location_name && a.location_name === b.location_name ? "critical" : "warning",
-      });
-    }
-  }
+  const eventIds = new Set(subEvents.map((event) => event.id));
+  const groupRsvps = (await db.select().from(rsvps).catch(() => []))
+    .filter((rsvp) => eventIds.has(rsvp.event_id));
+  const conflicts = findEventConflicts(subEvents, groupRsvps);
 
   return Ok({ totalConflicts: conflicts.length, conflicts });
 };

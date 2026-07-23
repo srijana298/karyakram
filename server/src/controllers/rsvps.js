@@ -1,7 +1,8 @@
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, ne, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { rsvps, events, eventMembers, notifications, users } from "../db/schema.js";
+import { rsvps, events, eventMembers, notifications, users, attendance } from "../db/schema.js";
 import { Ok, Created, BadRequest, Forbidden, NotFound, Conflict, InternalError } from "../utils/ApiResponse.js";
+import { buildUserStats, computeAttendanceScore } from "../utils/rsvpPrediction.js";
 
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   if (!aStart || !bStart) return false;
@@ -90,6 +91,54 @@ async function findUserEventConflict(userId, targetEvent) {
     timeConflict: candidates.find((row) => rangesOverlap(row.start_date, row.end_date, targetEvent.start_date, targetEvent.end_date)) || null,
     commuteRisk: candidates.map((row) => travelRisk(row, targetEvent)).find(Boolean) || null,
   };
+}
+
+// Compute a Smart RSVP attendance prediction for every user who has RSVP'd to
+// `event`. Returns Map<userId, { score, confidence, factors }>. Read-only.
+async function getEventAttendancePredictions(event, userIds) {
+  if (!userIds.length) return new Map();
+  const now = Date.now();
+
+  // Every RSVP these users made, excluding the target event so it can't
+  // inflate a user's own history.
+  const history = await db
+    .select({
+      user_id: rsvps.user_id,
+      event_id: rsvps.event_id,
+      approved: rsvps.approved,
+      rsvp_created_at: rsvps.created_at,
+      event_category: events.category,
+      event_created_at: events.created_at,
+      event_end_date: events.end_date,
+    })
+    .from(rsvps)
+    .leftJoin(events, eq(rsvps.event_id, events.id))
+    .where(and(inArray(rsvps.user_id, userIds), ne(rsvps.event_id, event.id)))
+    .catch(() => []);
+
+  // Which of those events each user actually checked in to.
+  const attRows = await db
+    .select({ user_id: attendance.user_id, event_id: attendance.event_id })
+    .from(attendance)
+    .where(inArray(attendance.user_id, userIds))
+    .catch(() => []);
+
+  const byUser = new Map(userIds.map((id) => [id, []]));
+  for (const row of history) byUser.get(row.user_id)?.push(row);
+  const attByUser = new Map(userIds.map((id) => [id, new Set()]));
+  for (const row of attRows) attByUser.get(row.user_id)?.add(row.event_id);
+
+  const predictions = new Map();
+  for (const userId of userIds) {
+    const stats = buildUserStats({
+      userRsvps: byUser.get(userId) || [],
+      attendedEventIds: attByUser.get(userId) || new Set(),
+      targetCategory: event.category,
+      now,
+    });
+    predictions.set(userId, computeAttendanceScore(stats));
+  }
+  return predictions;
 }
 
 export const createRsvp = async (req, res) => {
@@ -213,7 +262,15 @@ export const listRsvpsForEvent = async (req, res) => {
     .catch(() => null);
   if (!rows) return InternalError("Failed to fetch RSVPs");
 
-  return Ok(rows);
+  // Attach a Smart RSVP attendance prediction to each row.
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  const predictions = await getEventAttendancePredictions(event, userIds);
+  const withPrediction = rows.map((r) => ({
+    ...r,
+    prediction: predictions.get(r.user_id) || null,
+  }));
+
+  return Ok(withPrediction);
 };
 
 export const listMyRsvps = async (req, res) => {
