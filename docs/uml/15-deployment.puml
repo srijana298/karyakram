@@ -1,0 +1,36 @@
+@startuml deployment
+title Deployment Diagram — Mahotsav
+
+node "Client Device" {
+  artifact "Web Browser" as Browser {
+    component "React SPA bundle\n(dist/ from Vite build)" as Bundle
+  }
+}
+
+node "Web / Static Host" as WebHost {
+  artifact "Static assets\n(index.html, JS, CSS)" as Static
+}
+
+node "Application Server\n(Node.js runtime)" as AppServer {
+  component "Express API\n(server/src/index.js)\nPORT 5000" as API
+  folder "uploads/\n(templates, images)" as Uploads
+}
+
+node "Database Server" as DbServer {
+  database "MySQL" as MySQL
+}
+
+cloud "Resend\n(Email SaaS)" as Resend
+
+Browser --> Static : HTTPS (load SPA)
+Bundle --> API : HTTPS REST\n/api/* (Bearer JWT)
+API --> MySQL : TCP 3306\n(mysql2 / Drizzle)
+API --> Uploads : read/write files
+API --> Resend : HTTPS (API key)
+
+note right of AppServer
+  Dev: Vite dev server :5173 proxies to API :5000.
+  Prod: SPA served statically; API behind same origin / reverse proxy.
+  Secrets via .env (JWT_SECRET, DATABASE_URL, RESEND_API_KEY).
+end note
+@enduml

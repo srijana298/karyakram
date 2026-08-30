@@ -1,0 +1,41 @@
+@startuml component
+title Component Diagram — Mahotsav
+
+skinparam componentStyle rectangle
+
+package "Frontend (React SPA)" {
+  [Pages\n(landing, dashboard, editor,\nSelfCheckIn, MarkAttendance)] as Pages
+  [Reusable Components\n(EventCard, DataTable, Ticket...)] as Comp
+  [Context Providers\n(user/notification/theme)] as Contexts
+  [API Service Layer\n(services/api.js + per-domain)] as ApiSvc
+}
+
+package "Backend (Express)" {
+  [Route Modules\n(routes/*.js)] as Routes
+  [Middleware\n(auth, admin, upload, validate)] as Middleware
+  [Controllers\n(controllers/*.js)] as Controllers
+  [Validators (zod)\n(validators/*.js)] as Validators
+  [Utils\n(auth/JWT, rsvpPrediction,\neventConflicts, ApiResponse)] as Utils
+  [DB Access\n(db/index.js + schema.js)] as DbLayer
+}
+
+database "MySQL" as MySQL
+cloud "Resend API" as Resend
+node "node-canvas" as Canvas
+
+interface "REST / JSON\n(Bearer JWT)" as REST
+
+Pages --> Comp
+Pages --> Contexts
+Contexts --> ApiSvc
+ApiSvc --> REST
+REST -- Routes
+Routes --> Middleware
+Middleware --> Controllers
+Controllers --> Validators
+Controllers --> Utils
+Controllers --> DbLayer
+DbLayer --> MySQL
+Controllers --> Resend : send email
+Controllers --> Canvas : render certificate PNG
+@enduml

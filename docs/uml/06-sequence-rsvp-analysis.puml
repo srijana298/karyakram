@@ -1,0 +1,21 @@
+@startuml sequence-rsvp-analysis
+title RSVP — Sequence (Analysis)
+
+actor Attendee
+participant "Frontend\n(React)" as FE
+participant "Backend\n(Express API)" as API
+database "MySQL" as DB
+actor Organizer
+
+Attendee -> FE : click "RSVP"
+FE -> API : POST /events/:id/rsvp
+API -> DB : create RSVP (pending)
+DB --> API : ok
+API --> FE : 201 Created
+FE --> Attendee : "RSVP sent"
+
+API -> DB : create notification
+Organizer -> FE : opens dashboard
+FE -> API : GET pending RSVPs
+API --> FE : list
+@enduml

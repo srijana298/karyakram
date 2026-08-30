@@ -46,8 +46,24 @@ function Navbar() {
   const time = useNepalClock();
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const isAdmin = userInfo?.role === 'admin';
-  const initials = (userInfo?.name || 'U').slice(0, 2).toUpperCase();
+  const fullName =
+    userInfo?.fullName ||
+    userInfo?.full_name ||
+    userInfo?.name ||
+    [userInfo?.firstName || userInfo?.first_name, userInfo?.lastName || userInfo?.last_name]
+      .filter(Boolean)
+      .join(' ') ||
+    userInfo?.email?.split('@')?.[0] ||
+    '';
+  const initials = fullName
+    ? fullName
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase()
+    : 'U';
 
   useEffect(() => {
     const onClick = (e) => {
@@ -147,7 +163,7 @@ function Navbar() {
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen((o) => !o)}
-                    className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-orange-300 to-rose-400 text-white text-xs font-bold flex items-center justify-center ring-1 ring-black/5 dark:ring-white/20"
+                    className="w-8 h-8 rounded-full overflow-hidden bg-stone-700 text-white text-xs font-bold flex items-center justify-center ring-1 ring-black/5 dark:bg-stone-200 dark:text-stone-950 dark:ring-white/20"
                   >
                     {userInfo?.avatar ? (
                       <img
@@ -163,16 +179,12 @@ function Navbar() {
                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#151517] rounded-xl border border-stone-200 dark:border-white/10 shadow-xl overflow-hidden">
                       <div className="px-4 py-3 border-b border-stone-100 dark:border-white/10">
                         <p className="text-sm font-semibold text-stone-800 dark:text-white truncate">
-                          {userInfo?.name || 'User'}
+                          {fullName}
                         </p>
                         <p className="text-xs text-stone-400 dark:text-white/40 truncate">
                           {userInfo?.email || ''}
                         </p>
-                        <span
-                          className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${isAdmin ? 'bg-red-500/15 text-red-500 dark:text-red-300' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'}`}
-                        >
-                          {isAdmin ? 'Super Admin' : 'Member'}
-                        </span>
+
                       </div>
                       {[
                         {
@@ -181,9 +193,6 @@ function Navbar() {
                           to: '/dashboard/create',
                           cls: 'sm:hidden'
                         },
-                        ...(isAdmin
-                          ? [{ label: 'Users', icon: <IoPersonOutline />, to: '/dashboard/users' }]
-                          : []),
                         { label: 'Account', icon: <IoPersonOutline />, to: '/dashboard/account' }
                       ].map((it) => (
                         <button

@@ -1,0 +1,39 @@
+@startuml activity-organizer-review
+title Activity — Organizer Reviews Pending RSVP (approveRsvp / rejectRsvp)
+
+|Organizer|
+start
+:Open event dashboard;
+:GET pending RSVPs (with attendance prediction);
+:Review a pending RSVP;
+
+if (decision?) then (approve)
+  |System|
+  if (already approved?) then (yes)
+    :409 Conflict;
+    stop
+  endif
+  if (requester is event owner?) then (no)
+    :403 Forbidden;
+    stop
+  endif
+  :INSERT event_members (attendee);
+  :UPDATE rsvp (approved=true, pending=false, membership_id);
+  :notify user RSVP_APPROVED;
+  :200 "RSVP approved";
+else (reject)
+  |System|
+  if (requester is event owner?) then (no)
+    :403 Forbidden;
+    stop
+  endif
+  :DELETE event_members (if membership_id);
+  :DELETE rsvp row;
+  :notify user RSVP_REJECTED;
+  :200 "RSVP rejected";
+endif
+
+|Organizer|
+:List refreshes;
+stop
+@enduml

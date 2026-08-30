@@ -1,0 +1,14 @@
+@startuml state-rsvp-analysis
+title RSVP Lifecycle — State Machine (Analysis)
+
+[*] --> Pending : attendee submits RSVP
+
+Pending --> Confirmed : organizer approves
+Pending --> Rejected : organizer rejects
+
+Confirmed --> CheckedIn : attends event
+
+Rejected --> [*]
+CheckedIn --> [*]
+
+@enduml

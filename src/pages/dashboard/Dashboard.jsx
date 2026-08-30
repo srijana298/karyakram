@@ -8,12 +8,10 @@ import {
   IoNotificationsOutline,
   IoPeopleOutline,
   IoRocketOutline,
-  IoPersonOutline,
 } from "../../components/icons";
 import { Link } from "react-router-dom";
 import { eventService } from "../../services/events";
 import { analyticsService } from "../../services/analytics";
-import { adminService } from "../../services/admin";
 import Loading from "../../components/Loading";
 import { resolveImage } from "../../lib/resolveImage";
 import { useUser } from "../../context/userContext";
@@ -40,48 +38,28 @@ function StatCard({ icon, label, value, delta, tone = "green" }) {
 
 function Dashboard() {
   const { userInfo } = useUser();
-  const role = userInfo?.role || "user";
-  const isAdmin = role === "admin";
-  // Every member can organize events, so members get the organizer home view.
-  const isOrganizer = !isAdmin;
-  const isAttendee = false;
+  // Every signed-in member gets the same organizer home view.
+  const isOrganizer = true;
 
-  // Fetch events: admin gets all via admin service, organizer gets mine, attendee gets public.
-  // Admins fall back to their own events if the admin endpoint is forbidden.
+  // Fetch only the current user's events.
   const {
     data: events = [],
     isPending: eventsLoading,
     error: eventsError,
   } = useQuery({
-    queryKey: ["events", { scope: isAdmin ? "admin" : "mine" }],
+    queryKey: ["events", { scope: "mine" }],
     queryFn: async () => {
-      let res;
-      if (isAdmin) {
-        res = await adminService.listEvents();
-      } else if (isOrganizer) {
-        res = await eventService.list({ mine: "true" });
-      } else {
-        res = await eventService.list({});
-      }
+      const res = await eventService.list({ mine: "true" });
       if (res.ok) return res.data || [];
-      if (res.status === 403 && res.error === "Admin access required") {
-        const fallback = await eventService.list({ mine: "true" });
-        if (fallback.ok) return fallback.data || [];
-        throw new Error(fallback.error || "Failed to load events");
-      }
       throw new Error(res.error || "Failed to load events");
     },
   });
 
   const { data: analytics, isPending: loadingAnalytics } = useQuery({
-    queryKey: isAdmin ? ["admin", "stats"] : ["analytics"],
+    queryKey: ["analytics"],
     queryFn: async () => {
-      const res = isAdmin ? await adminService.stats() : await analyticsService.get();
+      const res = await analyticsService.get();
       if (res.ok && res.data) return res.data;
-      if (res.status === 403 && res.error === "Admin access required") {
-        const fallback = await analyticsService.get();
-        if (fallback.ok && fallback.data) return fallback.data;
-      }
       throw new Error(res.error || "Failed to load analytics");
     },
   });
@@ -90,35 +68,30 @@ function Dashboard() {
   const overview = analytics?.overview || {};
   const stats = [
     {
-      label: isAdmin ? "All Events" : "Total Events",
+      label: "Total Events",
       value: overview.totalEvents ?? 0,
       icon: <IoCalendarOutline className="text-lg" />,
       tone: "green",
       delta: 12,
     },
     {
-      label: isAdmin ? "Total Users" : "Upcoming Events",
-      value: isAdmin
-        ? Number(overview.totalUsers ?? 0).toLocaleString()
-        : events?.length ?? 0,
-      icon: isAdmin ? <IoPersonOutline className="text-lg" /> : <IoRocketOutline className="text-lg" />,
+      label: "Upcoming Events",
+      value: events?.length ?? 0,
+      icon: <IoRocketOutline className="text-lg" />,
       tone: "blue",
       delta: 8,
     },
     {
-      label: isAdmin ? "Total RSVPs" : "Total Attendees",
-      value: isAdmin
-        ? Number(overview.totalRsvps ?? 0).toLocaleString()
-        : Number(overview.totalMembers ?? 0).toLocaleString(),
+      label: "Total Attendees",
+      value: Number(overview.totalMembers ?? 0).toLocaleString(),
       icon: <IoPeopleOutline className="text-lg" />,
       tone: "violet",
       delta: 16,
     },
     {
-      label: isAdmin ? "Total Attendees" : "Approved RSVPs",      value: isAdmin
-        ? Number(overview.totalMembers ?? 0).toLocaleString()
-        : Number(overview.totalRsvps ?? 0).toLocaleString(),
-      icon: isAdmin ? <IoRocketOutline className="text-lg" /> : <IoPeopleOutline className="text-lg" />,
+      label: "Approved RSVPs",
+      value: Number(overview.totalRsvps ?? 0).toLocaleString(),
+      icon: <IoPeopleOutline className="text-lg" />,
       tone: "amber",
       delta: 20,
     },
@@ -162,9 +135,7 @@ function Dashboard() {
           <div>
             <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">Welcome back{userInfo?.name ? `, ${userInfo.name}` : ""}! 👋</h1>
             <p className="text-dashboard-muted mt-1">
-              {isAdmin && "Here's what's happening across the platform."}
-              {isOrganizer && "Here's what's happening with your events today."}
-              {isAttendee && "Discover what's happening on campus."}
+              Here's what's happening with your events today.
             </p>
           </div>
           {isOrganizer && (
@@ -193,7 +164,7 @@ function Dashboard() {
               <div className="dashboard-panel rounded-md p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold text-dashboard-text">
-                    {isAdmin ? "Recent Events (All Organizers)" : "Upcoming Events"}
+                    Upcoming Events
                   </h2>
                   <Link to="events?filter=total" className="text-sm text-primary inline-flex items-center gap-1 font-medium">
                     View all events <IoArrowForward />
@@ -260,14 +231,12 @@ function Dashboard() {
                         to="create"
                       />
                     )}
-                    {(isOrganizer || isAdmin) && (
-                      <QuickAction
-                        icon={<IoLayersOutline className="text-violet-600" />}
-                        title="Manage Groups"
-                        subtitle="Organize your teams and groups"
-                        to="groups"
-                      />
-                    )}
+                    <QuickAction
+                      icon={<IoLayersOutline className="text-violet-600" />}
+                      title="Manage Groups"
+                      subtitle="Organize your teams and groups"
+                      to="groups"
+                    />
                     <QuickAction
                       icon={<IoNotificationsOutline className="text-blue-600" />}
                       title="View Notifications"

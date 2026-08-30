@@ -25,9 +25,6 @@ import Groups from './pages/dashboard/Groups';
 import GroupDetails from './pages/dashboard/GroupDetails';
 import CreateGroup from './pages/dashboard/CreateGroup';
 import EventAttendance from './pages/dashboard/EventAttendance';
-import EventCertificates from './pages/dashboard/EventCertificates';
-import Users from './pages/dashboard/Users';
-import TemplateEditor from './pages/editor/TemplateEditor';
 import MyRsvps from './pages/landing/MyRsvps';
 import Calendars from './pages/dashboard/Calendars';
 import CreateCalendar from './pages/dashboard/CreateCalendar';
@@ -64,7 +61,6 @@ function App() {
             <Route path="events" element={<Events />} />
             <Route path="calendars" element={<Calendars />} />
             <Route path="calendars/create" element={<CreateCalendar />} />
-            <Route path="users" element={<Users />} />
             <Route path="notifications" element={<NotificationPage />} />
             <Route path="groups/create" element={<CreateGroup />} />
             <Route path="groups" element={<Groups />} />
@@ -77,19 +73,9 @@ function App() {
                 </DashboardScreenLayout>
               }
             />
-            <Route
-              path="event/:id/certificates"
-              element={
-                <DashboardScreenLayout title={'Certificates'}>
-                  <EventCertificates />
-                </DashboardScreenLayout>
-              }
-            />
           </Route>
           <Route path="/mark-attendance" element={<MarkAttendance />} />
           <Route path="/checkin/:id" element={<SelfCheckIn />} />
-          <Route path="/template-editor" element={<TemplateEditor />} />
-          <Route path="/template-editor/:id" element={<TemplateEditor />} />
           {/* Public event links use unguessable random codes. Keep last so it never shadows static routes above. */}
           <Route path="/:code" element={<EventPage />} />
         </Routes>

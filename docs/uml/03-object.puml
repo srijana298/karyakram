@@ -1,0 +1,55 @@
+@startuml object-snapshot
+title Object Diagram — Runtime Snapshot (one paid-approval event)
+
+object "srijana : User" as org {
+  id = 1
+  name = "Srijana Dahal"
+  role = "user"
+}
+
+object "aayush : User" as att {
+  id = 7
+  name = "Aayush"
+  role = "user"
+}
+
+object "techMeetup : Event" as ev {
+  id = 42
+  title = "Kathmandu JS Meetup"
+  medium = "offline"
+  admission_mode = "capacity"
+  require_approval = true
+  max_participants = 50
+  accepting_rsvp = true
+  short_code = "js42kt"
+}
+
+object "rsvp101 : RSVP" as rsvp {
+  id = 101
+  event_id = 42
+  user_id = 7
+  owner_user_id = 1
+  pending = true
+  approved = false
+  rejected = false
+}
+
+object "notif88 : Notification" as notif {
+  user_id = 1
+  type = "RSVP"
+  message = "Aayush has RSVP'd to Kathmandu JS Meetup"
+  read = false
+}
+
+org --> ev : created_by
+att --> rsvp : user_id
+ev --> rsvp : event_id
+rsvp --> notif : triggers
+org --> notif : user_id (recipient)
+
+note bottom of rsvp
+  Before approval: pending=true.
+  After approveRsvp(): approved=true, pending=false,
+  and an EventMember(role="attendee") is created.
+end note
+@enduml

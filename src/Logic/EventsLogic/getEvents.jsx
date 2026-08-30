@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { eventService } from "../../services/events";
-import { adminService } from "../../services/admin";
 
 function GetEventLogic() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,30 +13,20 @@ function GetEventLogic() {
 
   const isDetail = !!(id || code);
 
-  // Admin sees all events; everyone else sees only their own.
-  let role = "attendee";
-  try {
-    role = JSON.parse(localStorage.getItem("Mahotsav-user"))?.role || "attendee";
-  } catch {}
-  const isAdmin = role === "admin";
-
   const listParams = useMemo(() => {
-    const params = {};
+    const params = { mine: "true" };
     if (filter && filter !== "total") {
       if (filter === "private" || filter === "public") params.privacy = filter;
       if (filter === "offline" || filter === "online") params.medium = filter;
     }
-    if (!isAdmin) params.mine = "true";
     return params;
-  }, [filter, isAdmin]);
+  }, [filter]);
 
   const listQuery = useQuery({
-    queryKey: ["events", { scope: isAdmin ? "admin" : "mine", ...listParams }],
+    queryKey: ["events", { scope: "mine", ...listParams }],
     enabled: !isDetail,
     queryFn: async () => {
-      const res = isAdmin
-        ? await adminService.listEvents(listParams)
-        : await eventService.list(listParams);
+      const res = await eventService.list(listParams);
       if (!res.ok) throw new Error(res.error || "Failed to load events");
       return res.data || [];
     },

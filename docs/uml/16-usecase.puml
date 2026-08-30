@@ -1,0 +1,46 @@
+@startuml usecase
+title Use Case Diagram — Mahotsav
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor Attendee as Att
+actor Organizer as Org
+
+rectangle "Mahotsav" {
+  usecase "Sign up / Log in" as UC_Auth
+  usecase "Browse events" as UC_Browse
+  usecase "RSVP to event" as UC_Rsvp
+  usecase "Check in (QR)" as UC_Check
+
+  usecase "Create / edit event" as UC_Create
+  usecase "Approve / reject RSVP" as UC_Review
+  usecase "Manage attendance" as UC_Att
+  usecase "Issue certificates" as UC_Cert
+  usecase "View analytics" as UC_Analytics
+
+  usecase "Manage users & events" as UC_Manage
+}
+
+actor "Super-admin" as Admin
+
+' Attendee & Organizer on the left
+Att --> UC_Auth
+Att --> UC_Browse
+Att --> UC_Rsvp
+Att --> UC_Check
+
+Org --> UC_Create
+Org --> UC_Review
+Org --> UC_Att
+Org --> UC_Cert
+Org --> UC_Analytics
+
+' Super-admin on the right (arrow points back to actor)
+UC_Manage --> Admin
+
+' Generalization: organizer & admin are also attendees
+Org --|> Att
+Admin --|> Att
+@enduml

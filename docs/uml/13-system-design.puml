@@ -1,0 +1,45 @@
+@startuml system-design
+title System Design — High-Level Architecture (Mahotsav)
+
+skinparam packageStyle rectangle
+left to right direction
+
+actor "Attendee / Organizer" as User
+actor "Super-admin" as Admin
+
+package "Client (Browser)" {
+  [React SPA\n(Vite + Tailwind)] as SPA
+  [React Router] as Router
+  [Contexts:\nuser / notification / theme] as Ctx
+  [services/*.js\n(fetch wrappers)] as Svc
+}
+
+package "Server (Node.js)" {
+  [Express App\nindex.js] as Express
+  [Middleware:\nauth (JWT) / upload (multer) / validate (zod)] as MW
+  [Controllers\n(events, rsvps, auth, attendance,\ncertificates, groups, analytics...)] as Ctrl
+  [Drizzle ORM] as ORM
+}
+
+database "MySQL" as DB
+folder "uploads/\n(images, templates)" as FS
+cloud "Resend\n(email API)" as Resend
+
+User --> SPA
+Admin --> SPA
+SPA --> Router
+Router --> Ctx
+Ctx --> Svc
+Svc --> Express : HTTPS / JSON\n(Bearer JWT)
+Express --> MW
+MW --> Ctrl
+Ctrl --> ORM
+ORM --> DB
+Ctrl --> FS : static uploads
+Ctrl --> Resend : invitations / notifications
+
+note bottom of Ctrl
+  Certificate controller uses node-canvas
+  to render PNG certificates server-side.
+end note
+@enduml

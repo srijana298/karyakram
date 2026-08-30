@@ -102,6 +102,12 @@ export default function RsvpLogic(event) {
     if (checkUserIsOwner()) return toast.error("You cannot RSVP to your own event");
     if (!token) return toast.error("Please login to RSVP");
     if (event?.accepting_rsvp === false) return toast.error("RSVP for this event is closed");
+    const startDate = event?.start_date
+      ? new Date(typeof event.start_date === 'string' ? event.start_date.split('+')[0] : event.start_date)
+      : null;
+    if (startDate && startDate.getTime() < Date.now()) {
+      return toast.error("RSVP is closed because this event has already started");
+    }
     rsvpMutation.mutate();
   };
 

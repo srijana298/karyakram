@@ -1,0 +1,44 @@
+@startuml class-analysis
+title Domain Class Diagram (Analysis)
+
+class User {
+  name
+  email
+  role
+}
+
+class Event {
+  title
+  start_date
+  medium
+  privacy
+  max_participants
+}
+
+class RSVP {
+  status (pending/approved/rejected)
+}
+
+class Attendance {
+  checked_in
+  method
+}
+
+class Certificate {
+  verification_code
+}
+
+class Notification {
+  type
+  message
+}
+
+User "1" --> "*" Event : hosts
+User "1" --> "*" RSVP : makes
+Event "1" --> "*" RSVP : receives
+RSVP "1" --> "0..1" Attendance : leads to
+Event "1" --> "*" Attendance
+Event "1" --> "*" Certificate : issues
+User "1" --> "*" Certificate : earns
+User "1" --> "*" Notification : receives
+@enduml

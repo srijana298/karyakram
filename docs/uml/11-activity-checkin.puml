@@ -1,0 +1,36 @@
+@startuml activity-checkin
+title Activity — Attendance Check-in
+
+|Organizer|
+start
+:Generate check-in code for event;
+:Display code / QR at venue;
+
+|Attendee|
+:Scan QR / open self check-in page;
+:Submit code;
+
+|System|
+if (event found?) then (no)
+  :404 Not Found;
+  stop
+endif
+if (code matches event.check_in_code?) then (no)
+  :400 Invalid code;
+  stop
+endif
+if (attendee has approved RSVP?) then (no)
+  :403 Forbidden;
+  stop
+endif
+if (already checked in?) then (yes)
+  :200 "Already checked in";
+  stop
+endif
+:INSERT attendance (checked_in=true, method='self');
+:201 "Check-in successful";
+
+|Attendee|
+:See confirmation / ticket;
+stop
+@enduml

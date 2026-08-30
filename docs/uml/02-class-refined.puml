@@ -1,0 +1,163 @@
+@startuml class-refined
+title Class Diagram (Refined / Design — Drizzle schema.js)
+
+hide empty methods
+
+class User {
+  +int id
+  +string name
+  +string email <<unique>>
+  -string password <<bcrypt>>
+  +string phone
+  +string role = "user"
+  +string avatar
+  +datetime created_at
+}
+
+class EventGroup {
+  +int id
+  +string title
+  +string category
+  +string privacy = "public"
+  +int created_by <<FK User>>
+}
+
+class Category {
+  +int id
+  +string label <<unique>>
+  +string slug <<unique>>
+  +string icon
+  +string color
+}
+
+class Event {
+  +int id
+  +string title
+  +text description
+  +string medium = "offline"
+  +string location_name
+  +decimal latitude
+  +decimal longitude
+  +string meet_link
+  +datetime start_date
+  +datetime end_date
+  +int max_participants = 0
+  +string admission_mode = "capacity"  ' capacity | waitlist
+  +string privacy = "public"
+  +bool accepting_rsvp = true
+  +bool accepting_attendance = false
+  +bool require_approval = true
+  +string short_code <<unique>>
+  +string check_in_code
+  +int group_id <<FK>>
+  +int calendar_id <<FK>>
+  +int created_by <<FK User>>
+}
+
+class RSVP {
+  +int id
+  +int event_id <<FK>>
+  +int user_id <<FK>>
+  +int owner_user_id <<FK>>
+  +bool approved = false
+  +bool rejected = false
+  +bool pending = true
+  +int membership_id
+}
+
+class EventMember {
+  +int id
+  +int event_id <<FK>>
+  +int user_id <<FK>>
+  +string role   ' owner|collaborator|volunteer|attendee
+  +bool invited
+  +bool joined
+  +bool confirm
+}
+
+class EventInvitation {
+  +int id
+  +int event_id <<FK>>
+  +int invited_by <<FK>>
+  +string email
+  +string token <<unique>>
+  +string status = "sent"
+  +int accepted_by <<FK>>
+}
+
+class Attendance {
+  +int id
+  +int event_id <<FK>>
+  +int user_id <<FK>>
+  +bool checked_in = true
+  +string check_in_method = "manual" ' manual|self
+  +datetime checked_in_at
+}
+
+class Notification {
+  +int id
+  +int user_id <<FK>>
+  +int from_user_id <<FK>>
+  +string type
+  +text message
+  +string link
+  +bool read = false
+}
+
+class Calendar {
+  +int id
+  +string name
+  +string slug <<unique>>
+  +string city
+  +bool featured = false
+  +int created_by <<FK>>
+}
+
+class CalendarFollow {
+  +int id
+  +int calendar_id <<FK>>
+  +int user_id <<FK>>
+}
+
+class CertificateTemplate {
+  +int id
+  +string name
+  +string theme = "classic"
+  +text canvas_json
+  +int canvas_width = 1400
+  +int canvas_height = 1000
+}
+
+class Certificate {
+  +int id
+  +int event_id <<FK>>
+  +int user_id <<FK>>
+  +int template_id <<FK>>
+  +string verification_code <<unique>>
+  +text image_data
+}
+
+User "1" --> "*" Event : created_by
+User "1" --> "*" EventGroup : created_by
+EventGroup "1" --> "*" Event : group_id
+Calendar "1" --> "*" Event : calendar_id
+Event "1" --> "*" RSVP
+User "1" --> "*" RSVP : user_id
+RSVP "0..1" ..> "0..1" EventMember : membership_id
+Event "1" --> "*" EventMember
+User "1" --> "*" EventMember
+Event "1" --> "*" EventInvitation
+Event "1" --> "*" Attendance
+User "1" --> "*" Attendance
+User "1" --> "*" Notification
+Calendar "1" --> "*" CalendarFollow
+User "1" --> "*" CalendarFollow
+CertificateTemplate "1" --> "*" Certificate
+Event "1" --> "*" Certificate
+User "1" --> "*" Certificate
+
+note bottom of RSVP
+  Live model uses 3 booleans, not a status enum:
+  pending -> approved (approveRsvp) ; reject deletes the row.
+end note
+@enduml

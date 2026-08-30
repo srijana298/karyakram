@@ -1,0 +1,42 @@
+@startuml state-rsvp-refined
+title RSVP Lifecycle — State Machine (Refined, per createRsvp / approveRsvp / rejectRsvp)
+
+state "Choice: admission & approval" as C <<choice>>
+
+[*] --> Validating : POST /api/events/:id/rsvp
+
+Validating --> Blocked : accepting_rsvp = false\n/ own event / duplicate RSVP\n/ time conflict / travel risk\n/ capacity reached
+Validating --> C : checks pass
+
+C --> Confirmed : [mode=capacity && require_approval=false]\n approved=true, pending=false\n (creates event_members row)
+C --> CandidateList : [mode=waitlist]\n pending=true  (organizer/algorithm reviews)
+C --> PendingApproval : [mode=capacity && require_approval=true]\n pending=true
+
+state PendingApproval {
+  [*] --> AwaitingOwner
+}
+
+PendingApproval --> Confirmed : approveRsvp()\n approved=true, pending=false,\n membership_id set
+PendingApproval --> Rejected : rejectRsvp()\n row + membership deleted
+
+CandidateList --> Confirmed : approveRsvp()
+CandidateList --> Rejected : rejectRsvp()
+
+Confirmed --> CheckedIn : selfCheckIn() / markAttendance()\n (method = self | manual)
+
+Blocked --> [*] : 4xx returned, no RSVP row
+Rejected --> [*] : notification RSVP_REJECTED sent
+CheckedIn --> [*]
+
+note right of Confirmed
+  Persisted as rsvps row:
+  approved=true, rejected=false, pending=false.
+  Owner notified (type=RSVP / RSVP_APPROVED).
+end note
+
+note bottom of CheckedIn
+  Separate `attendance` row
+  (checked_in, check_in_method, checked_in_at).
+  Requires an approved RSVP.
+end note
+@enduml

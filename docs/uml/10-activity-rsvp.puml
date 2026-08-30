@@ -1,0 +1,58 @@
+@startuml activity-rsvp
+title Activity — RSVP Request (createRsvp)
+
+start
+:Attendee clicks "RSVP" on event;
+:POST /api/events/:id/rsvp;
+
+if (event exists?) then (no)
+  :return 404 Not Found;
+  stop
+endif
+
+if (own event / RSVP closed?) then (yes)
+  :return 400;
+  stop
+endif
+
+if (already RSVP'd?) then (yes)
+  :return 409 Conflict;
+  stop
+endif
+
+:findUserEventConflict();
+if (time overlap with another RSVP?) then (yes)
+  :return 409 TIME_CONFLICT;
+  stop
+endif
+if (travel risk & not forced?) then (yes)
+  :return 409 TRAVEL_RISK;
+  stop
+endif
+
+if (mode = capacity AND capacity > 0) then (yes)
+  :count approved RSVPs;
+  if (approved >= max_participants?) then (yes)
+    :return 400 "reached capacity";
+    stop
+  endif
+endif
+
+if (mode=capacity AND require_approval=false?) then (auto-approve)
+  :INSERT event_members (attendee);
+  :INSERT rsvp (approved=true, pending=false);
+  :notify owner "is attending";
+  :respond "You're confirmed";
+else (needs review)
+  :INSERT rsvp (pending=true);
+  if (mode = waitlist?) then (yes)
+    :notify owner "joined candidate list";
+    :respond "You joined the candidate list";
+  else (no)
+    :notify owner "has RSVP'd";
+    :respond "RSVP sent to owner";
+  endif
+endif
+
+stop
+@enduml

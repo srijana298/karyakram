@@ -1,0 +1,59 @@
+@startuml sequence-rsvp-refined
+title RSVP — Sequence (Refined, mirrors createRsvp controller)
+
+actor Attendee
+participant "rsvpService\n(services/rsvps.js)" as SVC
+participant "Router\n(routes/rsvps.js)" as RT
+participant "authMiddleware" as AUTH
+participant "createRsvp\n(controllers/rsvps.js)" as CTRL
+database "MySQL\n(Drizzle)" as DB
+
+Attendee -> SVC : rsvp(eventId)
+SVC -> RT : POST /api/events/:id/rsvp\n(Bearer token)
+RT -> AUTH : verify JWT
+AUTH -> DB : SELECT user by decoded.id
+DB --> AUTH : user
+AUTH --> RT : req.user = {id,name,role}
+RT -> CTRL : createRsvp(req,res)
+
+CTRL -> DB : SELECT event by id
+DB --> CTRL : event
+alt not found / own event / accepting_rsvp=false
+  CTRL --> SVC : 404 / 400
+end
+
+CTRL -> DB : SELECT existing rsvp (event,user)
+DB --> CTRL : existing?
+alt already RSVP'd
+  CTRL --> SVC : 409 Conflict
+end
+
+CTRL -> DB : SELECT user's other RSVPs + events\n(findUserEventConflict)
+DB --> CTRL : rows
+note right of CTRL
+  rangesOverlap() -> TIME_CONFLICT
+  travelRisk() haversine >40km & tight gap -> TRAVEL_RISK
+end note
+alt time conflict / travel risk (not forced)
+  CTRL --> SVC : 409 {code}
+end
+
+opt mode = capacity && max_participants > 0
+  CTRL -> DB : COUNT approved rsvps
+  DB --> CTRL : total
+  alt total >= capacity
+    CTRL --> SVC : 400 "reached capacity"
+  end
+end
+
+alt autoApprove (capacity && require_approval=false)
+  CTRL -> DB : INSERT event_members (attendee)
+  DB --> CTRL : membershipId
+end
+CTRL -> DB : INSERT rsvps\n(approved=autoApprove, pending=!autoApprove)
+DB --> CTRL : ok
+CTRL -> DB : INSERT notifications (owner)
+DB --> CTRL : ok
+CTRL --> SVC : 201 {approved, waitlisted}
+SVC --> Attendee : toast (confirmed / candidate / sent)
+@enduml

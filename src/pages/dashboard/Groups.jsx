@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { groupService } from "../../services/groups";
-import { adminService } from "../../services/admin";
 import Loading from "../../components/Loading";
 import DataTable from "../../components/DataTable";
 import {
@@ -12,7 +11,6 @@ import {
   IoEyeOutline,
   IoLayersOutline,
   IoOptionsOutline,
-  IoPersonOutline,
   IoSearchOutline,
 } from "../../components/icons";
 
@@ -23,21 +21,11 @@ export default function Groups() {
   const [expandedSubEvents, setExpandedSubEvents] = useState({});
   const [loadingExpand, setLoadingExpand] = useState({});
 
-  let role = "attendee";
-  try {
-    const user = JSON.parse(localStorage.getItem("Mahotsav-user"));
-    role = user?.role || "attendee";
-  } catch {}
-  const isAdmin = role === "admin";
-  const isOrganizer = role === "organizer";
-
-  const listParams = isAdmin ? { admin: true } : { mine: "true" };
+  const listParams = { mine: "true" };
   const { data: groups = [], isPending: loading } = useQuery({
     queryKey: ["groups", listParams],
     queryFn: async () => {
-      const res = isAdmin
-        ? await adminService.listGroups()
-        : await groupService.list({ mine: "true" });
+      const res = await groupService.list({ mine: "true" });
       if (!res.ok) throw new Error(res.error || "Failed to load groups");
       return res.data || [];
     },
@@ -115,11 +103,7 @@ export default function Groups() {
                   </span>
                 </div>
                 <p className="text-xs text-dashboard-muted mt-0.5 truncate">{row.description || row.category || "No description"}</p>
-                {row.organizer_name && isAdmin && (
-                  <p className="text-[11px] text-emerald-600 mt-0.5 inline-flex items-center gap-1">
-                    <IoPersonOutline className="text-[11px]" /> {row.organizer_name}
-                  </p>
-                )}
+
               </div>
             </div>
 
@@ -196,28 +180,26 @@ export default function Groups() {
   return (
     <div className="space-y-4">
       <div className="px-5 py-3 text-xs text-dashboard-muted border-b border-dashboard-border">
-        Main Menu <span className="px-2">/</span> {isAdmin ? "All Groups" : "Groups"}
+        Main Menu <span className="px-2">/</span> Groups
       </div>
 
       <div className="px-1">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-[34px] leading-tight font-semibold text-dashboard-text">
-              {isAdmin ? "All Groups" : "Groups"}
+              Groups
             </h1>
             <p className="text-dashboard-muted mt-1">
-              {isAdmin ? "All event groups across organizers." : "Organize your events into groups and sub-events."}
+              Organize your events into groups and sub-events.
             </p>
           </div>
-          {isOrganizer && (
-            <Link
-              to="/dashboard/groups/create"
-              className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
-            >
-              <IoLayersOutline className="text-base" />
-              Create Group
-            </Link>
-          )}
+          <Link
+            to="/dashboard/groups/create"
+            className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
+          >
+            <IoLayersOutline className="text-base" />
+            Create Group
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2 mt-5">
@@ -231,7 +213,7 @@ export default function Groups() {
             />
           </div>
           <button className="h-10 px-4 border border-gray-200 rounded-md text-sm text-dashboard-muted inline-flex items-center gap-2 bg-white">
-            All Groups <IoChevronDownOutline className="text-xs" />
+            Groups <IoChevronDownOutline className="text-xs" />
           </button>
           <button className="h-10 w-10 border border-gray-200 rounded-md text-dashboard-muted inline-flex items-center justify-center bg-white">
             <IoOptionsOutline />

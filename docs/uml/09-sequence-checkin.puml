@@ -1,0 +1,40 @@
+@startuml sequence-checkin
+title Attendance — Check-in (controllers/attendance.js)
+
+actor Organizer
+actor Attendee
+participant "attendanceController" as CTRL
+database "MySQL" as DB
+
+== Organizer generates code ==
+Organizer -> CTRL : POST /events/:id/checkin-code
+CTRL -> DB : canManageEvent (owner/admin?)
+DB --> CTRL : event
+CTRL -> CTRL : code = randomBytes(3).hex.toUpper()
+CTRL -> DB : UPDATE events.check_in_code
+CTRL --> Organizer : { code }  (shown as QR)
+
+== Attendee self check-in ==
+Attendee -> CTRL : POST /events/:id/self-checkin { code }
+CTRL -> DB : SELECT event
+DB --> CTRL : event
+alt code missing / mismatch
+  CTRL --> Attendee : 400 invalid code
+end
+CTRL -> DB : SELECT approved rsvp (event,user)
+DB --> CTRL : approved?
+alt not an approved attendee
+  CTRL --> Attendee : 403 Forbidden
+end
+CTRL -> DB : SELECT existing attendance
+alt already checked in
+  CTRL --> Attendee : 200 "Already checked in"
+end
+CTRL -> DB : INSERT attendance (method='self')
+CTRL --> Attendee : 201 "Check-in successful"
+
+== Organizer manual mark (alternative) ==
+Organizer -> CTRL : POST /events/:id/attendance {userId}
+CTRL -> DB : verify approved rsvp -> upsert attendance (method='manual')
+CTRL --> Organizer : 200/201
+@enduml

@@ -19,7 +19,6 @@ import {
   IoGlobeOutline,
   IoCheckmarkCircle,
   IoTimeOutline,
-  IoRibbonOutline,
   IoTicketOutline,
   IoLogoFacebook,
   IoLogoLinkedin,
@@ -352,9 +351,8 @@ function Event() {
         {tab === "Overview" && (
           <div className="space-y-5">
             {/* Quick actions */}
-            <div className="grid sm:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
               <ActionCard icon={<IoMailOutline />} label="Invite Guests" tint="bg-blue-50 text-blue-600" onClick={() => setInviteOpen(true)} />
-              <ActionCard icon={<IoRibbonOutline />} label="Certificates" tint="bg-amber-50 text-amber-600" onClick={() => navigate(`/dashboard/event/${events.id}/certificates`)} />
               <ActionCard icon={<IoArrowRedoOutline />} label="Share Event" tint="bg-rose-50 text-rose-600" onClick={copyLink} />
             </div>
 

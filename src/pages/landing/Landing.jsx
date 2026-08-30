@@ -10,7 +10,6 @@ import {
   IoGlobeOutline,
   IoSparkles
 } from '../../components/icons';
-import { RiGithubFill, RiInstagramLine, RiTwitterLine } from '../../components/icons';
 
 // Live Kathmandu clock for the header (mirrors the reference "GMT+5:45").
 function useNepalClock() {
@@ -30,11 +29,11 @@ function useNepalClock() {
 function PhoneHero() {
   return (
     <div className="relative mx-auto w-full max-w-[640px] select-none">
-      <div className="pointer-events-none absolute inset-[18%] rounded-full bg-violet-600/20 blur-3xl" />
+      <div className="absolute inset-x-10 bottom-8 h-20 rounded-[100%] bg-stone-900/10 blur-2xl" />
       <img
         src="/herosection.png"
         alt="Mahotsav event experience preview"
-        className="relative block w-full h-auto object-contain border-0 outline-none shadow-none"
+        className="relative block w-full h-auto object-contain border-0 outline-none shadow-none saturate-[0.88] contrast-[0.96]"
       />
     </div>
   );
@@ -83,7 +82,7 @@ function Landing() {
       icon: <IoPeopleOutline />,
       title: 'Go Live',
       description:
-        'Host online or in-person, check guests in with QR codes, and issue certificates.'
+        'Host online or in-person, check guests in with QR codes, and keep attendance organized.'
     },
     {
       icon: <IoGlobeOutline />,
@@ -118,30 +117,30 @@ function Landing() {
   ];
 
   return (
-    <div className="flex-1 bg-[#0a0a0b] text-white font-sans">
+    <div className="flex-1 bg-[#f4f2ed] text-stone-950 font-sans">
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative min-h-screen overflow-hidden">
-        {/* background wash */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_60%_at_70%_10%,rgba(124,58,237,0.18),transparent_60%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_10%_90%,rgba(16,185,129,0.10),transparent_60%)]" />
+      <section className="relative min-h-screen overflow-hidden bg-[#f4f2ed]">
+        {/* quiet neutral surface */}
+        <div className="pointer-events-none absolute inset-x-6 top-16 h-px bg-stone-950/10" />
+        <div className="pointer-events-none absolute inset-x-6 bottom-8 h-px bg-stone-950/10" />
 
         {/* Header */}
         <header className="relative z-10">
           <div className="container flex items-center justify-between h-16">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xl font-bold tracking-tight text-white"
+              className="inline-flex items-center gap-1.5 text-xl font-bold tracking-tight text-stone-950"
             >
-              <IoSparkles className="text-accent" /> Mahotsav
+              <IoSparkles className="text-stone-600" /> Mahotsav
             </Link>
             <div className="flex items-center gap-4 text-sm">
-              <span className="hidden sm:inline text-white/50 tabular-nums">{time} GMT+5:45</span>
-              <Link to="/explore" className="text-white/80 hover:text-white transition-colors">
+              <span className="hidden sm:inline text-stone-500 tabular-nums">{time} GMT+5:45</span>
+              <Link to="/explore" className="text-stone-700 hover:text-stone-950 transition-colors">
                 Discover Events
               </Link>
               <Link
                 to={token ? '/dashboard' : '/auth/login'}
-                className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors"
+                className="px-4 py-1.5 rounded-full bg-stone-950 text-stone-50 border border-stone-950 hover:bg-stone-800 transition-colors"
               >
                 {token ? 'Dashboard' : 'Sign In'}
               </Link>
@@ -154,25 +153,20 @@ function Landing() {
           <div className="grid lg:grid-cols-2 gap-10 items-center min-h-[calc(100vh-4rem)] py-12">
             {/* Left copy */}
             <div>
-              <h1 className="text-5xl md:text-7xl font-bold leading-[1.02] tracking-tight">
-                Delightful
+              <h1 className="text-5xl md:text-7xl font-bold leading-[1.02] tracking-tight text-stone-950">
+                Host events
                 <br />
-                events
+                without the
                 <br />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500">
-                  start{' '}
-                </span>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-orange-400">
-                  here.
-                </span>
+                extra noise.
               </h1>
-              <p className="mt-6 text-lg text-white/60 max-w-md leading-relaxed">
+              <p className="mt-6 text-lg text-stone-600 max-w-md leading-relaxed">
                 Set up an event page, invite friends, and manage RSVPs. Host a memorable event
                 today.
               </p>
               <Link
                 to={token ? '/dashboard/create' : '/auth/signup'}
-                className="group mt-9 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 hover:bg-white/90 transition-all hover:-translate-y-0.5"
+                className="group mt-9 inline-flex items-center gap-2 rounded-xl bg-stone-950 px-7 py-3.5 text-sm font-semibold text-stone-50 hover:bg-stone-800 transition-all hover:-translate-y-0.5"
               >
                 {token ? 'Create an Event' : 'Create Your First Event'}
                 <IoArrowForward className="transition-transform group-hover:translate-x-1" />
@@ -188,15 +182,15 @@ function Landing() {
       </section>
 
       {/* ── Stats ────────────────────────────────────────────── */}
-      <section className="py-10 border-y border-white/5 reveal-up" data-reveal>
+      <section className="py-10 border-y border-stone-950/10 bg-[#eeece6] reveal-up" data-reveal>
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                <p className="text-3xl md:text-4xl font-bold text-stone-950">
                   {s.value}
                 </p>
-                <p className="mt-1 text-xs text-white/40">{s.label}</p>
+                <p className="mt-1 text-xs text-stone-500">{s.label}</p>
               </div>
             ))}
           </div>
@@ -207,7 +201,7 @@ function Landing() {
       <section className="py-20 md:py-28 reveal-up" data-reveal>
         <div className="container">
           <div className="max-w-2xl mb-12">
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-3">
               Features
             </p>
             <h2 className="text-3xl md:text-4xl font-bold">Everything you need to host</h2>
@@ -216,13 +210,13 @@ function Landing() {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] hover:-translate-y-1 transition-all duration-300"
+                className="rounded-2xl p-6 bg-[#fbfaf7] border border-stone-950/10 shadow-sm hover:bg-white hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 text-violet-300 flex items-center justify-center text-xl mb-4">
+                <div className="w-11 h-11 rounded-xl bg-stone-200 text-stone-700 flex items-center justify-center text-xl mb-4">
                   {f.icon}
                 </div>
                 <h3 className="text-base font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">{f.description}</p>
+                <p className="mt-2 text-sm text-stone-600 leading-relaxed">{f.description}</p>
               </div>
             ))}
           </div>
@@ -233,7 +227,7 @@ function Landing() {
       <section className="py-20 md:py-24 reveal-up" data-reveal>
         <div className="container">
           <div className="max-w-2xl mb-12">
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-3">
               How it works
             </p>
             <h2 className="text-3xl md:text-4xl font-bold">From idea to event in minutes</h2>
@@ -242,11 +236,11 @@ function Landing() {
             {steps.map((s) => (
               <div
                 key={s.number}
-                className="rounded-2xl p-6 bg-white/[0.04] border border-white/10"
+                className="rounded-2xl p-6 bg-[#fbfaf7] border border-stone-950/10"
               >
-                <span className="text-sm font-bold text-violet-400">{s.number}</span>
+                <span className="text-sm font-bold text-stone-500">{s.number}</span>
                 <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">{s.description}</p>
+                <p className="mt-2 text-sm text-stone-600 leading-relaxed">{s.description}</p>
               </div>
             ))}
           </div>
@@ -256,17 +250,17 @@ function Landing() {
       {/* ── CTA ──────────────────────────────────────────────── */}
       <section className="py-20 md:py-24 reveal-up" data-reveal>
         <div className="container">
-          <div className="relative rounded-3xl p-10 md:p-16 text-center overflow-hidden border border-white/10 bg-[linear-gradient(135deg,rgba(124,58,237,0.25),rgba(236,72,153,0.15))]">
-            <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-violet-500/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 bg-fuchsia-500/20 rounded-full blur-3xl" />
+          <div className="relative rounded-3xl p-10 md:p-16 text-center overflow-hidden border border-stone-950/10 bg-[#dedbd2] shadow-sm">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-stone-50/80" />
+            <div className="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-stone-950/10" />
             <div className="relative z-10">
               <h2 className="text-3xl md:text-5xl font-bold">Delightful events start here.</h2>
-              <p className="mt-4 text-white/60 max-w-lg mx-auto">
+              <p className="mt-4 text-stone-600 max-w-lg mx-auto">
                 Join organizers across Nepal already hosting with Mahotsav — free.
               </p>
               <Link
                 to={token ? '/dashboard/create' : '/auth/signup'}
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 hover:bg-white/90 transition-all hover:-translate-y-0.5"
+                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-stone-950 px-7 py-3.5 text-sm font-semibold text-stone-50 hover:bg-stone-800 transition-all hover:-translate-y-0.5"
               >
                 {token ? 'Create an Event' : 'Create Your First Event'}
                 <IoArrowForward />
@@ -276,85 +270,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-white/5 pt-14 pb-10">
-        <div className="container">
-          <div className="grid md:grid-cols-4 gap-10">
-            <div>
-              <h3 className="text-xl font-bold inline-flex items-center gap-1.5">
-                <IoSparkles className="text-accent" /> Mahotsav
-              </h3>
-              <p className="mt-3 text-sm text-white/40 leading-relaxed">
-                The modern event platform built for Nepal.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
-                Platform
-              </h4>
-              <ul className="space-y-2.5 text-sm text-white/50">
-                <li>
-                  <Link className="hover:text-white transition-colors" to="/explore">
-                    Discover Events
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:text-white transition-colors" to="/dashboard">
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:text-white transition-colors" to="/dashboard/create">
-                    Create Event
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
-                Company
-              </h4>
-              <ul className="space-y-2.5 text-sm text-white/50">
-                <li>
-                  <a className="hover:text-white transition-colors" href="#">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-white transition-colors" href="#">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-white transition-colors" href="#">
-                    Privacy
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-4">
-                Connect
-              </h4>
-              <div className="flex gap-2">
-                {[RiInstagramLine, RiTwitterLine, RiGithubFill].map((Icon, i) => (
-                  <a
-                    key={i}
-                    href="#"
-                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 inline-flex items-center justify-center text-white/50 hover:text-white transition-all"
-                  >
-                    <Icon />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-          <hr className="my-8 border-white/5" />
-          <p className="text-center text-xs text-white/30">
-            © {new Date().getFullYear()} Mahotsav. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

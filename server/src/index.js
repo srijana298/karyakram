@@ -15,7 +15,6 @@ import groupRoutes from './routes/groups.js';
 import categoryRoutes from './routes/categories.js';
 import calendarRoutes from './routes/calendars.js';
 import attendanceRoutes from './routes/attendance.js';
-import certificateRoutes from './routes/certificates.js';
 import adminRoutes from './routes/admin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +54,6 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/calendars', calendarRoutes);
 app.use('/api', attendanceRoutes);
-app.use('/api/certificates', certificateRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {

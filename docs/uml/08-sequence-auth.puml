@@ -1,0 +1,41 @@
+@startuml sequence-auth
+title Authentication — Signup & Login (controllers/auth.js)
+
+actor User
+participant "Frontend" as FE
+participant "authController" as CTRL
+participant "bcryptjs" as BC
+participant "jsonwebtoken" as JWT
+database "MySQL" as DB
+
+== Signup ==
+User -> FE : submit name/email/password
+FE -> CTRL : POST /api/auth/signup
+CTRL -> DB : SELECT user WHERE email
+DB --> CTRL : existing?
+alt email already registered
+  CTRL --> FE : 409 Conflict
+end
+CTRL -> BC : hash(password, 10)
+BC --> CTRL : hashed
+CTRL -> DB : INSERT user (role='user')
+DB --> CTRL : insertId
+CTRL -> JWT : generateToken({id,email,name})
+JWT --> CTRL : token
+CTRL --> FE : 201 {token, user}
+FE -> FE : store token (userContext)
+
+== Login ==
+User -> FE : submit email/password
+FE -> CTRL : POST /api/auth/login
+CTRL -> DB : SELECT user WHERE email
+DB --> CTRL : user
+alt no user or bad password
+  CTRL -> BC : compare(password, hash)
+  BC --> CTRL : false
+  CTRL --> FE : 401 Unauthorized
+end
+CTRL -> JWT : generateToken(...)
+JWT --> CTRL : token
+CTRL --> FE : 200 {token, user}
+@enduml

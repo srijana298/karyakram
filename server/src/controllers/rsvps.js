@@ -149,6 +149,9 @@ export const createRsvp = async (req, res) => {
   if (!event) return NotFound("Event not found");
   if (event.created_by === userId) return BadRequest("You cannot RSVP to your own event");
   if (!event.accepting_rsvp) return BadRequest("RSVP is closed for this event");
+  if (event.start_date && new Date(event.start_date).getTime() < Date.now()) {
+    return BadRequest("RSVP is closed because this event has already started");
+  }
 
   const [existing] = await db.select().from(rsvps).where(
     and(eq(rsvps.event_id, eventId), eq(rsvps.user_id, userId)),
@@ -156,6 +159,7 @@ export const createRsvp = async (req, res) => {
 
   if (existing) {
     if (existing.approved) return Conflict("Your RSVP has already been approved");
+    if (existing.rejected) return Conflict("Your RSVP was rejected for this event");
     return Conflict("You have already RSVP'd. Please wait for approval");
   }
 
@@ -370,8 +374,13 @@ export const rejectRsvp = async (req, res) => {
     await db.delete(eventMembers).where(eq(eventMembers.id, rsvp.membership_id)).catch(() => {});
   }
 
-  const deleted = await db.delete(rsvps).where(eq(rsvps.id, rsvpId)).catch(() => null);
-  if (!deleted) return InternalError("Failed to delete RSVP");
+  const updated = await db.update(rsvps).set({
+    approved: false,
+    pending: false,
+    rejected: true,
+    membership_id: null,
+  }).where(eq(rsvps.id, rsvpId)).catch(() => null);
+  if (!updated) return InternalError("Failed to reject RSVP");
 
   // Notify user
   await db.insert(notifications).values({

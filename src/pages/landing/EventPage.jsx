@@ -117,6 +117,7 @@ function EventPage() {
     ? new Date(typeof end_date === 'string' ? end_date.split('+')[0] : end_date)
     : null;
   const isFree = true;
+  const isPastEvent = start ? start.getTime() < Date.now() : false;
 
   const DetailsCard = () => (
     <div className="bg-white dark:bg-[#151517] rounded-2xl border border-stone-200 dark:border-white/10 shadow-sm overflow-hidden">
@@ -256,7 +257,13 @@ function EventPage() {
             </button>
           </div>
         ) : myRsvp ? (
-          <div className="w-full py-3 rounded-full text-sm font-semibold text-center bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
+          <div
+            className={`w-full py-3 rounded-full text-sm font-semibold text-center border ${
+              myRsvp.rejected
+                ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/20'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
+            }`}
+          >
             {myRsvp.approved
               ? "You're Going 🎉"
               : myRsvp.rejected
@@ -265,7 +272,7 @@ function EventPage() {
           </div>
         ) : (
           <button
-            disabled={adding || (token && accepting_rsvp === false)}
+            disabled={adding || (token && (accepting_rsvp === false || isPastEvent))}
             onClick={handleRSVP}
             className="w-full py-3 rounded-full text-sm font-semibold bg-stone-900 text-white hover:bg-stone-700 dark:bg-white dark:text-stone-950 dark:hover:bg-white/85 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-stone-900 dark:border-white"
           >
@@ -273,9 +280,11 @@ function EventPage() {
               ? 'Processing...'
               : !token
                 ? 'Login to RSVP'
-                : accepting_rsvp === false
+                : isPastEvent
                   ? 'RSVP Closed'
-                  : "RSVP — It's Free"}
+                  : accepting_rsvp === false
+                    ? 'RSVP Closed'
+                    : "RSVP — It's Free"}
           </button>
         )}
       </div>
