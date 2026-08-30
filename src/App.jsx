@@ -42,6 +42,7 @@ function App() {
             <Route path="calendar/:id" element={<Calendar />} />
             <Route path="my-rsvps" element={<MyRsvps />} />
             <Route path="auth" element={<AuthLayout />}>
+              <Route index element={<Navigate to="login" replace />} />
               <Route path="login" element={<Login />} />
               <Route path="signup" element={<Signup />} />
             </Route>

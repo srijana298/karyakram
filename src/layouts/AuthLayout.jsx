@@ -47,9 +47,6 @@ function AuthLayout() {
             </div>
           </div>
 
-          <p className="px-6 sm:px-10 lg:px-14 pb-7 text-[11px] text-stone-500">
-            By continuing, you agree to the Terms and Privacy Policy.
-          </p>
         </section>
       </div>
     </main>
