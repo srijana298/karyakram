@@ -1,6 +1,6 @@
 import { eq, sql, and } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { users, events, rsvps, eventMembers, eventGroups } from "../db/schema.js";
+import { users, events, rsvps, eventMembers, eventGroups, attendance, eventInvitations } from "../db/schema.js";
 import { Ok, NotFound, BadRequest, InternalError } from "../utils/ApiResponse.js";
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -171,6 +171,37 @@ export const listAllGroups = async (req, res) => {
   }));
 
   return Ok(enriched);
+};
+
+export const deleteEvent = async (req, res) => {
+  const eventId = parseInt(req.params.id);
+
+  const [existing] = await db.select().from(events).where(eq(events.id, eventId)).catch(() => []);
+  if (!existing) return NotFound("Event not found");
+
+  await db.delete(attendance).where(eq(attendance.event_id, eventId)).catch(() => null);
+  await db.delete(eventInvitations).where(eq(eventInvitations.event_id, eventId)).catch(() => null);
+  await db.delete(rsvps).where(eq(rsvps.event_id, eventId)).catch(() => null);
+  await db.delete(eventMembers).where(eq(eventMembers.event_id, eventId)).catch(() => null);
+
+  const deleted = await db.delete(events).where(eq(events.id, eventId)).catch(() => null);
+  if (!deleted) return InternalError("Failed to delete event");
+
+  return Ok(null, "Event deleted");
+};
+
+export const deleteGroup = async (req, res) => {
+  const groupId = parseInt(req.params.id);
+
+  const [existing] = await db.select().from(eventGroups).where(eq(eventGroups.id, groupId)).catch(() => []);
+  if (!existing) return NotFound("Group not found");
+
+  await db.update(events).set({ group_id: null }).where(eq(events.group_id, groupId)).catch(() => null);
+
+  const deleted = await db.delete(eventGroups).where(eq(eventGroups.id, groupId)).catch(() => null);
+  if (!deleted) return InternalError("Failed to delete group");
+
+  return Ok(null, "Group deleted");
 };
 
 /* ── User Management ────────────────────────────────────────── */

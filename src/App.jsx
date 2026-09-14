@@ -8,6 +8,8 @@ import Account from './pages/dashboard/Account';
 import AuthLayout from './layouts/AuthLayout';
 import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import UserRoute from './components/UserRoute';
 import Create from './pages/dashboard/Create';
 import Events from './pages/dashboard/Events';
 import Event from './pages/dashboard/Event';
@@ -27,6 +29,7 @@ import EventAttendance from './pages/dashboard/EventAttendance';
 import MyRsvps from './pages/landing/MyRsvps';
 import Calendars from './pages/dashboard/Calendars';
 import CreateCalendar from './pages/dashboard/CreateCalendar';
+import Admin from './pages/admin/Admin';
 
 function App() {
   return (
@@ -34,12 +37,19 @@ function App() {
       <Toaster position="top-center" reverseOrder={false} />
       <Router>
         <Routes>
-          <Route path="/ticket" element={<Ticket />} />
+          <Route
+            path="/ticket"
+            element={
+              <UserRoute>
+                <Ticket />
+              </UserRoute>
+            }
+          />
           <Route path="/" element={<LandingLayout />}>
-            <Route path="/" element={<Landing />} />
-            <Route path="explore" element={<Explore />} />
-            <Route path="calendar/:id" element={<Calendar />} />
-            <Route path="my-rsvps" element={<MyRsvps />} />
+            <Route path="/" element={<UserRoute><Landing /></UserRoute>} />
+            <Route path="explore" element={<UserRoute><Explore /></UserRoute>} />
+            <Route path="calendar/:id" element={<UserRoute><Calendar /></UserRoute>} />
+            <Route path="my-rsvps" element={<UserRoute><MyRsvps /></UserRoute>} />
             <Route path="auth" element={<AuthLayout />}>
               <Route index element={<Navigate to="login" replace />} />
               <Route path="login" element={<Login />} />
@@ -49,9 +59,11 @@ function App() {
           <Route
             path="/"
             element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
+              <UserRoute>
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              </UserRoute>
             }
           >
             <Route path="" element={<Navigate to="/events?filter=total" replace />} />
@@ -74,10 +86,34 @@ function App() {
               }
             />
           </Route>
-          <Route path="/mark-attendance" element={<MarkAttendance />} />
-          <Route path="/checkin/:id" element={<SelfCheckIn />} />
+          <Route
+            path="/mark-attendance"
+            element={
+              <UserRoute>
+                <MarkAttendance />
+              </UserRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <DashboardLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<Admin />} />
+          </Route>
+          <Route
+            path="/checkin/:id"
+            element={
+              <UserRoute>
+                <SelfCheckIn />
+              </UserRoute>
+            }
+          />
           {/* Public event links use unguessable random codes. Keep last so it never shadows static routes above. */}
-          <Route path="/:code" element={<EventPage />} />
+          <Route path="/:code" element={<UserRoute><EventPage /></UserRoute>} />
         </Routes>
       </Router>
     </>

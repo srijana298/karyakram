@@ -14,9 +14,11 @@ router.get("/stats", asyncHandler(ctrl.platformStats));
 
 // All events across organizers
 router.get("/events", asyncHandler(ctrl.listAllEvents));
+router.delete("/events/:id", asyncHandler(ctrl.deleteEvent));
 
 // All groups
 router.get("/groups", asyncHandler(ctrl.listAllGroups));
+router.delete("/groups/:id", asyncHandler(ctrl.deleteGroup));
 
 // User management
 router.get("/users", asyncHandler(ctrl.listUsers));

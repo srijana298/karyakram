@@ -10,6 +10,7 @@ import {
   IoCalendarOutline,
   IoSparkles,
   IoAddOutline,
+  IoShieldCheckmarkOutline,
   IoSunnyOutline,
   IoMoonOutline
 } from './icons';
@@ -46,6 +47,7 @@ function Navbar() {
   const time = useNepalClock();
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const isAdmin = userInfo?.role === 'admin';
   const fullName =
     userInfo?.fullName ||
     userInfo?.full_name ||
@@ -73,22 +75,24 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const links = [
-    {
-      title: 'Events',
-      link: '/events?filter=total',
-      icon: <IoTicketOutline />,
-      show: !!token
-    },
-    {
-      title: 'Calendars',
-      link: '/calendars',
-      icon: <IoCalendarOutline />,
-      show: !!token
-    },
-    { title: 'My RSVPs', link: '/my-rsvps', icon: <IoCalendarClearOutline />, show: !!token },
-    { title: 'Discover', link: '/explore', icon: <IoCompassOutline />, show: true }
-  ];
+  const links = isAdmin
+    ? [{ title: 'Admin', link: '/admin', icon: <IoShieldCheckmarkOutline />, show: !!token }]
+    : [
+        {
+          title: 'Events',
+          link: '/events?filter=total',
+          icon: <IoTicketOutline />,
+          show: !!token
+        },
+        {
+          title: 'Calendars',
+          link: '/calendars',
+          icon: <IoCalendarOutline />,
+          show: !!token
+        },
+        { title: 'My RSVPs', link: '/my-rsvps', icon: <IoCalendarClearOutline />, show: !!token },
+        { title: 'Discover', link: '/explore', icon: <IoCompassOutline />, show: true }
+      ];
 
   const linkClass = ({ isActive }) =>
     `inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -106,7 +110,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16 gap-4">
           <div className="flex items-center gap-5">
             <Link
-              to={token ? '/events?filter=total' : '/'}
+              to={isAdmin ? '/admin' : token ? '/events?filter=total' : '/'}
               className="text-lg text-primary dark:text-white"
             >
               <IoSparkles className="text-accent" />
@@ -141,24 +145,28 @@ function Navbar() {
 
             {token ? (
               <>
-                <Link
-                  to="/create"
-                  className="hidden sm:inline text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-white/80 dark:hover:text-white transition-colors"
-                >
-                  Create Event
-                </Link>
-                <Link
-                  to="/notifications"
-                  className={`relative ${iconBtn}`}
-                  title="Notifications"
-                >
-                  <IoNotificationsOutline className="text-lg" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-accent text-secondary rounded-full text-[9px] font-bold flex items-center justify-center">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
-                </Link>
+                {!isAdmin && (
+                  <>
+                    <Link
+                      to="/create"
+                      className="hidden sm:inline text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-white/80 dark:hover:text-white transition-colors"
+                    >
+                      Create Event
+                    </Link>
+                    <Link
+                      to="/notifications"
+                      className={`relative ${iconBtn}`}
+                      title="Notifications"
+                    >
+                      <IoNotificationsOutline className="text-lg" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-accent text-secondary rounded-full text-[9px] font-bold flex items-center justify-center">
+                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        </span>
+                      )}
+                    </Link>
+                  </>
+                )}
 
                 <div className="relative" ref={menuRef}>
                   <button
@@ -187,13 +195,10 @@ function Navbar() {
 
                       </div>
                       {[
-                        {
-                          label: 'Create Event',
-                          icon: <IoAddOutline />,
-                          to: '/create',
-                          cls: 'sm:hidden'
-                        },
-                        { label: 'Account', icon: <IoPersonOutline />, to: '/dashboard/account' }
+                        ...(!isAdmin
+                          ? [{ label: 'Create Event', icon: <IoAddOutline />, to: '/create', cls: 'sm:hidden' }]
+                          : []),
+                        { label: 'Account', icon: <IoPersonOutline />, to: '/account' }
                       ].map((it) => (
                         <button
                           key={it.label}
