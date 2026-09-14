@@ -86,7 +86,7 @@ export default function Calendars() {
       <section className="mt-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg md:text-xl font-semibold">My Calendars</h2>
-          <Link to="/dashboard/calendars/create" className="inline-flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-200 dark:bg-white/10 dark:text-white/60 dark:hover:bg-white/[0.15]"><IoAdd /> Create</Link>
+          <Link to="/calendars/create" className="inline-flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-200 dark:bg-white/10 dark:text-white/60 dark:hover:bg-white/[0.15]"><IoAdd /> Create</Link>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
           <MyCalendarCard personal calendar={{ name: "Personal Calendar", avatar: userInfo?.avatar, color: "#a8a29e" }} />

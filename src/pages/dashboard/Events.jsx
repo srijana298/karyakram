@@ -46,14 +46,14 @@ function EventRow({ event }) {
         </div>
 
         <Link
-          to={`/dashboard/event/${event.id}`}
+          to={`/event/${event.id}`}
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white px-3.5 py-2 text-sm font-medium transition-colors"
         >
           Manage Event <IoArrowForward className="text-xs" />
         </Link>
       </div>
 
-      <Link to={`/dashboard/event/${event.id}`} className="shrink-0">
+      <Link to={`/event/${event.id}`} className="shrink-0">
         {event.image ? (
           <img src={resolveImage(event.image)} alt={event.title} className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover bg-stone-100 dark:bg-white/5" />
         ) : (
@@ -119,7 +119,7 @@ function Events() {
             {tab === "upcoming" ? "Create your first event to get started." : "Past events will show up here."}
           </p>
           {tab === "upcoming" && (
-            <Link to="/dashboard/create" className="inline-block mt-5 rounded-lg bg-primary text-white dark:bg-white dark:text-stone-900 px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
+            <Link to="/create" className="inline-block mt-5 rounded-lg bg-primary text-white dark:bg-white dark:text-stone-900 px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
               Create Event
             </Link>
           )}

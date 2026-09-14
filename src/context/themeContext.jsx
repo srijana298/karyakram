@@ -7,7 +7,7 @@ function getInitialTheme() {
     const saved = localStorage.getItem("Mahotsav-theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch {}
-  return "dark"; // default to the Luma-style dark theme
+  return "light"; // default to light — the app chrome (#root) is always light
 }
 
 export default function ThemeProvider({ children }) {

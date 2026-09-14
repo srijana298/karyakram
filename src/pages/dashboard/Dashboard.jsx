@@ -178,7 +178,7 @@ function Dashboard() {
                   {upcomingEvents.map((event, i) => (
                     <Link
                       key={event.id}
-                      to={`/dashboard/event/${event.id}`}
+                      to={`/event/${event.id}`}
                       className={`flex items-center gap-3 py-3 px-2 hover:bg-white/70 transition-colors ${i < upcomingEvents.length - 1 ? "border-b border-gray-200" : ""}`}
                     >
                       <img

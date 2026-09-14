@@ -148,7 +148,7 @@ export default function CreateGroup() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       if (editId) queryClient.invalidateQueries({ queryKey: ["group", editId] });
       toast.success(editId ? "Group updated!" : "Group created!");
-      navigate("/dashboard/groups", { replace: false });
+      navigate("/groups", { replace: false });
     },
     onError: (err) => toast.error(err.message),
   });

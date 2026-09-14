@@ -5,7 +5,7 @@ import Loading from "../components/Loading";
 function VerifyEmail() {
   // Email verification removed — redirect to dashboard
   const navigate = useNavigate();
-  navigate("/dashboard/account");
+  navigate("/account");
   return null;
 }
 

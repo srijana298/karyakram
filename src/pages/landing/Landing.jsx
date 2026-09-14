@@ -138,12 +138,15 @@ function Landing() {
               <Link to="/explore" className="text-stone-700 hover:text-stone-950 transition-colors">
                 Discover Events
               </Link>
-              <Link
-                to={token ? '/dashboard' : '/auth/login'}
-                className="px-4 py-1.5 rounded-full bg-stone-950 text-stone-50 border border-stone-950 hover:bg-stone-800 transition-colors"
-              >
-                {token ? 'Dashboard' : 'Sign In'}
-              </Link>
+              {!token &&
+                <Link
+                  to={token ? '/' : '/auth/login'}
+                  className="px-4 py-1.5 rounded-full bg-stone-950 text-stone-50 border border-stone-950 hover:bg-stone-800 transition-colors"
+                >
+                  Sign In
+                </Link>
+
+              }
             </div>
           </div>
         </header>
@@ -165,7 +168,7 @@ function Landing() {
                 today.
               </p>
               <Link
-                to={token ? '/dashboard/create' : '/auth/signup'}
+                to={token ? '/create' : '/auth/signup'}
                 className="group mt-9 inline-flex items-center gap-2 rounded-xl bg-stone-950 px-7 py-3.5 text-sm font-semibold text-stone-50 hover:bg-stone-800 transition-all hover:-translate-y-0.5"
               >
                 {token ? 'Create an Event' : 'Create Your First Event'}
@@ -259,7 +262,7 @@ function Landing() {
                 Join organizers across Nepal already hosting with Mahotsav — free.
               </p>
               <Link
-                to={token ? '/dashboard/create' : '/auth/signup'}
+                to={token ? '/create' : '/auth/signup'}
                 className="mt-8 inline-flex items-center gap-2 rounded-xl bg-stone-950 px-7 py-3.5 text-sm font-semibold text-stone-50 hover:bg-stone-800 transition-all hover:-translate-y-0.5"
               >
                 {token ? 'Create an Event' : 'Create Your First Event'}

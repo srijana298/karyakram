@@ -58,7 +58,7 @@ function LoginLogic() {
       localStorage.setItem("Mahotsav-user", JSON.stringify(data.user));
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast.success("Logged in successfully");
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     },
     onError: (err) => {
       setValidateMessage(err.message);

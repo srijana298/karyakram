@@ -39,7 +39,7 @@ export default function CreateCalendar() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendars"] });
-      toast.success("Calendar created"); navigate("/dashboard/calendars");
+      toast.success("Calendar created"); navigate("/calendars");
     },
     onError: (err) => toast.error(err.message),
   });

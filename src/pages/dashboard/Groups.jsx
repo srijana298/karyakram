@@ -95,7 +95,7 @@ export default function Groups() {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Link to={`/dashboard/groups/${row.id}`} className="text-sm font-semibold text-dashboard-text hover:text-primary truncate">
+                  <Link to={`/groups/${row.id}`} className="text-sm font-semibold text-dashboard-text hover:text-primary truncate">
                     {row.title}
                   </Link>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${visibility === "private" ? "bg-stone-100 text-stone-600" : "bg-emerald-50 text-emerald-700"}`}>
@@ -120,7 +120,7 @@ export default function Groups() {
                   >
                     <p className="text-sm text-dashboard-text truncate">{s.title || "Sub-event"}</p>
                     <Link
-                      to={`/dashboard/event/${s.id}`}
+                      to={`/event/${s.id}`}
                       className="w-8 h-8 rounded-md border border-gray-200 inline-flex items-center justify-center text-dashboard-muted hover:bg-stone-50"
                     >
                       <IoEyeOutline />
@@ -162,7 +162,7 @@ export default function Groups() {
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
           <Link
-            to={`/dashboard/groups/${row.id}`}
+            to={`/groups/${row.id}`}
             className="w-8 h-8 rounded-md border border-gray-200 inline-flex items-center justify-center text-dashboard-muted hover:bg-stone-50"
           >
             <IoEyeOutline />
@@ -194,7 +194,7 @@ export default function Groups() {
             </p>
           </div>
           <Link
-            to="/dashboard/groups/create"
+            to="/groups/create"
             className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
           >
             <IoLayersOutline className="text-base" />

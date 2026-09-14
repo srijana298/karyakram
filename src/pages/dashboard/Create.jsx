@@ -96,7 +96,7 @@ function Create() {
 
   return (
     <div className="w-full max-w-none">
-      <Link to="/dashboard/events?filter=total" className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 dark:text-white/50 dark:hover:text-white transition-colors mb-5">
+      <Link to="/events?filter=total" className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 dark:text-white/50 dark:hover:text-white transition-colors mb-5">
         <IoChevronBackOutline className="text-base" /> Back
       </Link>
 

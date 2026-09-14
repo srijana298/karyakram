@@ -9,7 +9,7 @@ const EventCard = ({
 }) => {
   return (
     <Link
-      to={`/dashboard/event/${id}`}
+      to={`/event/${id}`}
       className="bg-white overflow-hidden text-black rounded-xl shadow-sm hover:shadow-md transition-all duration-300 group border border-stone-100"
     >
       <div className="relative overflow-hidden">

@@ -212,7 +212,7 @@ function Event() {
     },
     onSuccess: () => {
       toast.success("Event deleted");
-      navigate("/dashboard/events?filter=total");
+      navigate("/events?filter=total");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -441,14 +441,14 @@ function Event() {
                     src={`https://maps.google.com/maps?q=${events.latitude},${events.longitude}&hl=en&output=embed`} />
                 )}
 
-                <Link to={`/dashboard/event/${events.id}/attendance`} className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
+                <Link to={`/event/${events.id}/attendance`} className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
                   <IoScanOutline /> Check In Guests
                 </Link>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  <Link to={`/dashboard/create?id=${events.id}`} className="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
+                  <Link to={`/create?id=${events.id}`} className="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
                     <IoCreateOutline /> Edit Event
                   </Link>
-                  <Link to={`/dashboard/create?id=${events.id}`} className="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
+                  <Link to={`/create?id=${events.id}`} className="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
                     <IoImageOutline /> Change Photo
                   </Link>
                   <button onClick={copyId} className="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-sm font-semibold text-stone-700 dark:text-white/80 transition-colors">
@@ -518,7 +518,7 @@ function Event() {
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">Creator</span>
                 </div>
               </div>
-              <Link to={`/dashboard/event/${events.id}/attendance`} className="mt-3 inline-flex items-center gap-2 text-sm text-stone-500 dark:text-white/50 hover:text-stone-800 dark:hover:text-white transition-colors">
+              <Link to={`/event/${events.id}/attendance`} className="mt-3 inline-flex items-center gap-2 text-sm text-stone-500 dark:text-white/50 hover:text-stone-800 dark:hover:text-white transition-colors">
                 <IoScanOutline /> Manage check-in staff and options
               </Link>
             </div>
@@ -572,7 +572,7 @@ function Event() {
                   <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-base"><IoMailOutline /></span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-white">Invite Guests</span>
                 </button>
-                <button onClick={() => navigate(`/dashboard/events/${events.id}/attendance`)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
+                <button onClick={() => navigate(`/events/${events.id}/attendance`)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
                   <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base"><IoQrCodeOutline /></span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-white">Check In Guests</span>
                 </button>

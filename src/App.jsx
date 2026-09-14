@@ -4,7 +4,6 @@ import LandingLayout from './layouts/LandingLayout';
 import Login from './pages/landing/Login';
 import Signup from './pages/landing/Signup';
 import DashboardLayout from './layouts/DashboardLayout';
-import Dashboard from './pages/dashboard/Dashboard';
 import Account from './pages/dashboard/Account';
 import AuthLayout from './layouts/AuthLayout';
 import { Toaster } from 'react-hot-toast';
@@ -48,14 +47,14 @@ function App() {
             </Route>
           </Route>
           <Route
-            path="/dashboard"
+            path="/"
             element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }
           >
-            <Route path="" element={<Navigate to="/dashboard/events?filter=total" replace />} />
+            <Route path="" element={<Navigate to="/events?filter=total" replace />} />
             <Route path="create" element={<Create />} />
             <Route path="event/:id" element={<Event />} />
             <Route path="account" element={<Account />} />

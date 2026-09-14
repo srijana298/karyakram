@@ -17,7 +17,7 @@ function ProtectedRoute({ children }) {
     // authenticated users.
 
     if (pathname.includes("login") || pathname.includes("signup")) {
-      navigate("/dashboard");
+      navigate("/");
     }
   }, [pathname, navigate]);
 

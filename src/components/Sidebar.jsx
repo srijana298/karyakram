@@ -96,7 +96,7 @@ function Sidebar() {
 
       <nav className="flex-1 px-4 py-5 flex flex-col gap-1 overflow-auto">
         <p className="text-xs font-medium text-dashboard-subtle px-1 mb-1">Main Menu</p>
-        <NavLink className={linkClass} to="/dashboard" end>
+        <NavLink className={linkClass} to="/" end>
           <IoHomeOutline className="text-[18px]" /> Home
         </NavLink>
         <NavLink className={linkClass} to="events?filter=total">

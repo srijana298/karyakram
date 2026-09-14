@@ -76,13 +76,13 @@ function Navbar() {
   const links = [
     {
       title: 'Events',
-      link: '/dashboard/events?filter=total',
+      link: '/events?filter=total',
       icon: <IoTicketOutline />,
       show: !!token
     },
     {
       title: 'Calendars',
-      link: '/dashboard/calendars',
+      link: '/calendars',
       icon: <IoCalendarOutline />,
       show: !!token
     },
@@ -106,7 +106,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16 gap-4">
           <div className="flex items-center gap-5">
             <Link
-              to={token ? '/dashboard/events?filter=total' : '/'}
+              to={token ? '/events?filter=total' : '/'}
               className="text-lg text-primary dark:text-white"
             >
               <IoSparkles className="text-accent" />
@@ -142,13 +142,13 @@ function Navbar() {
             {token ? (
               <>
                 <Link
-                  to="/dashboard/create"
+                  to="/create"
                   className="hidden sm:inline text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-white/80 dark:hover:text-white transition-colors"
                 >
                   Create Event
                 </Link>
                 <Link
-                  to="/dashboard/notifications"
+                  to="/notifications"
                   className={`relative ${iconBtn}`}
                   title="Notifications"
                 >
@@ -190,7 +190,7 @@ function Navbar() {
                         {
                           label: 'Create Event',
                           icon: <IoAddOutline />,
-                          to: '/dashboard/create',
+                          to: '/create',
                           cls: 'sm:hidden'
                         },
                         { label: 'Account', icon: <IoPersonOutline />, to: '/dashboard/account' }

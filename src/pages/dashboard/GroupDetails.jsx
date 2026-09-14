@@ -141,7 +141,7 @@ export default function GroupDetails() {
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
           <Link
-            to={`/dashboard/event/${row.id}`}
+            to={`/event/${row.id}`}
             className="w-8 h-8 rounded-md border border-gray-200 inline-flex items-center justify-center text-dashboard-muted hover:bg-stone-50"
           >
             <IoEyeOutline />
@@ -199,7 +199,7 @@ export default function GroupDetails() {
       <div className="flex items-start justify-between gap-3 flex-wrap px-1">
         <div className="flex items-start gap-3">
           <button
-            onClick={() => navigate("/dashboard/groups")}
+            onClick={() => navigate("/groups")}
             className="mt-2 w-9 h-9 rounded-md border border-gray-200 inline-flex items-center justify-center text-dashboard-muted hover:bg-stone-50"
           >
             <IoChevronBackOutline className="text-base" />
@@ -215,7 +215,7 @@ export default function GroupDetails() {
           </div>
         </div>
         <Link
-          to={`/dashboard/create?groupId=${group.id}`}
+          to={`/create?groupId=${group.id}`}
           className="inline-flex items-center gap-2 px-4 h-10 text-sm font-semibold text-white bg-primary rounded-md hover:bg-emerald-600 transition-colors"
         >
           <IoAdd className="text-base" />

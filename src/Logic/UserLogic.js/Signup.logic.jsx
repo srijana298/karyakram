@@ -98,7 +98,7 @@ function SignupLogic() {
       setUserInfo(data.user);
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast.success("Signed up successfully");
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     },
     onError: (err) => {
       setValidateMessage(err.message);

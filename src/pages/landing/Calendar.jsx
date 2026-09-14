@@ -63,7 +63,7 @@ export default function Calendar() {
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900 dark:bg-[#071517] dark:text-white">
       <div className="mx-auto max-w-[1420px] px-4 sm:px-8 pt-7 pb-16">
-        <Link to="/dashboard/calendars" className="mb-5 inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 dark:text-white/40 dark:hover:text-white"><IoArrowBackOutline /> Calendars</Link>
+        <Link to="/calendars" className="mb-5 inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 dark:text-white/40 dark:hover:text-white"><IoArrowBackOutline /> Calendars</Link>
 
         <div className="relative h-[250px] sm:h-[360px] overflow-hidden rounded-3xl bg-stone-200 dark:bg-white/10">
           {calendar.cover_image ? <img src={resolveImage(calendar.cover_image)} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full" style={{ background: `radial-gradient(circle at 65% 25%, ${accent}dd, transparent 35%), linear-gradient(135deg, ${accent}55, ${accent})` }} />}
@@ -106,7 +106,7 @@ export default function Calendar() {
             ))}</div> : <div className="mt-10 rounded-2xl border border-dashed border-stone-300 py-16 text-center dark:border-white/10"><IoCalendarClearOutline className="mx-auto text-4xl text-stone-300 dark:text-white/20" /><p className="mt-4 text-sm font-medium text-stone-500 dark:text-white/45">No events yet</p></div>}
           </div>
           <aside>
-            {isOwner && <Link to={`/dashboard/create?calendar=${calendar.id}`} className="flex w-full items-center justify-center rounded-xl bg-stone-900 py-3 text-sm font-semibold text-white dark:bg-white/10 dark:text-white">+ Create Event</Link>}
+            {isOwner && <Link to={`/create?calendar=${calendar.id}`} className="flex w-full items-center justify-center rounded-xl bg-stone-900 py-3 text-sm font-semibold text-white dark:bg-white/10 dark:text-white">+ Create Event</Link>}
             <div className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
               <div className="p-5"><p className="font-semibold">{calendar.city || "Nepal"}</p><p className="mt-1 text-sm text-stone-400 dark:text-white/35">Calendar region</p></div>
               {calendar.latitude && <iframe title="Calendar region" className="w-full h-48 grayscale-[.4] dark:invert-[.88] dark:hue-rotate-180" src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(calendar.longitude)-.08}%2C${Number(calendar.latitude)-.05}%2C${Number(calendar.longitude)+.08}%2C${Number(calendar.latitude)+.05}&layer=mapnik&marker=${calendar.latitude}%2C${calendar.longitude}`} />}
