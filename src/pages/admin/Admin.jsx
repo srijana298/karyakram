@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import DataTable from "../../components/DataTable";
 import Loading from "../../components/Loading";
 import { adminService } from "../../services/admin";
+import { useUser } from "../../context/userContext";
 import {
   IoCalendarOutline,
   IoLayersOutline,
@@ -16,6 +17,7 @@ import {
 const tabs = ["Overview", "Users", "Events", "Groups"];
 
 function Admin() {
+  const { userInfo } = useUser();
   const [activeTab, setActiveTab] = useState("Overview");
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
@@ -100,6 +102,7 @@ function Admin() {
 
   const stats = statsQuery.data;
   const categories = (stats?.eventsByCategory || []).map((item) => item.category).filter(Boolean);
+  const currentUserId = Number(userInfo?.id);
 
   const formatDate = (value) => {
     if (!value) return "TBA";
@@ -123,20 +126,24 @@ function Admin() {
         </div>
       ),
     },
-    { key: "phone", label: "Phone", render: (user) => user.phone || "-" },
     {
       key: "role",
       label: "Role",
-      render: (user) => (
+      render: (user) => {
+        const isCurrentUser = Number(user.id) === currentUserId;
+        return (
         <select
           value={user.role || "user"}
+          disabled={isCurrentUser}
           onChange={(e) => updateRole.mutate({ id: user.id, nextRole: e.target.value })}
-          className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm dark:border-white/10 dark:bg-[#151517]"
+          title={isCurrentUser ? "You cannot change your own admin role" : "Change user role"}
+          className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-[#151517]"
         >
           <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
-      ),
+        );
+      },
     },
     { key: "eventsCreated", label: "Events", render: (user) => user.eventsCreated || 0 },
     { key: "rsvpsCount", label: "RSVPs", render: (user) => user.rsvpsCount || 0 },
@@ -145,15 +152,19 @@ function Admin() {
       key: "actions",
       label: "",
       className: "text-right",
-      render: (user) => (
-        <button
-          onClick={() => confirmDelete(user.name || user.email, () => deleteUser.mutate(user.id))}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
-          title="Delete user"
-        >
-          <IoTrashOutline />
-        </button>
-      ),
+      render: (user) => {
+        const isCurrentUser = Number(user.id) === currentUserId;
+        return (
+          <button
+            disabled={isCurrentUser}
+            onClick={() => confirmDelete(user.name || user.email, () => deleteUser.mutate(user.id))}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-stone-300 disabled:hover:bg-transparent dark:hover:bg-red-500/10 dark:disabled:text-white/20"
+            title={isCurrentUser ? "You cannot delete your own account" : "Delete user"}
+          >
+            <IoTrashOutline />
+          </button>
+        );
+      },
     },
   ];
 
@@ -252,19 +263,16 @@ function Admin() {
 
       {activeTab === "Overview" && stats && (
         <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Metric icon={<IoCalendarOutline />} label="Events" value={stats.overview?.totalEvents || 0} />
             <Metric icon={<IoPeopleOutline />} label="Users" value={stats.overview?.totalUsers || 0} />
             <Metric icon={<IoShieldCheckmarkOutline />} label="RSVPs" value={stats.overview?.totalRsvps || 0} />
-            <Metric icon={<IoPeopleOutline />} label="Members" value={stats.overview?.totalMembers || 0} />
-            <Metric icon={<IoLayersOutline />} label="Groups" value={stats.overview?.totalGroups || 0} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Breakdown title="Events by category" data={stats.eventsByCategory || []} labelKey="category" />
-            <Breakdown title="Users by role" data={stats.usersByRole || []} labelKey="role" />
             <Breakdown title="Events by medium" data={stats.eventsByMedium || []} labelKey="medium" />
-            <Breakdown title="RSVP trend" data={stats.rsvpTrend || []} labelKey="month" />
+            <RsvpTrendChart data={stats.rsvpTrend || []} />
           </div>
         </div>
       )}
@@ -350,6 +358,78 @@ function Breakdown({ title, data, labelKey }) {
           );
         })}
       </div>
+    </section>
+  );
+}
+
+function RsvpTrendChart({ data }) {
+  const width = 520;
+  const height = 220;
+  const padding = { top: 18, right: 18, bottom: 42, left: 42 };
+  const points = data.map((item) => ({
+    label: item.month || "Unknown",
+    count: Number(item.count || 0),
+  }));
+  const max = Math.max(...points.map((point) => point.count), 1);
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const plotted = points.map((point, index) => {
+    const x = padding.left + (points.length <= 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
+    const y = padding.top + innerHeight - (point.count / max) * innerHeight;
+    return { ...point, x, y };
+  });
+  const line = plotted.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = plotted.length
+    ? `${padding.left},${padding.top + innerHeight} ${line} ${padding.left + innerWidth},${padding.top + innerHeight}`
+    : "";
+
+  return (
+    <section className="rounded-md border border-stone-200 bg-white p-4 dark:border-white/10 dark:bg-[#121214]">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-sm font-semibold text-stone-950 dark:text-white">RSVP trend</h2>
+        {points.length > 0 && (
+          <span className="text-xs tabular-nums text-stone-500 dark:text-white/45">
+            {points.reduce((sum, point) => sum + point.count, 0).toLocaleString()} total
+          </span>
+        )}
+      </div>
+
+      {points.length === 0 ? (
+        <p className="mt-4 text-sm text-stone-500 dark:text-white/45">No data yet.</p>
+      ) : (
+        <div className="mt-4 h-[240px]">
+          <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full overflow-visible" role="img" aria-label="RSVP trend line chart">
+            {[0, 0.5, 1].map((tick) => {
+              const y = padding.top + innerHeight - tick * innerHeight;
+              return (
+                <g key={tick}>
+                  <line x1={padding.left} x2={padding.left + innerWidth} y1={y} y2={y} className="stroke-stone-100 dark:stroke-white/10" />
+                  <text x={padding.left - 10} y={y + 4} textAnchor="end" className="fill-stone-400 text-[10px] tabular-nums dark:fill-white/35">
+                    {Math.round(max * tick)}
+                  </text>
+                </g>
+              );
+            })}
+            {area && <polygon points={area} className="fill-emerald-500/10 dark:fill-emerald-300/10" />}
+            {plotted.length > 1 ? (
+              <polyline points={line} fill="none" strokeLinecap="round" strokeLinejoin="round" className="stroke-emerald-600 stroke-[3] dark:stroke-emerald-300" />
+            ) : (
+              <line x1={padding.left} x2={padding.left + innerWidth} y1={plotted[0].y} y2={plotted[0].y} strokeLinecap="round" className="stroke-emerald-600 stroke-[3] dark:stroke-emerald-300" />
+            )}
+            {plotted.map((point) => (
+              <g key={point.label}>
+                <circle cx={point.x} cy={point.y} r="5" className="fill-white stroke-emerald-600 stroke-[3] dark:fill-[#121214] dark:stroke-emerald-300" />
+                <text x={point.x} y={point.y - 12} textAnchor="middle" className="fill-stone-700 text-[11px] font-semibold tabular-nums dark:fill-white/75">
+                  {point.count}
+                </text>
+                <text x={point.x} y={height - 14} textAnchor="middle" className="fill-stone-400 text-[10px] dark:fill-white/35">
+                  {point.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+        </div>
+      )}
     </section>
   );
 }

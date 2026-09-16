@@ -263,6 +263,7 @@ export const updateUserRole = async (req, res) => {
 
   const [existing] = await db.select().from(users).where(eq(users.id, userId)).catch(() => []);
   if (!existing) return NotFound("User not found");
+  if (existing.id === req.user.id) return BadRequest("You cannot change your own role");
 
   await db.update(users).set({ role }).where(eq(users.id, userId)).catch(() => null);
 
