@@ -172,7 +172,7 @@ export default function EventAttendance() {
   );
 
   const checkedSet = useMemo(
-    () => new Set(attendance.map((a) => a.user_id)),
+    () => new Set(attendance.filter((a) => a.checked_in !== false).map((a) => a.user_id)),
     [attendance]
   );
 
@@ -286,6 +286,14 @@ export default function EventAttendance() {
     toast.success("CSV exported");
   };
 
+  const checkInUrl =
+    code && typeof window !== "undefined"
+      ? `${window.location.origin}/checkin/${id}?code=${encodeURIComponent(code)}`
+      : "";
+  const checkInQrUrl = checkInUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(checkInUrl)}`
+    : "";
+
   if (loading) return <Loading />;
 
   return (
@@ -334,8 +342,8 @@ export default function EventAttendance() {
 
       {/* Check-in code banner */}
       {code && (
-        <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-5 mb-6 flex items-center justify-between gap-4">
-          <div>
+        <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-primary/70 mb-1">
               Check-in Code
             </p>
@@ -347,8 +355,7 @@ export default function EventAttendance() {
             </p>
             <button
               onClick={() => {
-                const url = `${window.location.origin}/checkin/${id}`;
-                navigator.clipboard.writeText(url);
+                navigator.clipboard.writeText(checkInUrl);
                 toast.success("Check-in link copied");
               }}
               className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-primary bg-white/80 rounded-lg border border-primary/15 hover:bg-primary hover:text-white transition-colors"
@@ -357,16 +364,25 @@ export default function EventAttendance() {
               Copy check-in link
             </button>
           </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(code);
-              toast.success("Code copied");
-            }}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-primary bg-white rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-colors"
-          >
-            <IoCopy className="text-sm" />
-            Copy
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl bg-white p-3 border border-primary/15 shadow-sm">
+              <img
+                src={checkInQrUrl}
+                alt="Check-in QR code"
+                className="w-32 h-32 sm:w-36 sm:h-36"
+              />
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(code);
+                toast.success("Code copied");
+              }}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-primary bg-white rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-colors"
+            >
+              <IoCopy className="text-sm" />
+              Copy
+            </button>
+          </div>
         </div>
       )}
 

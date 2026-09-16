@@ -2,8 +2,19 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "../../components/icons";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../../services/auth";
+
+function getSafeRedirect(value) {
+  if (!value) return "/";
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return "/";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
+  } catch {
+    return value.startsWith("/") && !value.startsWith("//") ? value : "/";
+  }
+}
 
 function LoginLogic() {
   const [showPass, setShowPass] = useState(false);
@@ -12,6 +23,7 @@ function LoginLogic() {
   const [validateMessage, setValidateMessage] = useState(null);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   const inputs = [
@@ -58,7 +70,7 @@ function LoginLogic() {
       localStorage.setItem("Mahotsav-user", JSON.stringify(data.user));
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast.success("Logged in successfully");
-      navigate("/", { replace: true });
+      navigate(getSafeRedirect(searchParams.get("redirect")), { replace: true });
     },
     onError: (err) => {
       setValidateMessage(err.message);

@@ -62,14 +62,21 @@ export const markAttendance = async (req, res) => {
 
 export const bulkAttendance = async (req, res) => {
   const eventId = parseInt(req.params.id);
-  const { attendees } = req.body; // [{ userId, checkedIn }]
+  const { attendees, userIds, checkedIn: bulkCheckedIn = true } = req.body; // attendees: [{ userId, checkedIn }] or userIds: []
 
   const check = await canManageEvent(eventId, req.user);
   if (!check.ok) return check.error;
-  if (!Array.isArray(attendees) || attendees.length === 0) return BadRequest("attendees array is required");
+
+  const rows = Array.isArray(attendees)
+    ? attendees
+    : Array.isArray(userIds)
+      ? userIds.map((userId) => ({ userId, checkedIn: bulkCheckedIn }))
+      : [];
+
+  if (rows.length === 0) return BadRequest("attendees or userIds array is required");
 
   let updated = 0;
-  for (const item of attendees) {
+  for (const item of rows) {
     const userId = item.userId;
     const checkedIn = item.checkedIn !== false;
     if (!userId) continue;

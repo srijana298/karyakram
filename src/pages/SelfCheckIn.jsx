@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { attendanceService } from "../services/attendance";
 import { toast } from "react-hot-toast";
 import {
@@ -15,8 +15,9 @@ import Brand from "../components/Brand";
 export default function SelfCheckIn() {
   const { id: eventId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() => (searchParams.get("code") || "").toUpperCase());
   const [status, setStatus] = useState(null); // null | "success" | "error"
 
   const checkInMutation = useMutation({

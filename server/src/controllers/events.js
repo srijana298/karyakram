@@ -40,9 +40,20 @@ export const inviteGuests = async (req, res) => {
     .catch(() => null);
   if (!existingInvitations) return InternalError('Failed to check existing invitations');
 
-  const existingEmails = new Set(existingInvitations.map((invitation) => invitation.email.toLowerCase()));
+  const existingRsvps = await db
+    .select({ email: users.email })
+    .from(rsvps)
+    .leftJoin(users, eq(rsvps.user_id, users.id))
+    .where(eq(rsvps.event_id, event.id))
+    .catch(() => null);
+  if (!existingRsvps) return InternalError('Failed to check existing guests');
+
+  const existingEmails = new Set([
+    ...existingInvitations.map((invitation) => invitation.email.toLowerCase()),
+    ...existingRsvps.map((rsvp) => rsvp.email?.toLowerCase()).filter(Boolean),
+  ]);
   const emails = requestedEmails.filter((email) => !existingEmails.has(email));
-  if (emails.length === 0) return BadRequest('All of these emails have already been invited to this event');
+  if (emails.length === 0) return BadRequest('All of these emails have already been invited or added to this event');
 
   const eventPath = event.short_code || genShortCode();
   const invitations = emails.map((email) => {

@@ -85,6 +85,14 @@ function App() {
                 </DashboardScreenLayout>
               }
             />
+            <Route
+              path="events/:id/attendance"
+              element={
+                <DashboardScreenLayout title={'Attendance'}>
+                  <EventAttendance />
+                </DashboardScreenLayout>
+              }
+            />
           </Route>
           <Route
             path="/mark-attendance"

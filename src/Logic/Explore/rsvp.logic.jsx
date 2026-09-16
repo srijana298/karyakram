@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { rsvpService } from "../../services/rsvps";
 import { useNotifications } from "../../context/notificationContext";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function RsvpLogic(event) {
   let token = null;
@@ -12,6 +13,8 @@ export default function RsvpLogic(event) {
 
   const queryClient = useQueryClient();
   const { sendNotification } = useNotifications();
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
 
   // Load the user's existing RSVP for this event so we don't offer to RSVP
   // again after they've already responded.
@@ -100,7 +103,10 @@ export default function RsvpLogic(event) {
   const handleRSVP = (e) => {
     e?.preventDefault();
     if (checkUserIsOwner()) return toast.error("You cannot RSVP to your own event");
-    if (!token) return toast.error("Please login to RSVP");
+    if (!token) {
+      toast.error("Please login to RSVP");
+      return navigate(`/auth/login?redirect=${encodeURIComponent(pathname + search)}`);
+    }
     if (event?.accepting_rsvp === false) return toast.error("RSVP for this event is closed");
     const startDate = event?.start_date
       ? new Date(typeof event.start_date === 'string' ? event.start_date.split('+')[0] : event.start_date)

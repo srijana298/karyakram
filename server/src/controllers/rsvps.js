@@ -293,6 +293,7 @@ export const listMyRsvps = async (req, res) => {
       approved: rsvps.approved,
       rejected: rsvps.rejected,
       pending: rsvps.pending,
+      membership_id: rsvps.membership_id,
       rsvp_created_at: rsvps.created_at,
       event_id: events.id,
       event_short_code: events.short_code,

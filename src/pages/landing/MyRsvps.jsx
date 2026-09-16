@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { rsvpService } from "../../services/rsvps";
 import { resolveImage } from "../../lib/resolveImage";
 import Loading from "../../components/Loading";
@@ -10,6 +10,7 @@ import {
   IoCloseCircle,
   IoHourglassOutline,
   IoLocationOutline,
+  IoTicketOutline,
 } from "../../components/icons";
 import { MdComputer } from "../../components/icons";
 
@@ -49,6 +50,7 @@ function formatEventDate(dateStr) {
 }
 
 function MyRsvps() {
+  const navigate = useNavigate();
   const {
     data: rsvps = [],
     isPending: loading,
@@ -139,11 +141,18 @@ function MyRsvps() {
             {rsvps.map((rsvp) => {
               const status = getStatus(rsvp);
               const cfg = statusConfig[status];
+              const eventPath = `/${rsvp.event_short_code || rsvp.event_id}`;
+              const ticketPath = `/ticket?eventId=${rsvp.event_id}&memberId=${rsvp.membership_id}`;
               return (
-                <Link
+                <div
                   key={rsvp.rsvp_id}
-                  to={`/${rsvp.event_short_code || rsvp.event_id}`}
-                  className="block group"
+                  onClick={() => navigate(eventPath)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") navigate(eventPath);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  className="block group text-left"
                 >
                   <div className="bg-white dark:bg-white/[0.04] rounded-xl border border-stone-200/80 dark:border-white/10 overflow-hidden hover:shadow-lg hover:shadow-stone-200/50 hover:border-stone-300 transition-all duration-300">
                     {/* Image */}
@@ -195,9 +204,22 @@ function MyRsvps() {
                           )}
                         </span>
                       </div>
+                      {rsvp.approved && rsvp.membership_id && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(ticketPath);
+                          }}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-stone-700 dark:bg-white dark:text-stone-950 dark:hover:bg-white/85"
+                        >
+                          <IoTicketOutline className="text-sm" />
+                          Download ticket
+                        </button>
+                      )}
                     </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>

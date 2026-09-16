@@ -121,7 +121,16 @@ function Event() {
   const pending = rsvps.filter((r) => r.pending && !r.approved && !r.rejected);
   const approved = rsvps.filter((r) => r.approved);
   const rejected = rsvps.filter((r) => r.rejected);
-  const sentInvitations = invitations.filter((invitation) => invitation.status === "sent");
+  const rsvpEmails = new Set(
+    rsvps
+      .map((r) => r.user_email?.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const visibleSentInvitations = invitations.filter(
+    (invitation) =>
+      invitation.status === "sent" &&
+      !rsvpEmails.has(invitation.email?.trim().toLowerCase())
+  );
 
   // Combined "Invites" list for the Overview tab: still-pending email invites
   // plus everyone who has RSVP'd (going / pending / declined).
@@ -132,7 +141,7 @@ function Event() {
         ? { status: "Declined", tint: "bg-red-500/10 text-red-600" }
         : { status: "Pending", tint: "bg-amber-500/10 text-amber-600" };
   const inviteRows = [
-    ...sentInvitations.map((i) => ({
+    ...visibleSentInvitations.map((i) => ({
       key: `inv-${i.id}`,
       label: i.email,
       sub: `Invited ${new Date(i.created_at).toLocaleDateString()}`,
@@ -186,7 +195,7 @@ function Event() {
 
   const exportGuests = () => {
     const rows = [
-      ...sentInvitations.map((i) => ({ name: "", email: i.email, status: "Invited" })),
+      ...visibleSentInvitations.map((i) => ({ name: "", email: i.email, status: "Invited" })),
       ...rsvps.map((r) => ({
         name: r.user_name || `User #${r.user_id}`,
         email: r.user_email || "",
@@ -572,7 +581,7 @@ function Event() {
                   <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-base"><IoMailOutline /></span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-white">Invite Guests</span>
                 </button>
-                <button onClick={() => navigate(`/events/${events.id}/attendance`)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
+                <button onClick={() => navigate(`/event/${events.id}/attendance`)} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/[0.04] p-2.5 text-left hover:bg-stone-100 dark:hover:bg-white/[0.07] transition-colors">
                   <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base"><IoQrCodeOutline /></span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-white">Check In Guests</span>
                 </button>
@@ -595,7 +604,7 @@ function Event() {
 
               {rsvpsLoading ? (
                 <div className="py-12 text-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>
-              ) : approved.length + pending.length + rejected.length + sentInvitations.length === 0 ? (
+              ) : approved.length + pending.length + rejected.length + visibleSentInvitations.length === 0 ? (
                 <div className="py-14 text-center">
                   <IoPeopleOutline className="text-5xl text-stone-300 dark:text-white/30 mx-auto" />
                   <p className="mt-5 text-xl font-bold text-stone-500 dark:text-white/50">No Guests Yet</p>
@@ -603,7 +612,7 @@ function Event() {
                 </div>
               ) : (
                 <div className="rounded-2xl overflow-hidden bg-stone-50 dark:bg-white/[0.04] border border-stone-100 dark:border-white/10">
-                  {sentInvitations.map((invitation) => (
+                  {visibleSentInvitations.map((invitation) => (
                     <div key={`invite-${invitation.id}`} className="px-5 py-4 border-b border-stone-100 dark:border-white/10 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-bold">{invitation.email[0].toUpperCase()}</div>
                       <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-stone-800 dark:text-white truncate">{invitation.email}</p><p className="text-xs text-stone-400 dark:text-white/40">Invitation sent · awaiting response</p></div>
