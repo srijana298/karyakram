@@ -508,15 +508,6 @@ function Event() {
 
             {/* ── Hosts ───────────────────────────────────────── */}
             <div>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-stone-900 dark:text-white">Hosts</h2>
-                <button
-                  onClick={() => toast("Adding co-hosts is coming soon")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-200 dark:border-white/15 text-sm font-medium text-stone-700 dark:text-white/80 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
-                >
-                  + Add Host
-                </button>
-              </div>
               <div className="mt-3 rounded-2xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/[0.04] p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-300 to-rose-400 text-white text-xs font-bold flex items-center justify-center shrink-0">
                   {(userInfo?.name || "?").slice(0, 2).toUpperCase()}
