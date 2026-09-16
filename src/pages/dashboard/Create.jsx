@@ -140,16 +140,16 @@ function Create() {
         {/* Right: details */}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className={`inline-flex items-center gap-2 pl-3 pr-2 py-2 ${card}`}>
+            <div className={`inline-flex min-w-0 items-center gap-2 pl-3 pr-2 py-2 ${card}`}>
               <IoCalendarClearOutline className={`text-sm ${muted}`} />
-              <select value={fields.calendarId || ""} onChange={(e) => fields.setCalendarId(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-4 cursor-pointer [&>option]:text-stone-900">
+              <select value={fields.calendarId || ""} onChange={(e) => fields.setCalendarId(e.target.value)} className="w-[min(72vw,280px)] sm:w-72 text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-8 cursor-pointer truncate [&>option]:text-stone-900">
                 <option value="">Personal Calendar</option>
                 {calendars.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div className={`inline-flex items-center gap-2 pl-3 pr-2 py-2 ${card}`}>
               {fields.privacy === "private" ? <IoLockClosedOutline className={`text-sm ${muted}`} /> : <IoGlobeOutline className={`text-sm ${muted}`} />}
-              <select value={fields.privacy} onChange={(e) => fields.setPrivacy(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-4 cursor-pointer capitalize [&>option]:text-stone-900">
+              <select value={fields.privacy} onChange={(e) => fields.setPrivacy(e.target.value)} className="w-28 text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none pr-8 cursor-pointer capitalize [&>option]:text-stone-900">
                 <option value="public">Public</option>
                 <option value="private">Private</option>
               </select>
@@ -238,7 +238,7 @@ function Create() {
               <div className="flex items-center gap-3 p-4">
                 <IoPricetagOutline className={`text-lg ${muted}`} />
                 <span className={`${label} flex-1`}>Category</span>
-                <select value={fields.category} onChange={(e) => fields.setCategory(e.target.value)} className="text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none text-right cursor-pointer max-w-[55%] [&>option]:text-stone-900" required>
+                <select value={fields.category} onChange={(e) => fields.setCategory(e.target.value)} className="w-[min(62vw,260px)] max-w-[70%] text-sm font-medium text-stone-800 dark:text-white bg-transparent outline-none text-right cursor-pointer truncate pr-8 [&>option]:text-stone-900" required>
                   <option value="">Select…</option>
                   {categories.map((c) => <option key={c.id} value={c.label}>{c.label}</option>)}
                 </select>
