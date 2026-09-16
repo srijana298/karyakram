@@ -83,7 +83,6 @@ export default function Calendar() {
           <h1 className="mt-7 text-4xl sm:text-5xl font-bold tracking-tight">{calendar.name}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-stone-500 dark:text-white/45">
             <span className="inline-flex items-center gap-2"><IoTimeOutline /> Times in GMT+5:45</span>
-            {calendar.city && <span className="inline-flex items-center gap-2"><IoLocationOutline /> {calendar.city}, Nepal</span>}
             <span className="inline-flex items-center gap-2"><IoPeopleOutline /> {Number(calendar.follower_count)} followers</span>
           </div>
           {calendar.description && <p className="mt-5 max-w-3xl text-base leading-relaxed text-stone-600 dark:text-white/65">{calendar.description}</p>}
@@ -92,7 +91,7 @@ export default function Calendar() {
       </div>
 
       <section className="border-t border-stone-200 dark:border-white/10">
-        <div className="mx-auto max-w-[1320px] px-5 sm:px-10 py-12 grid lg:grid-cols-[1fr_320px] gap-12">
+        <div className={`mx-auto max-w-[1320px] px-5 sm:px-10 py-12 grid gap-12 ${isOwner ? "lg:grid-cols-[1fr_320px]" : ""}`}>
           <div>
             <h2 className="text-3xl font-bold">Events</h2>
             {events.length ? <div className="mt-9 space-y-10">{Object.entries(groups).map(([key, list]) => (
@@ -105,13 +104,11 @@ export default function Calendar() {
               </div>
             ))}</div> : <div className="mt-10 rounded-2xl border border-dashed border-stone-300 py-16 text-center dark:border-white/10"><IoCalendarClearOutline className="mx-auto text-4xl text-stone-300 dark:text-white/20" /><p className="mt-4 text-sm font-medium text-stone-500 dark:text-white/45">No events yet</p></div>}
           </div>
-          <aside>
-            {isOwner && <Link to={`/create?calendar=${calendar.id}`} className="flex w-full items-center justify-center rounded-xl bg-stone-900 py-3 text-sm font-semibold text-white dark:bg-white/10 dark:text-white">+ Create Event</Link>}
-            <div className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
-              <div className="p-5"><p className="font-semibold">{calendar.city || "Nepal"}</p><p className="mt-1 text-sm text-stone-400 dark:text-white/35">Calendar region</p></div>
-              {calendar.latitude && <iframe title="Calendar region" className="w-full h-48 grayscale-[.4] dark:invert-[.88] dark:hue-rotate-180" src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(calendar.longitude)-.08}%2C${Number(calendar.latitude)-.05}%2C${Number(calendar.longitude)+.08}%2C${Number(calendar.latitude)+.05}&layer=mapnik&marker=${calendar.latitude}%2C${calendar.longitude}`} />}
-            </div>
-          </aside>
+          {isOwner && (
+            <aside>
+              <Link to={`/create?calendar=${calendar.id}`} className="flex w-full items-center justify-center rounded-xl bg-stone-900 py-3 text-sm font-semibold text-white dark:bg-white/10 dark:text-white">+ Create Event</Link>
+            </aside>
+          )}
         </div>
       </section>
     </main>

@@ -19,12 +19,13 @@ function CalendarAvatar({ calendar, size = "w-14 h-14", rounded = "rounded-2xl" 
 
 function MyCalendarCard({ calendar, personal = false }) {
   const className = "block w-full sm:w-[260px] min-h-[132px] rounded-2xl border border-stone-200 bg-white p-4 dark:border-white/10 dark:bg-[#1b1b1d] dark:hover:bg-[#202023] hover:border-stone-300 transition-colors";
+  const calendarPath = `/calendar/${calendar.slug || calendar.id}`;
   const content = <>
     <CalendarAvatar calendar={calendar} size="w-11 h-11" rounded="rounded-full" />
     <h3 className="mt-3 text-base font-semibold text-stone-900 dark:text-white">{calendar.name}</h3>
     <p className="mt-1 text-sm text-stone-500 dark:text-white/45">{personal ? "No Contacts" : `${Number(calendar.event_count)} events`}</p>
   </>;
-  return personal ? <div className={className}>{content}</div> : <Link to={`/calendar/${calendar.id}`} className={className}>{content}</Link>;
+  return personal ? <div className={className}>{content}</div> : <Link to={calendarPath} className={className}>{content}</Link>;
 }
 
 function FollowingCard({ calendar }) {
@@ -36,7 +37,7 @@ function FollowingCard({ calendar }) {
       <div>
         <CalendarAvatar calendar={calendar} size="w-10 h-10" rounded="rounded-xl" />
         <h3 className="mt-3 text-base font-semibold text-stone-900 dark:text-white">{calendar.name}</h3>
-        <Link to={`/calendar/${calendar.id}`} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/[0.15]">
+        <Link to={`/calendar/${calendar.slug || calendar.id}`} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/[0.15]">
           View Calendar <IoArrowForward />
         </Link>
       </div>

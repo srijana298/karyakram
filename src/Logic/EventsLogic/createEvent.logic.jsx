@@ -13,6 +13,7 @@ function CreateEventLogic() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const groupIdParam = searchParams.get("groupId");
+  const calendarIdParam = searchParams.get("calendar");
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -36,7 +37,7 @@ function CreateEventLogic() {
   const [meetPassword, setMeetPassword] = useState("");
   const [privacy, setPrivacy] = useState("public");
   const [groupId, setGroupId] = useState(groupIdParam || "");
-  const [calendarId, setCalendarId] = useState("");
+  const [calendarId, setCalendarId] = useState(calendarIdParam || "");
   const [requireApproval, setRequireApproval] = useState(true);
   const [image, setImage] = useState(null);
   const [imageError, setImageError] = useState("");

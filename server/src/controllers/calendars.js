@@ -51,14 +51,14 @@ export const listCalendars = async (req, res) => {
 export const createCalendar = async (req, res) => {
   const name = req.body.name?.trim();
   const description = req.body.description?.trim() || null;
-  const city = req.body.city?.trim();
+  const city = req.body.city?.trim() || null;
   const color = /^#[0-9a-f]{6}$/i.test(req.body.color || "") ? req.body.color : "#78716c";
-  const latitude = Number(req.body.latitude);
-  const longitude = Number(req.body.longitude);
+  const latitude = req.body.latitude !== undefined && req.body.latitude !== "" ? Number(req.body.latitude) : null;
+  const longitude = req.body.longitude !== undefined && req.body.longitude !== "" ? Number(req.body.longitude) : null;
 
   if (!name) return BadRequest("Calendar name is required");
-  if (!city || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return BadRequest("Choose a city in Nepal");
+  if ((latitude !== null && !Number.isFinite(latitude)) || (longitude !== null && !Number.isFinite(longitude))) {
+    return BadRequest("Invalid calendar location");
   }
 
   const requested = (req.body.slug || name)
@@ -80,21 +80,37 @@ export const createCalendar = async (req, res) => {
   return Created({ id: result[0].insertId, slug: requested }, "Calendar created");
 };
 
+// GET /api/calendars/slug/:slug/availability — live public URL validation.
+export const checkSlugAvailability = async (req, res) => {
+  const slug = (req.params.slug || "")
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!slug) return BadRequest("Enter a valid public URL");
+
+  const [taken] = await db.select({ id: calendars.id }).from(calendars)
+    .where(eq(calendars.slug, slug)).catch(() => []);
+
+  return Ok({ slug, available: !taken });
+};
+
 // GET /api/calendars/:id — a calendar plus its upcoming public events.
 export const getCalendar = async (req, res) => {
-  const id = parseInt(req.params.id);
-  const [cal] = await db.select().from(calendars).where(eq(calendars.id, id)).catch(() => []);
+  const value = req.params.id;
+  const numericId = Number(value);
+  const lookup = Number.isInteger(numericId)
+    ? eq(calendars.id, numericId)
+    : eq(calendars.slug, value);
+  const [cal] = await db.select().from(calendars).where(lookup).catch(() => []);
   if (!cal) return NotFound("Calendar not found");
 
-  const calEvents = await db.select().from(events).where(eq(events.calendar_id, id)).catch(() => []);
+  const calEvents = await db.select().from(events).where(eq(events.calendar_id, cal.id)).catch(() => []);
 
   const [{ follower_count } = { follower_count: 0 }] = rows(
-    await db.execute(sql`SELECT COUNT(*) AS follower_count FROM calendar_follows WHERE calendar_id = ${id}`).catch(() => null),
+    await db.execute(sql`SELECT COUNT(*) AS follower_count FROM calendar_follows WHERE calendar_id = ${cal.id}`).catch(() => null),
   );
 
   const uid = req.user?.id ?? 0;
   const following = rows(
-    await db.execute(sql`SELECT 1 FROM calendar_follows WHERE calendar_id = ${id} AND user_id = ${uid} LIMIT 1`).catch(() => null),
+    await db.execute(sql`SELECT 1 FROM calendar_follows WHERE calendar_id = ${cal.id} AND user_id = ${uid} LIMIT 1`).catch(() => null),
   );
 
   return Ok({ ...cal, events: calEvents, follower_count, is_following: following.length > 0 });

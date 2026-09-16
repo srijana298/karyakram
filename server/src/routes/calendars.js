@@ -9,6 +9,7 @@ const router = Router();
 // Public reads use optionalAuth so is_following is populated when a token is
 // present, but the page still works for logged-out visitors.
 router.get("/", optionalAuth, asyncHandler(ctrl.listCalendars));
+router.get("/slug/:slug/availability", authMiddleware, asyncHandler(ctrl.checkSlugAvailability));
 router.get("/:id", optionalAuth, asyncHandler(ctrl.getCalendar));
 router.post("/", authMiddleware, upload.fields([{ name: "avatar", maxCount: 1 }, { name: "cover", maxCount: 1 }]), asyncHandler(ctrl.createCalendar));
 

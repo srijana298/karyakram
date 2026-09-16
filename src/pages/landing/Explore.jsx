@@ -188,7 +188,7 @@ function Explore() {
                 {calendars.map((cal) => (
                   <Link
                     key={cal.id}
-                    to={`/calendar/${cal.id}`}
+                    to={`/calendar/${cal.slug || cal.id}`}
                     className="block p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07] transition-all"
                   >
                     <div className="flex items-start justify-between gap-3">
