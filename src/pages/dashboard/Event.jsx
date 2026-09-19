@@ -20,12 +20,14 @@ import {
   IoCheckmarkCircle,
   IoTimeOutline,
   IoTicketOutline,
+  IoLogoFacebook,
+  IoLogoLinkedin,
+  IoChatbubbleEllipsesOutline,
   IoMegaphoneOutline,
   IoPersonAddOutline,
   IoQrCodeOutline,
   IoDownloadOutline,
   IoRefreshOutline,
-  RiTwitterFill,
 } from "../../components/icons";
 import { MdComputer } from "../../components/icons";
 import { eventService } from "../../services/events";
@@ -180,9 +182,6 @@ function Event() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   // Public event pages use unguessable random short codes, never numeric IDs.
   const shareUrl = events?.short_code ? `${origin}/${events.short_code}` : "";
-  const twitterShareUrl = shareUrl
-    ? `https://twitter.com/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(events?.title || "")}`
-    : "";
 
   const copyLink = () => {
     if (!shareUrl) return toast.error("Public event link is not available for this event");
@@ -408,11 +407,9 @@ function Event() {
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-xs text-stone-400 dark:text-white/40">Share Event</span>
                   <div className="flex items-center gap-3 text-stone-400 dark:text-white/40">
-                    {twitterShareUrl && (
-                      <a target="_blank" rel="noreferrer" href={twitterShareUrl} className="hover:text-sky-500" title="Share on Twitter">
-                        <RiTwitterFill />
-                      </a>
-                    )}
+                    <a target="_blank" rel="noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} className="hover:text-blue-600"><IoLogoFacebook /></a>
+                    <a target="_blank" rel="noreferrer" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} className="hover:text-blue-700"><IoLogoLinkedin /></a>
+                    <button onClick={copyLink} className="hover:text-stone-700 dark:text-white/80"><IoChatbubbleEllipsesOutline /></button>
                   </div>
                 </div>
               </div>

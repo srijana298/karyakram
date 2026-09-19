@@ -17,10 +17,17 @@ import {
 
 const tabs = [
   { key: "all", label: "All Events" },
-  { key: "recommended", label: "Recommended" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "past", label: "Past" },
   { key: "offline", label: "In-person" },
   { key: "online", label: "Online" },
 ];
+
+// An event counts as over once its end (or start, when there is no end) has passed.
+function eventEndTime(event) {
+  const end = event.end_date || event.start_date;
+  return end ? new Date(end).getTime() : null;
+}
 
 // Turns "Kathmandu Tech Meetups" → "KT" for the avatar fallback.
 function initials(name = "") {
@@ -92,15 +99,32 @@ function Explore() {
     setSearchQuery(""); setSearchLocation(""); setDateRange({ from: "", to: "" });
   };
 
+  // Split into upcoming (soonest first) and past (most recent first).
+  const { upcomingEvents, pastEvents } = useMemo(() => {
+    const now = Date.now();
+    const upcoming = [];
+    const past = [];
+    (events || []).forEach((event) => {
+      const end = eventEndTime(event);
+      if (end !== null && end < now) past.push(event);
+      else upcoming.push(event);
+    });
+    upcoming.sort((a, b) => (eventEndTime(a) ?? Infinity) - (eventEndTime(b) ?? Infinity));
+    past.sort((a, b) => (eventEndTime(b) ?? 0) - (eventEndTime(a) ?? 0));
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [events]);
+
   const tabEvents = useMemo(() => {
     if (hasActiveFilters) return filteredEvents;
     switch (activeTab) {
       case "recommended": return recommendedEvents;
+      case "upcoming": return upcomingEvents;
+      case "past": return pastEvents;
       case "offline": return offlineEvent || [];
       case "online": return onlineEvent || [];
       default: return events || [];
     }
-  }, [activeTab, events, offlineEvent, onlineEvent, recommendedEvents, filteredEvents, hasActiveFilters]);
+  }, [activeTab, events, offlineEvent, onlineEvent, recommendedEvents, upcomingEvents, pastEvents, filteredEvents, hasActiveFilters]);
 
   const selectCategory = (label) => {
     setSearchParams(category === label ? {} : { category: label });
@@ -340,7 +364,11 @@ function Explore() {
               </div>
               <p className="text-sm font-medium text-stone-500 dark:text-white/70">No events found</p>
               <p className="text-xs text-stone-400 dark:text-white/40 mt-1">
-                {hasActiveFilters ? "Try adjusting your filters" : "Check back later for new events"}
+                {hasActiveFilters
+                  ? "Try adjusting your filters"
+                  : activeTab === "past"
+                    ? "No events have finished yet"
+                    : "Check back later for new events"}
               </p>
             </div>
           )}
