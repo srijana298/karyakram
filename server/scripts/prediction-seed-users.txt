@@ -1,0 +1,59 @@
+Smart RSVP Prediction — seeded score spread
+Generated: 2026-09-20T01:37:40.240Z
+Script:    scripts/seedPredictionSpread.js
+
+ORGANIZER (log in as this to see the badges)
+  email:    seedx.organizer@karyakram.test
+  password: Password123!
+
+TARGET EVENT
+  id:         632
+  short_code: SEEDX-TARGET
+  title:      Prediction Spread Demo (open this one)
+  where:      Event page → Guests → Pending tab
+
+PENDING GUESTS
+
+  Nirajan Manandhar  (user id 235)
+    email:        nirajan-manandhar48@mahotsav.com
+    target score: 10%
+    ACTUAL score: 10%   confidence: medium
+    factors:      past attendance 0% | acceptance 25% | category 13% | speed 0%
+    seeded plan:  14 past events — 3 approved, 0 attended, 2 on-category, RSVP'd 1h after creation
+    pre-existing: 2 real RSVP(s) already counted in the above
+
+  Deepa Thakuri  (user id 234)
+    email:        deepa-thakuri47@mahotsav.com
+    target score: 20%
+    ACTUAL score: 20%   confidence: medium
+    factors:      past attendance 0% | acceptance 25% | category 13% | speed 98%
+    seeded plan:  14 past events — 3 approved, 0 attended, 2 on-category, RSVP'd 1h after creation
+    pre-existing: 2 real RSVP(s) already counted in the above
+
+  Raj Maharjan  (user id 231)
+    email:        raj-maharjan44@mahotsav.com
+    target score: 40%
+    ACTUAL score: 40%   confidence: medium
+    factors:      past attendance 33% | acceptance 31% | category 38% | speed 98%
+    seeded plan:  14 past events — 3 approved, 1 attended, 6 on-category, RSVP'd 1h after creation
+    pre-existing: 2 real RSVP(s) already counted in the above
+
+  Sabina Yadav  (user id 228)
+    email:        sabina-yadav41@mahotsav.com
+    target score: 60%
+    ACTUAL score: 60%   confidence: medium
+    factors:      past attendance 67% | acceptance 31% | category 69% | speed 98%
+    seeded plan:  14 past events — 3 approved, 2 attended, 11 on-category, RSVP'd 1h after creation
+    pre-existing: 2 real RSVP(s) already counted in the above
+
+  Dibash  (user id 237)
+    email:        dibashthapa55@gmail.com
+    target score: 80%
+    ACTUAL score: 79%   confidence: high
+    factors:      past attendance 100% | acceptance 78% | category 78% | speed 0%
+    seeded plan:  14 past events — 13 approved, 13 attended, 14 on-category, RSVP'd 1h after creation
+    pre-existing: 4 real RSVP(s) already counted in the above
+
+NOTE  Passwords of the real users are unchanged — log in as the organizer above.
+CLEANUP  Re-running this script wipes every SEEDX- event and its RSVPs/attendance first.
+         Pre-existing rows are never touched.
